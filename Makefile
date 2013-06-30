@@ -13,7 +13,7 @@ CXXFLAGS += -Wall -Wextra -Werror -fno-rtti
 LIBARCHIVE_CFLAGS :=
 LIBARCHIVE_LIBS   := -larchive
 LLVM_CFLAGS := `llvm-config --cppflags`
-LLVM_LIBS   := `llvm-config --ldflags --libs core bitwriter object target all-targets`
+LLVM_LIBS   := `llvm-config --ldflags --libs object`
 
 CPPFLAGS += $(LIBARCHIVE_CFLAGS)
 CPPFLAGS += $(LLVM_CFLAGS)
