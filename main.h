@@ -6,8 +6,6 @@
 
 /// Package class
 /// reads a package archive, extracts information
-/// about libraries and updates a database with new
-/// information.
 class Package {
 public:
 	Package();
@@ -25,7 +23,6 @@ public:
 		std::vector<std::string> need;
 		std::string              rpath;
 	};
-
 
 public:
 	inline operator bool()  { return !error; }
