@@ -22,7 +22,7 @@ LIBS     += $(LLVM_LIBS)
 
 OBJECTS = main.o package.o
 
-BINARY = findpkgelf
+BINARY = readpkgelf
 
 default: all
 
@@ -36,6 +36,10 @@ $(BINARY): $(OBJECTS)
 
 clean:
 	-rm -f *.o $(BINARY)
+
+install:
+	install -d -m755            $(DESTDIR)$(BINDIR)
+	install    -m755 $(BINARY)  $(DESTDIR)$(BINDIR)/$(BINARY)
 
 depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null
