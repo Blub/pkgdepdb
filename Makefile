@@ -1,8 +1,8 @@
-DESTDIR :=
-PREFIX  := /usr/local
-BINDIR  := $(PREFIX)/bin
-DATADIR := $(PREFIX)/share
-MANDIR  := $(DATADIR)/man
+DESTDIR =
+PREFIX  = /usr/local
+BINDIR  = $(PREFIX)/bin
+DATADIR = $(PREFIX)/share
+MANDIR  = $(DATADIR)/man
 
 PACKAGE_NAME := readpkgelf
 
