@@ -84,10 +84,14 @@ Package::add_entry(struct archive *tar, struct archive_entry *entry)
 	// Check the size
 	size_t size = archive_entry_size(entry);
 	if (!size) {
+#if 0
 		log(Error, "invalid size: %lu for file %s\n",
 		    (unsigned long)size,
 		    filename.c_str());
 		return false;
+#else
+		return true;
+#endif
 	}
 
 	if (isinfo)
