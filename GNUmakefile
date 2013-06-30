@@ -1,6 +1,6 @@
 OBJECTS_SRC = $(subst .o,.cpp,$(OBJECTS))
 
-ifneq ($(shell git describe --always 2>/dev/null,)
+ifneq ($(shell git describe --always 2>/dev/null),)
     CPPFLAGS += -DGITINFO="\"$(shell git describe --always)\""
 endif
 
