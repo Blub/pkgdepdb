@@ -1,0 +1,25 @@
+.\"mdoc
+.Dd June 6, 2013
+.Dt READPKGELF 1
+.Os
+.Sh NAME
+.Nm readpkgelf
+.Nd read Arch package archive files, and print the required library names
+.Sh SYNOPSIS
+.Nm readelf
+.Op Cm options
+.Op Ar files...
+.Sh DESCRIPTION
+This tool is helpful to find library dependencies of packages without
+unpacking or installing them to a temporary location. It reads through
+the archive file, optionally parses a .PKGINFO file one is
+encountered, and then prints a list of required libraries of each ELF
+file contained in the library.
+.Sh OPTIONS
+There currently are no specific options. But
+.Fl h , Fl -help , Fl v
+and
+.Fl -version
+are recognized.
+.Sh AUTHOR
+See <http://github.com/Blub/readpkgelf>.

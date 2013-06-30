@@ -37,9 +37,15 @@ $(BINARY): $(OBJECTS)
 clean:
 	-rm -f *.o $(BINARY)
 
-install:
-	install -d -m755            $(DESTDIR)$(BINDIR)
-	install    -m755 $(BINARY)  $(DESTDIR)$(BINDIR)/$(BINARY)
+install: install-bin install-man
+install-prefix:
+	install -d -m755 $(DESTDIR)$(PREFIX)
+install-bin: install-prefix
+	install -d -m755              $(DESTDIR)$(BINDIR)
+	install    -m755 $(BINARY)    $(DESTDIR)$(BINDIR)/$(BINARY)
+install-man: install-prefix
+	install -d -m755              $(DESTDIR)$(MANDIR)/man1
+	install    -m644 readpkgelf.1 $(DESTDIR)$(MANDIR)/man1/readpkgelf.1
 
 depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null
