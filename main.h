@@ -4,6 +4,14 @@
 #include <string>
 #include <vector>
 
+enum {
+	Debug,
+	Warn,
+	Error
+};
+
+void log(int level, const char *msg, ...);
+
 /// Package class
 /// reads a package archive, extracts information
 class Package {

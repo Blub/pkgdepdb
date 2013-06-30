@@ -20,7 +20,7 @@ CPPFLAGS += $(LLVM_CFLAGS)
 LIBS     += $(LIBARCHIVE_LIBS)
 LIBS     += $(LLVM_LIBS)
 
-OBJECTS = main.o
+OBJECTS = main.o package.o
 
 BINARY = findpkgelf
 
@@ -43,3 +43,4 @@ depend:
 # DO NOT DELETE
 
 main.o: main.h
+package.o: main.h
