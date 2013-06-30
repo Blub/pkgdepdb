@@ -1,0 +1,9 @@
+.*.swp
+*.o
+*.orig
+*.rej
+*.patch
+*.diff
+*.exe
+
+readpkgelf
