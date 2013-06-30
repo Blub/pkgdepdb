@@ -42,6 +42,7 @@ private:
 	bool add_entry  (struct archive *tar, struct archive_entry *entry);
 	bool care_about (struct archive_entry *entry) const;
 	bool read_object(struct archive *tar, const std::string &filename, size_t size);
+	bool read_info  (struct archive *tar, size_t size);
 
 public:
 	std::string         name;

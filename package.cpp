@@ -79,9 +79,10 @@ bool
 Package::add_entry(struct archive *tar, struct archive_entry *entry)
 {
 	std::string filename(archive_entry_pathname(entry));
+	bool isinfo = filename == ".PKGINFO";
 
 	// for now we only care about files named lib.*\.so(\.|$)
-	if (!care_about(entry))
+	if (!isinfo && !care_about(entry))
 	{
 		log(Debug, "skip: %s\n", filename.c_str());
 		archive_read_data_skip(tar);
@@ -97,7 +98,36 @@ Package::add_entry(struct archive *tar, struct archive_entry *entry)
 		return false;
 	}
 
+	if (isinfo)
+		return read_info(tar, size);
+
 	return read_object(tar, filename, size);
+}
+
+bool
+Package::read_info(struct archive *tar, size_t size)
+{
+	std::unique_ptr<char> data(new char[size]);
+	ssize_t rc = archive_read_data(tar, data.get(), size);
+	if ((size_t)rc != size) {
+		log(Error, "failed to read .PKGINFO");
+		return false;
+	}
+
+	std::string str(data.get());
+	size_t pos = str.find("pkgname = ");
+	if (pos == std::string::npos) {
+		log(Error, "missing pkgname entry in .PKGINFO");
+		return false;
+	}
+
+	if (pos != 0 && data.get()[pos-1] != '\n') {
+		log(Error, "corrupted .PKGINFO");
+		return false;
+	}
+
+	this->name = str.substr(pos + 10, str.find_first_of(" \n\r\t", pos+10) - pos - 10);
+	return true;
 }
 
 bool
@@ -148,7 +178,7 @@ Package::read_object(struct archive *tar, const std::string &filename, size_t si
 			log(Error, "error reading library ref\n");
 			return false;
 		}
-		printf("%s NEEDS %s\n", filename.c_str(), path.str().c_str());
+		binobj->need.push_back(path);
 	}
 
 	objects.push_back(binobj);
@@ -159,4 +189,11 @@ Package::read_object(struct archive *tar, const std::string &filename, size_t si
 void
 Package::show_needed()
 {
+	const char *name = this->name.c_str();
+	for (auto &obj : objects) {
+		const char *objname = obj->path.c_str();
+		for (auto &need : obj->need) {
+			printf("%s: %s NEEDS %s\n", name, objname, need.c_str());
+		}
+	}
 }
