@@ -4,6 +4,30 @@
 #include <string>
 #include <vector>
 
+#ifndef READPKGELF_V_MAJ
+# error "READPKGELF_V_MAJ not defined"
+#endif
+#ifndef READPKGELF_V_MIN
+# error "READPKGELF_V_MIN not defined"
+#endif
+#ifndef READPKGELF_V_PAT
+# error "READPKGELF_V_PAT not defined"
+#endif
+
+#define RPKG_IND_STRING2(x) #x
+#define RPKG_IND_STRING(x) RPKG_IND_STRING2(x)
+#define VERSION_STRING \
+	RPKG_IND_STRING(READPKGELF_V_MAJ) "." \
+	RPKG_IND_STRING(READPKGELF_V_MIN) "." \
+	RPKG_IND_STRING(READPKGELF_V_PAT)
+
+#ifdef GITINFO
+# define FULL_VERSION_STRING \
+    VERSION_STRING "-git" GITINFO
+#else
+# define FULL_VERSION_STRING VERSION_STRING
+#endif
+
 enum {
 	Debug,
 	Warn,

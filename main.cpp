@@ -45,7 +45,7 @@ help(int x)
 static void
 version(int x)
 {
-	printf("readpkgelf v0.0\n");
+	printf("readpkgelf " VERSION_STRING "\n");
 	exit(x);
 }
 

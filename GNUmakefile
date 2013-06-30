@@ -1,5 +1,9 @@
 OBJECTS_SRC = $(subst .o,.cpp,$(OBJECTS))
 
+ifneq ($(shell git describe --always 2>/dev/null,)
+    CPPFLAGS += -DGITINFO="\"$(shell git describe --always)\""
+endif
+
 # For the local development environment
 # define your most precious flags in .localflags
 -include .localflags
