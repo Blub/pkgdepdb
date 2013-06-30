@@ -11,16 +11,8 @@
 #include "main.h"
 
 Package::Object::Object(const std::string &filepath)
+: path(filepath)
 {
-	size_t dot = filepath.find_last_of('.');
-	if (dot == std::string::npos) {
-		// contains no dot
-		name = filepath;
-	}
-	else {
-		path = filepath.substr(0, dot);
-		name = filepath.substr(dot+1, std::string::npos);
-	}
 }
 
 Package::Package(const std::string& path)

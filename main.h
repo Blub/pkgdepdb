@@ -51,7 +51,6 @@ public:
 
 	public:
 		std::string              path;
-		std::string              name;
 		std::vector<std::string> need;
 		std::string              rpath;
 	};
