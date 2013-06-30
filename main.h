@@ -23,7 +23,7 @@
 
 #ifdef GITINFO
 # define FULL_VERSION_STRING \
-    VERSION_STRING "-git" GITINFO
+    VERSION_STRING "-git: " GITINFO
 #else
 # define FULL_VERSION_STRING VERSION_STRING
 #endif

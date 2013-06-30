@@ -1,5 +1,10 @@
 OBJECTS_SRC = ${OBJECTS:C/\.o/.cpp/g}
 
+GITINFO != git describe --always 2>/dev/null
+.if $(GITINFO) != ""
+    CPPFLAGS += -DGITINFO="\"$(GITINFO)\""
+.endif
+
 .if exists(.localflags)
 .  include ".localflags"
 .endif
