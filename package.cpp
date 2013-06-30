@@ -97,6 +97,14 @@ Package::add_entry(struct archive *tar, struct archive_entry *entry)
 		return false;
 	}
 
+	return read_object(tar, filename, size);
+}
+
+bool
+Package::read_object(struct archive *tar, const std::string &filename, size_t size)
+{
+	std::shared_ptr<Object> binobj(new Object(filename));
+
 	// Read into an LLVM MemoryBuffer
 	std::unique_ptr<llvm::MemoryBuffer> buffer(llvm::MemoryBuffer::getNewUninitMemBuffer(size));
 	char *data = const_cast<char*>(buffer->getBufferStart());
@@ -143,5 +151,12 @@ Package::add_entry(struct archive *tar, struct archive_entry *entry)
 		printf("%s NEEDS %s\n", filename.c_str(), path.str().c_str());
 	}
 
+	objects.push_back(binobj);
+
 	return true;
+}
+
+void
+Package::show_needed()
+{
 }

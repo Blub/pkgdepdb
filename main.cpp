@@ -80,6 +80,7 @@ main(int argc, char **argv)
 		Package package(argv[optind]);
 		if (!package)
 			log(Error, "error reading package %s\n", argv[optind]);
+		package.show_needed();
 		++optind;
 	}
 

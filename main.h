@@ -36,13 +36,16 @@ public:
 	inline operator bool()  { return !error; }
 	inline bool operator!() { return error; }
 
+	void show_needed();
+
 private:
-	bool add_entry(struct archive *tar, struct archive_entry *entry);
-	bool care_about(struct archive_entry *entry) const;
+	bool add_entry  (struct archive *tar, struct archive_entry *entry);
+	bool care_about (struct archive_entry *entry) const;
+	bool read_object(struct archive *tar, const std::string &filename, size_t size);
 
 public:
 	std::string         name;
-	std::vector<Object> objects;
+	std::vector<std::shared_ptr<Object> > objects;
 
 private:
 	bool error;
