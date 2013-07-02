@@ -78,10 +78,12 @@ Elf32::Elf32(const char *data, size_t size)
 : Elf(data, size)
 {
 	hdr = (decltype(hdr))(data);
+	db_ident = (ei_class << 16) | (ei_osabi << 8) | 32;
 }
 
 Elf64::Elf64(const char *data, size_t size)
 : Elf(data, size)
 {
 	hdr = (decltype(hdr))(data);
+	db_ident = (ei_class << 16) | (ei_osabi << 8) | 64;
 }

@@ -90,7 +90,7 @@ public:
 	inline operator bool() const  { return !error; }
 	inline bool operator!() const { return error;  }
 
-private:
+protected:
 	bool        error;
 	const char *data;
 	size_t      size;
