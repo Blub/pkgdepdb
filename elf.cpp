@@ -6,20 +6,19 @@ template<typename HDR, typename SecHDR, typename Dyn>
 class ElfImpl : public Elf {
 private:
 	HDR *hdr;
-	SecHDR *strhdr;
 	SecHDR *dynhdr;
 	size_t  dyncount;
+	Dyn    *dynstr = 0;
 
 public:
 	const char*
 	get_string(size_t off) const {
-		return data + strhdr->sh_offset + off;
+		return data + dynstr->d_un.d_ptr + off;
 	}
 
 	ElfImpl(const char *data, size_t size)
 	: Elf(data, size)
 	{
-		strhdr   = 0;
 		dynhdr   = 0;
 		dyncount = 0;
 
@@ -28,19 +27,14 @@ public:
 
 		SecHDR *shdr = (SecHDR*)(data + hdr->e_shoff);
 		for (size_t i = 0; i != hdr->e_shnum; ++i) {
-			if (shdr[i].sh_type == SHT_DYNAMIC)
+			if (shdr[i].sh_type == SHT_DYNAMIC) {
 				dynhdr = shdr+i;
-			else if (shdr[i].sh_type == SHT_STRTAB)
-				strhdr = shdr+i;
+				break;
+			}
 		}
 
 		if (!dynhdr) {
 			log(Debug, "no dynamic section");
-			error = true;
-			return;
-		}
-		if (!strhdr) {
-			log(Debug, "no string table section");
 			error = true;
 			return;
 		}
@@ -56,11 +50,25 @@ public:
 		Dyn *dynstart = (Dyn*)(data + dynhdr->sh_offset);
 		for (size_t i = 0; i != dyncount; ++i) {
 			Dyn *dyn = dynstart + i;
+			if (dyn->d_tag == DT_STRTAB) {
+				dynstr = dyn;
+				break;
+			}
+		}
+		if (!dynstr) {
+			log(Error, "No DT_STRTAB\n");
+			error = true;
+			return;
+		}
+
+		for (size_t i = 0; i != dyncount; ++i) {
+			Dyn *dyn = dynstart + i;
 			switch (dyn->d_tag) {
 				case DT_NEEDED:
 					needed.push_back(get_string(dyn->d_un.d_ptr));
+					printf("needed: %s\n", needed.back().c_str());
 					break;
-				case DT_RPATH:   rpath   = get_string(dyn->d_un.d_ptr); break;
+				case DT_RPATH:   rpath   = get_string(dyn->d_un.d_ptr); printf("rpath: %s\n", rpath.c_str()); break;
 				case DT_RUNPATH: runpath = get_string(dyn->d_un.d_ptr); break;
 				default:
 					break;
