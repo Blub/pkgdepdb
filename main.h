@@ -1,8 +1,11 @@
 #ifndef WDEPTRACK_MAIN_H__
 #define WDEPTRACK_MAIN_H__
 
+#include <memory>
 #include <string>
 #include <vector>
+
+#include <elf.h>
 
 #ifndef READPKGELF_V_MAJ
 # error "READPKGELF_V_MAJ not defined"
@@ -73,6 +76,31 @@ public:
 
 private:
 	bool error;
+};
+
+class Elf {
+protected:
+	Elf(const char *data, size_t size);
+public:
+	static Elf* open(const char *data, size_t size);
+
+	const char *get_rpath() const;
+
+public:
+	inline operator bool() const  { return !error; }
+	inline bool operator!() const { return error;  }
+
+private:
+	bool        error;
+	const char *data;
+	size_t      size;
+
+	unsigned char *elf_ident;
+	unsigned char  ei_class;
+	unsigned char  ei_data;
+	unsigned char  ei_version;
+	unsigned char  ei_osabi;
+	unsigned char  ei_abiversion;
 };
 
 #endif

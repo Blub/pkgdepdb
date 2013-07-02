@@ -3,8 +3,6 @@
 #include <stdarg.h>
 #include <getopt.h>
 
-#include <memory>
-
 #include <archive.h>
 #include <archive_entry.h>
 
@@ -49,10 +47,21 @@ version(int x)
 	exit(x);
 }
 
+#include <fstream>
+
 int
 main(int argc, char **argv)
 {
 	arg0 = argv[0];
+
+	std::ifstream     inf(argv[1], std::ios::binary);
+	std::vector<char> elfdata;
+	inf.seekg(0, std::ios::end);
+	elfdata.resize(inf.tellg());
+	inf.seekg(0, std::ios::beg);
+	inf.read(&elfdata[0], elfdata.size());
+	std::unique_ptr<Elf> elf(Elf::open(&elfdata[0], elfdata.size()));
+	exit(0);
 
 	if (argc < 2)
 		help(1);

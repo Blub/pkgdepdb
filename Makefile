@@ -27,7 +27,7 @@ CPPFLAGS += $(LLVM_CFLAGS)
 LIBS     += $(LIBARCHIVE_LIBS)
 LIBS     += $(LLVM_LIBS)
 
-OBJECTS = main.o package.o
+OBJECTS = main.o package.o elf.o
 
 BINARY = readpkgelf
 
