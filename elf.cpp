@@ -2,19 +2,56 @@
 
 #include "main.h"
 
-class Elf32 : public Elf {
-public:
-	Elf32(const char *data, size_t size);
+template<typename HDR, typename SecHDR, typename Dyn>
+class ElfImpl : public Elf {
 private:
-	Elf32_Ehdr *hdr;
+	HDR *hdr;
+	SecHDR *strhdr;
+	SecHDR *dynhdr;
+	size_t  dyncount;
+
+public:
+	ElfImpl(const char *data, size_t size)
+	: Elf(data, size)
+	{
+		strhdr   = 0;
+		dynhdr   = 0;
+		dyncount = 0;
+
+		hdr = (decltype(hdr))(data);
+		db_ident = (ei_class << 16) | (ei_osabi << 8) | 32;
+
+		SecHDR *shdr = (SecHDR*)(data + hdr->e_shoff);
+		for (size_t i = 0; i != hdr->e_shnum; ++i) {
+			if (shdr[i].sh_type == SHT_DYNAMIC)
+				dynhdr = shdr+i;
+			else if (shdr[i].sh_type == SHT_STRTAB)
+				strhdr = shdr+i;
+		}
+
+		if (!dynhdr) {
+			log(Debug, "no dynamic section");
+			return;
+		}
+		if (!strhdr) {
+			log(Debug, "no string table section");
+			return;
+		}
+
+		if (dynhdr->sh_entsize != sizeof(Dyn)) {
+			log(Error, "invalid entsize for dynamic section\n");
+			error = true;
+			return;
+		}
+
+		dyncount = dynhdr->sh_size / sizeof(Dyn);
+	}
+
+	// can now read the dynamic section, and the string table
 };
 
-class Elf64 : public Elf {
-public:
-	Elf64(const char *data, size_t size);
-private:
-	Elf64_Ehdr *hdr;
-};
+using Elf32 = ElfImpl<Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
+using Elf64 = ElfImpl<Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
 
 Elf* Elf::open(const char *data, size_t size)
 {
@@ -72,18 +109,4 @@ Elf::Elf(const char *data_, size_t size_)
 	ei_version    = elf_ident[EI_VERSION];
 	ei_osabi      = elf_ident[EI_OSABI];
 	ei_abiversion = elf_ident[EI_ABIVERSION];
-}
-
-Elf32::Elf32(const char *data, size_t size)
-: Elf(data, size)
-{
-	hdr = (decltype(hdr))(data);
-	db_ident = (ei_class << 16) | (ei_osabi << 8) | 32;
-}
-
-Elf64::Elf64(const char *data, size_t size)
-: Elf(data, size)
-{
-	hdr = (decltype(hdr))(data);
-	db_ident = (ei_class << 16) | (ei_osabi << 8) | 64;
 }
