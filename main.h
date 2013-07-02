@@ -84,11 +84,14 @@ protected:
 public:
 	static Elf* open(const char *data, size_t size);
 
-	const char *get_rpath() const;
-
 public:
 	inline operator bool() const  { return !error; }
 	inline bool operator!() const { return error;  }
+
+public:
+	std::string              rpath;
+	std::string              runpath;
+	std::vector<std::string> needed;
 
 protected:
 	bool        error;

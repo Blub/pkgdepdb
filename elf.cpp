@@ -11,6 +11,11 @@ private:
 	size_t  dyncount;
 
 public:
+	const char*
+	get_string(size_t off) const {
+		return data + strhdr->sh_offset + off;
+	}
+
 	ElfImpl(const char *data, size_t size)
 	: Elf(data, size)
 	{
@@ -31,10 +36,12 @@ public:
 
 		if (!dynhdr) {
 			log(Debug, "no dynamic section");
+			error = true;
 			return;
 		}
 		if (!strhdr) {
 			log(Debug, "no string table section");
+			error = true;
 			return;
 		}
 
@@ -45,9 +52,21 @@ public:
 		}
 
 		dyncount = dynhdr->sh_size / sizeof(Dyn);
-	}
 
-	// can now read the dynamic section, and the string table
+		Dyn *dynstart = (Dyn*)(data + dynhdr->sh_offset);
+		for (size_t i = 0; i != dyncount; ++i) {
+			Dyn *dyn = dynstart + i;
+			switch (dyn->d_tag) {
+				case DT_NEEDED:
+					needed.push_back(get_string(dyn->d_un.d_ptr));
+					break;
+				case DT_RPATH:   rpath   = get_string(dyn->d_un.d_ptr); break;
+				case DT_RUNPATH: runpath = get_string(dyn->d_un.d_ptr); break;
+				default:
+					break;
+			}
+		}
+	}
 };
 
 using Elf32 = ElfImpl<Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
