@@ -101,6 +101,9 @@ private:
 	unsigned char  ei_version;
 	unsigned char  ei_osabi;
 	unsigned char  ei_abiversion;
+
+	// type identification - for when we start the database stuff
+	unsigned int   db_ident;
 };
 
 #endif

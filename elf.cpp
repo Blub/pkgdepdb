@@ -5,11 +5,15 @@
 class Elf32 : public Elf {
 public:
 	Elf32(const char *data, size_t size);
+private:
+	Elf32_Ehdr *hdr;
 };
 
 class Elf64 : public Elf {
 public:
 	Elf64(const char *data, size_t size);
+private:
+	Elf64_Ehdr *hdr;
 };
 
 Elf* Elf::open(const char *data, size_t size)
@@ -24,18 +28,20 @@ Elf* Elf::open(const char *data, size_t size)
 		return 0;
 	}
 
-	unsigned char ei_class      = elf_ident[EI_CLASS];
-	unsigned char ei_version    = elf_ident[EI_VERSION];
+	unsigned char ei_class   = elf_ident[EI_CLASS];
+	unsigned char ei_version = elf_ident[EI_VERSION];
+	unsigned char ei_osabi   = elf_ident[EI_OSABI];
 
 	if (ei_version != EV_CURRENT) {
 		log(Error, "invalid ELF version: %u\n", (unsigned)ei_version);
 		return 0;
 	}
 
-	printf("version: %u\n", (unsigned int)elf_ident[EI_VERSION]);
-	printf("osabi:   %u\n", (unsigned int)elf_ident[EI_OSABI]);
-	for (size_t i = 0; i < EI_NIDENT; ++i) {
-		printf("%i: %u\n", (int)i, (unsigned)elf_ident[i]);
+	if (ei_osabi != ELFOSABI_FREEBSD &&
+	    ei_osabi != ELFOSABI_LINUX   &&
+	    ei_osabi != ELFOSABI_NONE)
+	{
+		log(Warn, "osabi not recognized: %u\n", (unsigned)ei_osabi);
 	}
 
 	if (ei_class == ELFCLASS32)
@@ -71,9 +77,11 @@ Elf::Elf(const char *data_, size_t size_)
 Elf32::Elf32(const char *data, size_t size)
 : Elf(data, size)
 {
+	hdr = (decltype(hdr))(data);
 }
 
 Elf64::Elf64(const char *data, size_t size)
 : Elf(data, size)
 {
+	hdr = (decltype(hdr))(data);
 }
