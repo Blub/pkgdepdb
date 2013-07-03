@@ -19,13 +19,9 @@ CPPFLAGS += -DREADPKGELF_V_PAT=$(VERSION_PATCH)
 
 LIBARCHIVE_CFLAGS :=
 LIBARCHIVE_LIBS   := -larchive
-LLVM_CFLAGS := `llvm-config --cppflags`
-LLVM_LIBS   := `llvm-config --ldflags --libs object`
 
 CPPFLAGS += $(LIBARCHIVE_CFLAGS)
-CPPFLAGS += $(LLVM_CFLAGS)
 LIBS     += $(LIBARCHIVE_LIBS)
-LIBS     += $(LLVM_LIBS)
 
 OBJECTS = main.o package.o elf.o
 

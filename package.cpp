@@ -3,17 +3,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-#include <llvm/Support/system_error.h>
-#include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Object/ObjectFile.h>
-#include <llvm/Object/Binary.h>
-
 #include "main.h"
-
-Package::Object::Object(const std::string &filepath)
-: path(filepath)
-{
-}
 
 Package::Package(const std::string& path)
 {
@@ -97,7 +87,7 @@ Package::add_entry(struct archive *tar, struct archive_entry *entry)
 	if (isinfo)
 		return read_info(tar, size);
 
-	return read_object(tar, filename, size);
+	return read_object(tar, std::move(filename), size);
 }
 
 bool
@@ -127,57 +117,38 @@ Package::read_info(struct archive *tar, size_t size)
 }
 
 bool
-Package::read_object(struct archive *tar, const std::string &filename, size_t size)
+Package::read_object(struct archive *tar, std::string &&filename, size_t size)
 {
-	std::shared_ptr<Object> binobj(new Object(filename));
+	std::vector<char> data;
+	data.resize(size);
 
-	// Read into an LLVM MemoryBuffer
-	std::unique_ptr<llvm::MemoryBuffer> buffer(llvm::MemoryBuffer::getNewUninitMemBuffer(size));
-	char *data = const_cast<char*>(buffer->getBufferStart());
-
-	ssize_t rc = archive_read_data(tar, data, size);
+	ssize_t rc = archive_read_data(tar, &data[0], size);
 	if (rc < 0) {
 		log(Error, "failed to read from archive stream\n");
 		return false;
 	}
-
-	// Create an ELF Object
-	// in llvm memorybuffers are moved, create a new one:
-	llvm::MemoryBuffer *bufref = llvm::MemoryBuffer::getMemBuffer(buffer->getBuffer(), "", false);
-
-	llvm::OwningPtr<llvm::object::Binary> binary;
-	llvm::error_code ec = llvm::object::createBinary(bufref, binary);
-	if (ec) {
-		log(Debug, "nope: %s\n", filename.c_str());
-		return true;
-	}
-	if (!binary->isObject()) {
-		log(Debug, "not an object: %s\n", filename.c_str());
-		return true;
-	}
-	if (!binary->isELF()) {
-		// for now...
-		log(Debug, "not an ELF object: %s\n", filename.c_str());
-		return true;
+	else if ((size_t)rc != size) {
+		log(Error, "file was short: %s\n", filename.c_str());
+		return false;
 	}
 
-	std::unique_ptr<llvm::object::ObjectFile> obj(llvm::object::ObjectFile::createELFObjectFile(buffer.release()));
-	log(Debug, "ELF: %s\n", filename.c_str());
-
-	llvm::StringRef path;
-	for (auto need = obj->begin_libraries_needed();
-	     !ec && need != obj->end_libraries_needed();
-	     need.increment(ec) )
-	{
-		ec = need->getPath(path);
-		if (ec) {
-			log(Error, "error reading library ref\n");
-			return false;
-		}
-		binobj->need.push_back(path);
+	bool err = false;
+	std::shared_ptr<Elf> object(Elf::open(&data[0], data.size(), &err));
+	if (!object.get()) {
+		if (err)
+			log(Error, "error in: %s\n", filename.c_str());
+		return !err;
 	}
 
-	objects.push_back(binobj);
+	size_t slash = filename.find_last_of('/');
+	if (slash == std::string::npos)
+		object->basename = std::move(filename);
+	else {
+		object->dirname  = filename.substr(0, slash);
+		object->basename = filename.substr(slash+1, std::string::npos);
+	}
+
+	objects.push_back(object);
 
 	return true;
 }
@@ -187,8 +158,9 @@ Package::show_needed()
 {
 	const char *name = this->name.c_str();
 	for (auto &obj : objects) {
-		const char *objname = obj->path.c_str();
-		for (auto &need : obj->need) {
+		std::string path = obj->dirname + "/" + obj->basename;
+		const char *objname = path.c_str();
+		for (auto &need : obj->needed) {
 			printf("%s: %s NEEDS %s\n", name, objname, need.c_str());
 		}
 	}

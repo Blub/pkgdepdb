@@ -39,24 +39,26 @@ enum {
 
 void log(int level, const char *msg, ...);
 
+class Elf {
+public:
+	Elf();
+	static Elf* open(const char *data, size_t size, bool *waserror);
+
+public:
+	std::string dirname;
+	std::string basename;
+
+	std::string              rpath;
+	std::string              runpath;
+	std::vector<std::string> needed;
+};
+
 /// Package class
 /// reads a package archive, extracts information
 class Package {
 public:
 	Package();
 	Package(const std::string& path);
-
-public:
-	/// Represents an object file
-	class Object {
-	public:
-		Object(const std::string& filepath);
-
-	public:
-		std::string              path;
-		std::vector<std::string> need;
-		std::string              rpath;
-	};
 
 public:
 	inline operator bool()  { return !error; }
@@ -67,26 +69,15 @@ public:
 private:
 	bool add_entry  (struct archive *tar, struct archive_entry *entry);
 	bool care_about (struct archive_entry *entry) const;
-	bool read_object(struct archive *tar, const std::string &filename, size_t size);
+	bool read_object(struct archive *tar, std::string &&filename, size_t size);
 	bool read_info  (struct archive *tar, size_t size);
 
 public:
 	std::string         name;
-	std::vector<std::shared_ptr<Object> > objects;
+	std::vector<std::shared_ptr<Elf> > objects;
 
 private:
 	bool error;
-};
-
-class Elf {
-public:
-	Elf();
-	static Elf* open(const char *data, size_t size);
-
-public:
-	std::string              rpath;
-	std::string              runpath;
-	std::vector<std::string> needed;
 };
 
 #endif
