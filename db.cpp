@@ -131,8 +131,9 @@ DB::install_package(Package* &&pkg)
 				++missing;
 				continue;
 			}
+			bool needs = false;
 			std::remove_if(missing->second.begin(), missing->second.end(),
-				[&obj](const std::string &lib) { return lib == obj->basename; });
+				[&obj, &needs](const std::string &lib) { return (lib == obj->basename && (needs = true)); });
 			if (0 == missing->second.size())
 				required_missing.erase(missing++);
 			else
