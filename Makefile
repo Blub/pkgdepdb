@@ -23,7 +23,7 @@ LIBARCHIVE_LIBS   := -larchive
 CPPFLAGS += $(LIBARCHIVE_CFLAGS)
 LIBS     += $(LIBARCHIVE_LIBS)
 
-OBJECTS = main.o package.o elf.o
+OBJECTS = main.o package.o elf.o db.o
 
 BINARY = readpkgelf
 
@@ -57,3 +57,5 @@ depend:
 
 main.o: main.h
 package.o: main.h
+elf.o: main.h
+db.o: main.h

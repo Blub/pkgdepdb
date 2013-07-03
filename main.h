@@ -45,6 +45,8 @@ public:
 	static Elf* open(const char *data, size_t size, bool *waserror);
 
 public:
+	size_t refcount;
+
 	// path + name separated
 	std::string dirname;
 	std::string basename;
@@ -69,6 +71,70 @@ public:
 	std::vector<std::shared_ptr<Elf> > objects;
 
 	void show_needed();
+};
+
+template<typename T>
+class rptr {
+public:
+	T *ptr;
+
+	rptr()     : ptr(NULL) {}
+	rptr(T *t) : ptr(t) {
+		if (ptr) ptr->refcount++;
+	}
+	rptr(const rptr<T> &o) : ptr(o.ptr) {
+		if (ptr) ptr->refcount++;
+	}
+	rptr(rptr<T> &&o) : ptr(o.ptr) {
+		o.ptr = 0;
+	}
+	~rptr() {
+		if (ptr && !--(ptr->refcount))
+			delete ptr;
+	}
+	T* release() {
+		T *p = ptr;
+		ptr = NULL;
+		if (p)
+			p->refcount--;
+		return p;
+	}
+	operator T*() const { return  ptr; }
+	T*      get() const { return  ptr; }
+
+	bool operator!() const { return !ptr; }
+
+	T&       operator*()        { return *ptr; }
+	T*       operator->()       { return  ptr; }
+	const T* operator->() const { return ptr; }
+
+	rptr<T>& operator=(T* o) {
+		if (o) o->refcount++;
+		if (ptr && !--(ptr->refcount))
+			delete ptr;
+		ptr = o;
+		return (*this);
+	}
+	rptr<T>& operator=(const rptr<T> &o) {
+		if (ptr && !--(ptr->refcount))
+			delete ptr;
+		if ( (ptr = o.ptr) )
+			ptr->refcount++;
+		return (*this);
+	}
+	rptr<T>& operator=(rptr<T> &&o) {
+		if (ptr && !--(ptr->refcount))
+			delete ptr;
+		ptr = o.ptr;
+		o.ptr = 0;
+		return (*this);
+	}
+	bool operator==(const T* t) const {
+		return ptr == t;
+	}
+	bool operator==(T* t) const {
+		return ptr == t;
+	}
 };
 
 #endif

@@ -3,6 +3,7 @@
 #include "main.h"
 
 Elf::Elf()
+: refcount(0)
 {
 }
 
