@@ -61,18 +61,6 @@ public:
 	std::vector<std::string> needed;
 };
 
-/// Package class
-/// reads a package archive, extracts information
-class Package {
-public:
-	static Package* open(const std::string& path);
-
-	std::string                        name;
-	std::vector<std::shared_ptr<Elf> > objects;
-
-	void show_needed();
-};
-
 template<typename T>
 class rptr {
 public:
@@ -135,6 +123,18 @@ public:
 	bool operator==(T* t) const {
 		return ptr == t;
 	}
+};
+
+/// Package class
+/// reads a package archive, extracts information
+class Package {
+public:
+	static Package* open(const std::string& path);
+
+	std::string                        name;
+	std::vector<rptr<Elf> > objects;
+
+	void show_needed();
 };
 
 #endif
