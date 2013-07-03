@@ -7,8 +7,13 @@
 using ObjClass = unsigned short;
 
 static inline ObjClass
-objclass(unsigned char ei_class, unsigned char ei_osabi) {
+getObjClass(unsigned char ei_class, unsigned char ei_osabi) {
 	return (ei_class << 8) | ei_osabi;
+}
+
+static inline ObjClass
+getObjClass(Elf *elf) {
+	return getObjClass(elf->ei_class, elf->ei_osabi);
 }
 
 using PackageList = std::vector<Package*>;
@@ -78,11 +83,35 @@ DB::delete_package(const std::string& name)
 		}
 	}
 
+	delete old;
+
 	std::remove_if(objects.begin(), objects.end(),
 		[](rptr<Elf> &obj) { return 1 == obj->refcount; });
 
-	delete old;
 	return true;
+}
+
+static bool
+elf_finds(Elf *elf, const std::string& path)
+{
+	if (path == "/lib" ||
+	    path == "/usr/lib")
+	{
+		return true;
+	}
+
+	if (!elf->rpath.length())
+		return false;
+
+	size_t at = 0;
+	while (at != std::string::npos) {
+		size_t to = elf->rpath.find_first_of(':', at);
+		if (elf->rpath.substr(at, to) == path)
+			return true;
+		at = to;
+	}
+
+	return false;
 }
 
 bool
@@ -90,6 +119,26 @@ DB::install_package(Package* &&pkg)
 {
 	if (!delete_package(pkg->name))
 		return false;
-	delete pkg;
+	packages.push_back(pkg);
+
+	for (auto &obj : pkg->objects) {
+		ObjClass objclass = getObjClass(obj);
+		// check if the object is required
+		for (auto missing = required_missing.begin(); missing != required_missing.end();) {
+			if (getObjClass(missing->first) != objclass ||
+			    !elf_finds(missing->first, obj->dirname))
+			{
+				++missing;
+				continue;
+			}
+			std::remove_if(missing->second.begin(), missing->second.end(),
+				[&obj](const std::string &lib) { return lib == obj->basename; });
+			if (0 == missing->second.size())
+				required_missing.erase(missing++);
+			else
+				++missing;
+		}
+	}
+
 	return true;
 }
