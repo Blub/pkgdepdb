@@ -79,34 +79,14 @@ private:
 };
 
 class Elf {
-protected:
-	Elf(const char *data, size_t size);
 public:
+	Elf();
 	static Elf* open(const char *data, size_t size);
-
-public:
-	inline operator bool() const  { return !error; }
-	inline bool operator!() const { return error;  }
 
 public:
 	std::string              rpath;
 	std::string              runpath;
 	std::vector<std::string> needed;
-
-protected:
-	bool        error;
-	const char *data;
-	size_t      size;
-
-	unsigned char *elf_ident;
-	unsigned char  ei_class;
-	unsigned char  ei_data;
-	unsigned char  ei_version;
-	unsigned char  ei_osabi;
-	unsigned char  ei_abiversion;
-
-	// type identification - for when we start the database stuff
-	unsigned int   db_ident;
 };
 
 #endif

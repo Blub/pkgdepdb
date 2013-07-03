@@ -61,6 +61,12 @@ main(int argc, char **argv)
 	inf.seekg(0, std::ios::beg);
 	inf.read(&elfdata[0], elfdata.size());
 	std::unique_ptr<Elf> elf(Elf::open(&elfdata[0], elfdata.size()));
+	printf("file: %s\n", argv[1]);
+	printf("rpath:   [[%s]]\n", elf->rpath.c_str());
+	printf("runpath: [[%s]]\n", elf->runpath.c_str());
+	for (auto &n : elf->needed) {
+		printf("needs: %s\n", n.c_str());
+	}
 	exit(0);
 
 	if (argc < 2)
