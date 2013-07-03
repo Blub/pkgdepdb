@@ -63,27 +63,12 @@ public:
 /// reads a package archive, extracts information
 class Package {
 public:
-	Package();
-	Package(const std::string& path);
+	static Package* open(const std::string& path);
 
-public:
-	inline operator bool()  { return !error; }
-	inline bool operator!() { return error; }
-
-	void show_needed();
-
-private:
-	bool add_entry  (struct archive *tar, struct archive_entry *entry);
-	bool care_about (struct archive_entry *entry) const;
-	bool read_object(struct archive *tar, std::string &&filename, size_t size);
-	bool read_info  (struct archive *tar, size_t size);
-
-public:
-	std::string         name;
+	std::string                        name;
 	std::vector<std::shared_ptr<Elf> > objects;
 
-private:
-	bool error;
+	void show_needed();
 };
 
 #endif

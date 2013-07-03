@@ -77,10 +77,11 @@ main(int argc, char **argv)
 	}
 
 	while (optind < argc) {
-		Package package(argv[optind]);
+		Package *package = Package::open(argv[optind]);
 		if (!package)
 			log(Error, "error reading package %s\n", argv[optind]);
-		package.show_needed();
+		package->show_needed();
+		delete package;
 		++optind;
 	}
 

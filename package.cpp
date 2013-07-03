@@ -5,37 +5,8 @@
 
 #include "main.h"
 
-Package::Package(const std::string& path)
-{
-	error = false;
-
-	struct archive *tar = archive_read_new();
-	archive_read_support_filter_all(tar);
-	archive_read_support_format_all(tar);
-
-	struct archive_entry *entry;
-	if (ARCHIVE_OK != archive_read_open_filename(tar, path.c_str(), 10240)) {
-		error = true;
-		return;
-	}
-
-	while (ARCHIVE_OK == archive_read_next_header(tar, &entry)) {
-		//log(Log, "-> %s\n", archive_entry_pathname(entry));
-
-		if (!add_entry(tar, entry))
-			break;
-	}
-
-	archive_read_free(tar);
-}
-
-Package::Package()
-{
-	error = false;
-}
-
-bool
-Package::care_about(struct archive_entry *entry) const
+static bool
+care_about(struct archive_entry *entry)
 {
 	mode_t mode = archive_entry_mode(entry);
 
@@ -57,41 +28,8 @@ Package::care_about(struct archive_entry *entry) const
 	return true;
 }
 
-bool
-Package::add_entry(struct archive *tar, struct archive_entry *entry)
-{
-	std::string filename(archive_entry_pathname(entry));
-	bool isinfo = filename == ".PKGINFO";
-
-	// for now we only care about files named lib.*\.so(\.|$)
-	if (!isinfo && !care_about(entry))
-	{
-		log(Debug, "skip: %s\n", filename.c_str());
-		archive_read_data_skip(tar);
-		return true;
-	}
-
-	// Check the size
-	size_t size = archive_entry_size(entry);
-	if (!size) {
-#if 0
-		log(Error, "invalid size: %lu for file %s\n",
-		    (unsigned long)size,
-		    filename.c_str());
-		return false;
-#else
-		return true;
-#endif
-	}
-
-	if (isinfo)
-		return read_info(tar, size);
-
-	return read_object(tar, std::move(filename), size);
-}
-
-bool
-Package::read_info(struct archive *tar, size_t size)
+static bool
+read_info(Package *pkg, struct archive *tar, size_t size)
 {
 	std::unique_ptr<char> data(new char[size]);
 	ssize_t rc = archive_read_data(tar, data.get(), size);
@@ -112,12 +50,12 @@ Package::read_info(struct archive *tar, size_t size)
 		return false;
 	}
 
-	this->name = str.substr(pos + 10, str.find_first_of(" \n\r\t", pos+10) - pos - 10);
+	pkg->name = str.substr(pos + 10, str.find_first_of(" \n\r\t", pos+10) - pos - 10);
 	return true;
 }
 
-bool
-Package::read_object(struct archive *tar, std::string &&filename, size_t size)
+static bool
+read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t size)
 {
 	std::vector<char> data;
 	data.resize(size);
@@ -148,9 +86,57 @@ Package::read_object(struct archive *tar, std::string &&filename, size_t size)
 		object->basename = filename.substr(slash+1, std::string::npos);
 	}
 
-	objects.push_back(object);
+	pkg->objects.push_back(object);
 
 	return true;
+}
+
+static bool
+add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
+{
+	std::string filename(archive_entry_pathname(entry));
+	bool isinfo = filename == ".PKGINFO";
+
+	// for now we only care about files named lib.*\.so(\.|$)
+	if (!isinfo && !care_about(entry))
+	{
+		archive_read_data_skip(tar);
+		return true;
+	}
+
+	// Check the size
+	size_t size = archive_entry_size(entry);
+	if (!size)
+		return true;
+
+	if (isinfo)
+		return read_info(pkg, tar, size);
+
+	return read_object(pkg, tar, std::move(filename), size);
+}
+
+
+Package*
+Package::open(const std::string& path)
+{
+	std::unique_ptr<Package> package(new Package);
+
+	struct archive *tar = archive_read_new();
+	archive_read_support_filter_all(tar);
+	archive_read_support_format_all(tar);
+
+	struct archive_entry *entry;
+	if (ARCHIVE_OK != archive_read_open_filename(tar, path.c_str(), 10240)) {
+		return 0;
+	}
+
+	while (ARCHIVE_OK == archive_read_next_header(tar, &entry)) {
+		if (!add_entry(package.get(), tar, entry))
+			return 0;
+	}
+
+	archive_read_free(tar);
+	return package.release();
 }
 
 void
