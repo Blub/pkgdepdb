@@ -78,6 +78,9 @@ DB::delete_package(const std::string& name)
 		}
 	}
 
+	std::remove_if(objects.begin(), objects.end(),
+		[](rptr<Elf> &obj) { return 1 == obj->refcount; });
+
 	delete old;
 	return true;
 }
