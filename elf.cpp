@@ -173,12 +173,16 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror)
 		log(Warn, "osabi not recognized: %u\n", (unsigned)ei_osabi);
 	}
 
+	Elf *e = 0;
 	if (ei_class == ELFCLASS32)
-		return LoadElf32(data, size, waserror);
+		e = LoadElf32(data, size, waserror);
 	else if (ei_class == ELFCLASS64)
-		return LoadElf64(data, size, waserror);
-	else {
+		e = LoadElf64(data, size, waserror);
+	if (!e) {
 		log(Error, "unrecognized ELF class: %u\n", (unsigned)ei_class);
 		return 0;
 	}
+	e->ei_class = ei_class;
+	e->ei_osabi = ei_osabi;
+	return e;
 }

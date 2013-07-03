@@ -45,9 +45,15 @@ public:
 	static Elf* open(const char *data, size_t size, bool *waserror);
 
 public:
+	// path + name separated
 	std::string dirname;
 	std::string basename;
 
+	// classification:
+	unsigned char ei_class; // 32/64 bit
+	unsigned char ei_osabi; // freebsd/linux/...
+
+	// requirements:
 	std::string              rpath;
 	std::string              runpath;
 	std::vector<std::string> needed;
