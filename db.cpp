@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <memory>
 #include <map>
+#include <set>
 
 #include "main.h"
 
@@ -18,7 +19,9 @@ getObjClass(Elf *elf) {
 
 using PackageList = std::vector<Package*>;
 using ObjectList  = std::vector<rptr<Elf>>;
+using ObjectSet   = std::set<rptr<Elf>>;
 using StringList  = std::vector<std::string>;
+using StringSet   = std::set<std::string>;
 
 class DB {
 public:
@@ -27,8 +30,8 @@ public:
 	PackageList packages;
 	ObjectList  objects;
 
-	std::map<Elf*, ObjectList> required_found;
-	std::map<Elf*, StringList> required_missing;
+	std::map<Elf*, ObjectSet> required_found;
+	std::map<Elf*, StringSet> required_missing;
 
 	bool install_package(Package* &&pkg);
 	bool delete_package(const std::string& name);
@@ -125,15 +128,27 @@ DB::install_package(Package* &&pkg)
 		ObjClass objclass = getObjClass(obj);
 		// check if the object is required
 		for (auto missing = required_missing.begin(); missing != required_missing.end();) {
-			if (getObjClass(missing->first) != objclass ||
-			    !elf_finds(missing->first, obj->dirname))
+			Elf *seeker = missing->first;
+			if (getObjClass(seeker) != objclass ||
+			    !elf_finds(seeker, obj->dirname))
 			{
 				++missing;
 				continue;
 			}
+			/* for vector:
 			bool needs = false;
 			std::remove_if(missing->second.begin(), missing->second.end(),
-				[&obj, &needs](const std::string &lib) { return (lib == obj->basename && (needs = true)); });
+				[&obj, &needs](const std::string &lib) {
+					// if lib==name {needs=true} written as side-effect
+					return (lib == obj->basename && (needs = true));
+				});
+			*/
+			// for std::set:
+			bool needs = (0 != missing->second.erase(obj->basename));
+
+			if (needs) // the library is indeed required and found:
+				required_found[seeker].insert(obj);
+
 			if (0 == missing->second.size())
 				required_missing.erase(missing++);
 			else
