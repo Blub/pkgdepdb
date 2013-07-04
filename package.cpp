@@ -197,11 +197,6 @@ Package::open(const std::string& path)
 			}
 			changed = true;
 
-			printf("%s/%s -> %s/%s\n",
-				std::get<0>(linkfrom).c_str(),
-				std::get<1>(linkfrom).c_str(),
-				std::get<0>(linkto).c_str(),
-				std::get<1>(linkto).c_str());
 			Elf *copy = new Elf(*obj);
 			copy->dirname  = std::move(std::get<0>(linkfrom));
 			copy->basename = std::move(std::get<1>(linkfrom));
