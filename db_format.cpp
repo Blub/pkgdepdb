@@ -371,8 +371,8 @@ db_read(DB *db, const std::string& filename)
 {
 	SerialIn in(db, filename);
 	if (!in.in) {
-		log(Error, "failed to open input file %s for reading\n", filename.c_str());
-		return false;
+		//log(Error, "failed to open input file %s for reading\n", filename.c_str());
+		return true; // might not exist...
 	}
 
 	char magic[sizeof(depdb_magic)];

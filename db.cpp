@@ -49,14 +49,30 @@ DB::delete_package(const std::string& name)
 
 	for (auto &elfsp : old->objects) {
 		Elf *elf = elfsp.get();
-		{
-			auto found = required_found.find(elf);
-			if (found != required_found.end())
-				required_found.erase(found);
-		}{
-			auto missing = required_missing.find(elf);
-			if (missing != required_missing.end())
-				required_missing.erase(missing);
+		required_found.erase(elf);
+		required_missing.erase(elf);
+		// remove the object from the list
+		auto self = std::find(objects.begin(), objects.end(), elf);
+		objects.erase(self);
+
+		// for each object which depends on this object, search for a replacing object
+		for (auto &found : required_found) {
+			// does this object depend on 'elf'?
+			auto ref = std::find(found.second.begin(), found.second.end(), elf);
+			if (ref == found.second.end())
+				continue;
+			// erase
+			found.second.erase(ref);
+			// search for this dependency anew
+			Elf *seeker = found.first;
+			Elf *other  = find_for(seeker, elf->basename);
+			if (!other) {
+				// it's missing now
+				required_missing[seeker].insert(elf->basename);
+			} else {
+				// replace it with a new object
+				found.second.insert(other);
+			}
 		}
 	}
 
@@ -217,6 +233,10 @@ DB::show()
 		if (obj->runpath_set)
 			printf("     runpath: %s\n", obj->runpath.c_str());
 	}
+	printf("\n`found` entry set size: %lu\n",
+	       (unsigned long)required_found.size());
+	printf("\n`missing` entry set size: %lu\n",
+	       (unsigned long)required_missing.size());
 }
 
 bool
