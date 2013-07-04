@@ -12,6 +12,20 @@ Elf::Elf()
 	runpath_set = false;
 }
 
+Elf::Elf(const Elf& cp)
+: refcount(0),
+  dirname(cp.dirname),
+  basename(cp.basename),
+  ei_class(cp.ei_class),
+  ei_osabi(cp.ei_osabi),
+  rpath_set(cp.rpath_set),
+  runpath_set(cp.runpath_set),
+  rpath(cp.rpath),
+  runpath(cp.runpath),
+  needed(cp.needed)
+{
+}
+
 template<typename HDR, typename SecHDR, typename Dyn>
 Elf*
 LoadElf(const char *data, size_t size, bool *waserror)

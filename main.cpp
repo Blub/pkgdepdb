@@ -14,6 +14,8 @@
 static int LogLevel = Message;
 static const char *arg0 = 0;
 
+unsigned int opt_verbosity = 0;
+
 enum {
     RESET = 0,
     BOLD  = 1,
@@ -153,7 +155,6 @@ main(int argc, char **argv)
 		help(1);
 
 	std::string  dbfile, newname;
-	unsigned int verbose = 0;
 	bool         do_install    = false;
 	bool         do_delete     = false;
 	bool         has_db        = false;
@@ -198,7 +199,7 @@ main(int argc, char **argv)
 				newname = optarg;
 				break;
 
-			case 'v': ++verbose;            break;
+			case 'v': ++opt_verbosity; break;
 			case 'i': oldmode = false; do_install    = true; break;
 			case 'r': oldmode = false; do_delete     = true; break;
 			case 'I': oldmode = false; show_info     = true; break;

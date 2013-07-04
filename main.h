@@ -43,9 +43,12 @@ enum {
 
 void log(int level, const char *msg, ...);
 
+extern unsigned int opt_verbosity;
+
 class Elf {
 public:
 	Elf();
+	Elf(const Elf& cp);
 	static Elf* open(const char *data, size_t size, bool *waserror);
 
 public:
@@ -141,6 +144,7 @@ public:
 	std::vector<rptr<Elf> > objects;
 
 	void show_needed();
+	Elf* find(const std::string &dirname, const std::string &basename) const;
 
 public: // NOT SERIALIZED:
 	// used only while loading an archive

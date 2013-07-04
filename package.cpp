@@ -56,6 +56,17 @@ read_info(Package *pkg, struct archive *tar, size_t size)
 	return true;
 }
 
+static inline std::tuple<std::string, std::string>
+splitpath(const std::string& path)
+{
+	size_t slash = path.find_last_of('/');
+	if (slash == std::string::npos)
+		return std::make_tuple("/", path);
+	if (path[0] != '/')
+		return std::make_tuple(std::move(std::string("/") + path.substr(0, slash)), path.substr(slash+1));
+	return std::make_tuple(path.substr(0, slash), path.substr(slash+1));
+}
+
 static bool
 read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t size)
 {
@@ -80,14 +91,9 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
 		return !err;
 	}
 
-	size_t slash = filename.find_last_of('/');
-	object->dirname = "/";
-	if (slash == std::string::npos)
-		object->basename = std::move(filename);
-	else {
-		object->dirname.append(filename.substr(0, slash));
-		object->basename = filename.substr(slash+1, std::string::npos);
-	}
+	auto split(std::move(splitpath(filename)));
+	object->dirname  = std::move(std::get<0>(split));
+	object->basename = std::move(std::get<1>(split));
 
 	pkg->objects.push_back(object);
 
@@ -131,6 +137,15 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 	return read_object(pkg, tar, std::move(filename), size);
 }
 
+Elf*
+Package::find(const std::string& dirname, const std::string& basename) const
+{
+	for (auto &obj : objects) {
+		if (obj->dirname == dirname && obj->basename == basename)
+			return const_cast<Elf*>(obj.get());
+	}
+	return nullptr;
+}
 
 Package*
 Package::open(const std::string& path)
@@ -152,6 +167,51 @@ Package::open(const std::string& path)
 	}
 
 	archive_read_free(tar);
+
+	bool changed;
+	do {
+		changed = false;
+		for (auto link = package->symlinks.begin(); link != package->symlinks.end();)
+		{
+			auto linkfrom = splitpath(link->first);
+			decltype(linkfrom) linkto;
+
+			// handle relative as well as absolute symlinks
+			if (!link->second.length()) {
+				// illegal
+				++link;
+				continue;
+			}
+			if (link->second[0] == '/') // absolute
+				linkto = splitpath(link->second);
+			else // relative
+			{
+				std::string fullpath = std::get<0>(linkfrom) + "/" + link->second;
+				linkto = splitpath(fullpath);
+			}
+
+			Elf *obj = package->find(std::get<0>(linkto), std::get<1>(linkto));
+			if (!obj) {
+				++link;
+				continue;
+			}
+			changed = true;
+
+			printf("%s/%s -> %s/%s\n",
+				std::get<0>(linkfrom).c_str(),
+				std::get<1>(linkfrom).c_str(),
+				std::get<0>(linkto).c_str(),
+				std::get<1>(linkto).c_str());
+			Elf *copy = new Elf(*obj);
+			copy->dirname  = std::move(std::get<0>(linkfrom));
+			copy->basename = std::move(std::get<1>(linkfrom));
+
+			package->objects.push_back(copy);
+			package->symlinks.erase(link++);
+		}
+	} while (changed);
+	package->symlinks.clear();
+
 	return package.release();
 }
 

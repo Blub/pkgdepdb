@@ -339,6 +339,8 @@ DB::show_objects()
 	printf("\nObjects:\n");
 	for (auto &obj : objects) {
 		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		if (opt_verbosity < 1)
+			continue;
 		printf("     finds:\n"); {
 			auto &set = required_found[obj];
 			for (auto &found : set)
@@ -356,7 +358,7 @@ DB::show_objects()
 	}
 	printf("\n`found` entry set size: %lu\n",
 	       (unsigned long)required_found.size());
-	printf("\n`missing` entry set size: %lu\n",
+	printf("`missing` entry set size: %lu\n",
 	       (unsigned long)required_missing.size());
 }
 
