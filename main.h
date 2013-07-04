@@ -135,7 +135,7 @@ class Package {
 public:
 	static Package* open(const std::string& path);
 
-	std::string                        name;
+	std::string             name;
 	std::vector<rptr<Elf> > objects;
 
 	void show_needed();
@@ -167,7 +167,7 @@ public:
 
 	void show();
 
-	void store(const std::string& filename);
+	bool store(const std::string& filename);
 };
 
 #endif
