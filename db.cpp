@@ -41,6 +41,8 @@ public:
 	Package* find_pkg   (const std::string& name) const;
 	PackageList::const_iterator
 	         find_pkg_i (const std::string& name) const;
+
+	void show();
 };
 
 DB::~DB() {
@@ -208,4 +210,30 @@ DB::find_for(Elf *obj, const std::string& needed) const
 		return lib;
 	}
 	return 0;
+}
+
+void
+DB::show()
+{
+	printf("Packages:\n");
+	for (auto &pkg : packages)
+		printf("  -> %s\n", pkg->name.c_str());
+	printf("\nObjects:\n");
+	for (auto &obj : objects) {
+		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		printf("     finds:\n"); {
+			auto &set = required_found[obj];
+			for (auto &found : set)
+				printf("       -> %s / %s\n", found->dirname.c_str(), found->basename.c_str());
+		}
+		printf("     misses:\n"); {
+			auto &set = required_missing[obj];
+			for (auto &miss : set)
+				printf("       -> %s\n", miss.c_str());
+		}
+		if (obj->rpath_set)
+			printf("     rpath: %s\n", obj->rpath.c_str());
+		if (obj->runpath_set)
+			printf("     runpath: %s\n", obj->runpath.c_str());
+	}
 }
