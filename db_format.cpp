@@ -78,9 +78,29 @@ write_objlist(SerialOut &out, const ObjectList& list)
 	}
 	return true;
 }
+static bool
+write_objset(SerialOut &out, const ObjectSet& list)
+{
+	uint32_t len = list.size();
+	out.out.write((const char*)&len, sizeof(len));
+	for (auto &obj : list) {
+		if (!write_obj(out, obj))
+			return false;
+	}
+	return true;
+}
 
 static bool
 write_stringlist(SerialOut &out, const std::vector<std::string> &list)
+{
+	uint32_t len = list.size();
+	out.out.write((const char*)&len, sizeof(len));
+	for (auto &s : list)
+		out <= s;
+	return true;
+}
+static bool
+write_stringset(SerialOut &out, const StringSet &list)
 {
 	uint32_t len = list.size();
 	out.out.write((const char*)&len, sizeof(len));
@@ -159,6 +179,20 @@ db_store(DB *db, const std::string& filename)
 		return false;
 
 	out <= (uint32_t)db->required_found.size();
+	for (auto &found : db->required_found) {
+		if (!write_obj(out, found.first))
+			return false;
+		if (!write_objset(out, found.second))
+			return false;
+	}
+
+	out <= (uint32_t)db->required_missing.size();
+	for (auto &missing : db->required_missing) {
+		if (!write_obj(out, missing.first))
+			return false;
+		if (!write_stringset(out, missing.second))
+			return false;
+	}
 
 	return out.out;
 }
