@@ -141,6 +141,10 @@ public:
 	std::vector<rptr<Elf> > objects;
 
 	void show_needed();
+
+public: // NOT SERIALIZED:
+	// used only while loading an archive
+	std::map<std::string, std::string> symlinks;
 };
 
 using PackageList = std::vector<Package*>;

@@ -10,10 +10,12 @@ care_about(struct archive_entry *entry)
 {
 	mode_t mode = archive_entry_mode(entry);
 
+#if 0
 	if (AE_IFLNK == (mode & AE_IFLNK)) {
 		// ignoring symlinks for now
 		return false;
 	}
+#endif
 
 	if (AE_IFREG != (mode & AE_IFREG)) {
 		// not a regular file
@@ -102,6 +104,19 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 	if (!isinfo && !care_about(entry))
 	{
 		archive_read_data_skip(tar);
+		return true;
+	}
+
+	mode_t mode = archive_entry_mode(entry);
+	if (AE_IFLNK == (mode & AE_IFLNK)) {
+		// it's a symlink...
+		const char *link = archive_entry_symlink(entry);
+		if (!link) {
+			log(Error, "error reading symlink");
+			return false;
+		}
+		archive_read_data_skip(tar);
+		pkg->symlinks[filename] = link;
 		return true;
 	}
 
