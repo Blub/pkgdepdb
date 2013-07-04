@@ -118,7 +118,7 @@ class ArgArg {
 public:
 	bool        on;
 	bool       *mode;
-	std::string arg;
+	std::vector<std::string> arg;
 
 	ArgArg(bool *om) {
 		mode = om;
@@ -132,14 +132,11 @@ public:
 	}
 	inline void operator=(const char *arg) {
 		on = true;
-		this->arg = arg;
+		this->arg.push_back(arg);
 	}
 	inline void operator=(std::string &&arg) {
 		on = true;
-		this->arg = std::move(arg);
-	}
-	inline operator const std::string&() const {
-		return arg;
+		this->arg.push_back(std::move(arg));
 	}
 };
 
@@ -170,10 +167,9 @@ main(int argc, char **argv)
 	ArgArg ld_append (&oldmode),
 	       ld_prepend(&oldmode),
 	       ld_delete (&oldmode),
-	       ld_insert (&oldmode),
 	       ld_clear  (&oldmode);
+	std::vector<std::tuple<std::string,size_t>> ld_insert;
 
-	size_t ld_insert_at = 0;
 	for (;;) {
 		int opt_index = 0;
 		int c = getopt_long(argc, argv, "hird:ILMFPvn:", long_opts, &opt_index);
@@ -213,6 +209,7 @@ main(int argc, char **argv)
 			case -'C': ld_clear   = true;   break;
 			case -'I':
 			{
+				oldmode = false;
 				std::string str(optarg);
 				if (!isdigit(str[0])) {
 					log(Error, "--ld-insert format wrong: has to start with a number\n");
@@ -225,8 +222,8 @@ main(int argc, char **argv)
 					help(1);
 					return 1;
 				}
-				ld_insert_at = strtoul(str.c_str(), nullptr, 0);
-				ld_insert = std::move(str.substr(colon+1, std::string::npos));
+				ld_insert.push_back(std::make_tuple(std::move(str.substr(colon+1)),
+				                                    strtoul(str.c_str(), nullptr, 0)));
 				break;
 			}
 
@@ -312,15 +309,22 @@ main(int argc, char **argv)
 		db->name = newname;
 	}
 
-	if (ld_append)
-		modified = db->ld_append(ld_append)   || modified;
-	if (ld_prepend)
-		modified = db->ld_prepend(ld_prepend) || modified;
-	if (ld_delete)
-		modified = db->ld_delete(ld_delete)   || modified;
-	if (ld_insert)
-		modified = db->ld_insert(ld_insert, ld_insert_at)
+	if (ld_append) {
+		for (auto &dir : ld_append.arg)
+			modified = db->ld_append(dir)  || modified;
+	}
+	if (ld_prepend) {
+		for (auto &dir : ld_prepend.arg)
+			modified = db->ld_prepend(dir) || modified;
+	}
+	if (ld_delete) {
+		for (auto &dir : ld_delete.arg)
+			modified = db->ld_delete(dir)  || modified;
+	}
+	for (auto &ins : ld_insert) {
+		modified = db->ld_insert(std::get<0>(ins), std::get<1>(ins))
 		         || modified;
+	}
 	if (ld_clear)
 		modified = db->ld_clear()             || modified;
 

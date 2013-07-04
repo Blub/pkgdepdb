@@ -58,5 +58,24 @@ Change the database's contained name. This does not affect the
 filename. The database-name is currently not used anywhere except when
 using the -I option to show it.
 .El
+.Pp
+The following options are used to modify the library search paths used
+by the database. The database file will only be updated if an actual
+change appears.
+.Pp
+Directories can only exist once in the path. When adding an already
+existing path to the list, the old path will be moved by reordering.
+.Bl -tag -width Ds
+.It Fl -ld-append= Ns Ar dir
+Add to the end of the list.
+.It Fl -ld-prepend= Ns Ar dir
+Prepend to the front of the list.
+.It Fl -ld-delete= Ns Ar dir
+Delete from the list.
+.It Fl -ld-insert= Ns Ar pos Ns : Ns Ar dir
+Insert the directory at the specified index.
+.It Fl -ld-clear
+Remove all paths from the db.
+.El
 .Sh AUTHOR
 See <http://github.com/Blub/readpkgelf>.
