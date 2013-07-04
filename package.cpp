@@ -53,6 +53,19 @@ read_info(Package *pkg, struct archive *tar, size_t size)
 	}
 
 	pkg->name = str.substr(pos + 10, str.find_first_of(" \n\r\t", pos+10) - pos - 10);
+
+    pos = str.find("pkgver = ");
+	if (pos == std::string::npos) {
+		log(Warn, "missing pkgname entry in .PKGINFO");
+		return true;
+	}
+
+	if (pos != 0 && data.get()[pos-1] != '\n') {
+		log(Warn, "corrupted .PKGINFO; skipping pkgver");
+		return true;
+	}
+
+	pkg->version = str.substr(pos + 9, str.find_first_of(" \n\r\t", pos+9) - pos - 9);
 	return true;
 }
 

@@ -403,7 +403,8 @@ write_pkg(SerialOut &out, Package *pkg)
 	out.pkgs[pkg] = out.out.tellp();
 
 	// Now serialize the actual package data:
-	out <= pkg->name;
+	out <= pkg->name
+	    <= pkg->version;
 	if (!write_objlist(out, pkg->objects))
 		return false;
 	return true;
@@ -436,7 +437,8 @@ read_pkg(SerialIn &in, Package *&pkg)
 	in.pkgs[ref] = pkg;
 
 	// Now serialize the actual package data:
-	in >= pkg->name;
+	in >= pkg->name
+	   >= pkg->version;
 	if (!read_objlist(in, pkg->objects))
 		return false;
 	return true;

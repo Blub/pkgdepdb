@@ -330,7 +330,7 @@ DB::show_packages()
 {
 	printf("Packages:\n");
 	for (auto &pkg : packages)
-		printf("  -> %s\n", pkg->name.c_str());
+		printf("  -> %s - %s\n", pkg->name.c_str(), pkg->version.c_str());
 }
 
 void

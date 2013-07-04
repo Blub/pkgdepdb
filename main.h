@@ -141,6 +141,7 @@ public:
 	static Package* open(const std::string& path);
 
 	std::string             name;
+	std::string             version;
 	std::vector<rptr<Elf> > objects;
 
 	void show_needed();
