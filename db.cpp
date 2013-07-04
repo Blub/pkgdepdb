@@ -258,4 +258,12 @@ DB::show_missing()
 void
 DB::show_found()
 {
+	printf("Found:\n");
+	for (auto &fnd : required_found) {
+		Elf       *obj = fnd.first;
+		ObjectSet &set = fnd.second;
+		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		for (auto &s : set)
+			printf("    finds: %s\n", s->basename.c_str());
+	}
 }
