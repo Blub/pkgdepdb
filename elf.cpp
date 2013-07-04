@@ -5,6 +5,11 @@
 Elf::Elf()
 : refcount(0)
 {
+	ei_class =
+	ei_osabi = 0;
+
+	rpath_set   =
+	runpath_set = false;
 }
 
 template<typename HDR, typename SecHDR, typename Dyn>
@@ -123,11 +128,13 @@ LoadElf(const char *data, size_t size, bool *waserror)
 				object->needed.push_back(str);
 				break;
 			case DT_RPATH:
+				object->rpath_set = true;
 				if (! (str = get_string(dyn->d_un.d_ptr)) )
 					return 0;
 				object->rpath = str;
 				break;
 			case DT_RUNPATH:
+				object->runpath_set = true;
 				if (! (str = get_string(dyn->d_un.d_ptr)) )
 					return 0;
 				object->runpath = str;

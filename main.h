@@ -56,6 +56,8 @@ public:
 	unsigned char ei_osabi; // freebsd/linux/...
 
 	// requirements:
+	bool                     rpath_set;
+	bool                     runpath_set;
 	std::string              rpath;
 	std::string              runpath;
 	std::vector<std::string> needed;

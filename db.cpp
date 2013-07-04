@@ -1,7 +1,8 @@
-#include <algorithm>
 #include <memory>
 #include <map>
 #include <set>
+#include <algorithm>
+#include <utility>
 
 #include "main.h"
 
@@ -34,10 +35,12 @@ public:
 	std::map<Elf*, StringSet> required_missing;
 
 	bool install_package(Package* &&pkg);
-	bool delete_package(const std::string& name);
+	bool delete_package (const std::string& name);
+	Elf *find_for       (Elf*, const std::string& lib) const;
 
-	Package* find_pkg(const std::string& name) const;
-	PackageList::const_iterator find_pkg_i(const std::string& name) const;
+	Package* find_pkg   (const std::string& name) const;
+	PackageList::const_iterator
+	         find_pkg_i (const std::string& name) const;
 };
 
 DB::~DB() {
@@ -97,21 +100,39 @@ DB::delete_package(const std::string& name)
 static bool
 elf_finds(Elf *elf, const std::string& path)
 {
+	size_t at;
+
+	// DT_RPATH first
+	if (elf->rpath_set) {
+		at = 0;
+		while (at != std::string::npos) {
+			size_t to = elf->rpath.find_first_of(':', at);
+			std::string p(elf->rpath.substr(at, to));
+			if (p.length() && p == path)
+				return true;
+			at = to;
+		}
+	}
+
+	// LD_LIBRARY_PATH - ignored
+
+	// DT_RUNPATH
+	if (elf->runpath_set) {
+		at = 0;
+		while (at != std::string::npos) {
+			size_t to = elf->runpath.find_first_of(':', at);
+			std::string p(elf->runpath.substr(at, to));
+			if (p.length() && p == path)
+				return true;
+			at = to;
+		}
+	}
+
+	// Trusted Paths
 	if (path == "/lib" ||
 	    path == "/usr/lib")
 	{
 		return true;
-	}
-
-	if (!elf->rpath.length())
-		return false;
-
-	size_t at = 0;
-	while (at != std::string::npos) {
-		size_t to = elf->rpath.find_first_of(':', at);
-		if (elf->rpath.substr(at, to) == path)
-			return true;
-		at = to;
 	}
 
 	return false;
@@ -154,7 +175,30 @@ DB::install_package(Package* &&pkg)
 			else
 				++missing;
 		}
+
+		// search for whatever THIS object requires
+		ObjectSet req_found;
+		StringSet req_missing;
+		for (auto &needed : obj->needed) {
+			Elf *found = find_for(obj, needed);
+			if (found)
+				req_found.insert(found);
+			else
+				req_missing.insert(needed);
+		}
+		required_found[obj]   = std::move(req_found);
+		required_missing[obj] = std::move(req_missing);
 	}
 
 	return true;
+}
+
+Elf*
+DB::find_for(Elf *obj, const std::string& needed) const
+{
+	ObjClass objclass = getObjClass(obj);
+	(void)obj;
+	(void)objclass;
+	(void)needed;
+	return 0;
 }
