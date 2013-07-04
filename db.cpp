@@ -159,6 +159,9 @@ DB::install_package(Package* &&pkg)
 
 	packages.push_back(pkg);
 
+	for (auto &obj : pkg->objects)
+		objects.push_back(obj);
+
 	for (auto &obj : pkg->objects) {
 		ObjClass objclass = getObjClass(obj);
 		// check if the object is required
@@ -202,8 +205,6 @@ DB::install_package(Package* &&pkg)
 		}
 		required_found[obj]   = std::move(req_found);
 		required_missing[obj] = std::move(req_missing);
-
-		objects.push_back(obj);
 	}
 
 	return true;
@@ -212,8 +213,16 @@ DB::install_package(Package* &&pkg)
 Elf*
 DB::find_for(Elf *obj, const std::string& needed) const
 {
+	log(Debug, "dependency of %s/%s   :  %s\n", obj->dirname.c_str(), obj->basename.c_str(), needed.c_str());
 	ObjClass objclass = getObjClass(obj);
 	for (auto &lib : objects) {
+		if (getObjClass(lib) != objclass)
+			log(Debug, "  skipping %s/%s (objclass)\n", lib->dirname.c_str(), lib->basename.c_str());
+		else if (lib->basename    != needed)
+			log(Debug, "  skipping %s/%s (wrong name)\n", lib->dirname.c_str(), lib->basename.c_str());
+		else if (!elf_finds(obj, lib->dirname))
+			log(Debug, "  skipping %s/%s (not visible)\n", lib->dirname.c_str(), lib->basename.c_str());
+
 		if (getObjClass(lib) != objclass ||
 		    lib->basename    != needed   ||
 		    !elf_finds(obj, lib->dirname))

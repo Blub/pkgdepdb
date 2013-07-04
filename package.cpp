@@ -79,10 +79,11 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
 	}
 
 	size_t slash = filename.find_last_of('/');
+	object->dirname = "/";
 	if (slash == std::string::npos)
 		object->basename = std::move(filename);
 	else {
-		object->dirname  = filename.substr(0, slash);
+		object->dirname.append(filename.substr(0, slash));
 		object->basename = filename.substr(slash+1, std::string::npos);
 	}
 
