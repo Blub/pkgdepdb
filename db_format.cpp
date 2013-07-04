@@ -47,20 +47,15 @@ public:
 // Using the <= operator - we're "streaming" here, so whatever
 // C++ stream << is forbidden due to its extreme stupidity
 
+template<typename T>
 static inline SerialOut&
-operator<=(SerialOut &out, size_t r)
+operator<=(SerialOut &out, const T& r)
 {
 	out.out.write((const char*)&r, sizeof(r));
 	return out;
 }
 
-static inline SerialOut&
-operator<=(SerialOut &out, ObjRef r)
-{
-	out.out.write((const char*)&r, sizeof(r));
-	return out;
-}
-
+// special for strings:
 static inline SerialOut&
 operator<=(SerialOut &out, const std::string& r)
 {
@@ -70,22 +65,32 @@ operator<=(SerialOut &out, const std::string& r)
 	return out;
 }
 
-static bool commit_obj(SerialOut &out, Elf *obj);
+static bool write_obj(SerialOut &out, Elf *obj);
 
 static bool
-commit_objlist(SerialOut &out, const ObjectList& list)
+write_objlist(SerialOut &out, const ObjectList& list)
 {
 	uint32_t len = list.size();
 	out.out.write((const char*)&len, sizeof(len));
 	for (auto &obj : list) {
-		if (!commit_obj(out, obj))
+		if (!write_obj(out, obj))
 			return false;
 	}
 	return true;
 }
 
 static bool
-commit_obj(SerialOut &out, Elf *obj)
+write_stringlist(SerialOut &out, const std::vector<std::string> &list)
+{
+	uint32_t len = list.size();
+	out.out.write((const char*)&len, sizeof(len));
+	for (auto &s : list)
+		out <= s;
+	return true;
+}
+
+static bool
+write_obj(SerialOut &out, Elf *obj)
 {
 	// check if the object has already been serialized
 	auto prev = out.objs.find(obj);
@@ -98,11 +103,24 @@ commit_obj(SerialOut &out, Elf *obj)
 	out <= ObjRef::OBJ;
 	out.objs[obj] = out.out.tellp();
 
+	// Serialize the actual object data
+	out <= obj->dirname
+	    <= obj->basename
+	    <= obj->ei_class
+	    <= obj->ei_osabi
+	    <= (uint8_t)obj->rpath_set
+	    <= (uint8_t)obj->runpath_set
+	    <= obj->rpath
+	    <= obj->runpath;
+
+	if (!write_stringlist(out, obj->needed))
+		return false;
+
 	return true;
 }
 
 static bool
-commit_pkg(SerialOut &out, Package *pkg)
+write_pkg(SerialOut &out, Package *pkg)
 {
 	// check if the package has already been serialized
 	auto prev = out.pkgs.find(pkg);
@@ -117,7 +135,7 @@ commit_pkg(SerialOut &out, Package *pkg)
 
 	// Now serialize the actual package data:
 	out <= pkg->name;
-	if (!commit_objlist(out, pkg->objects))
+	if (!write_objlist(out, pkg->objects))
 		return false;
 	return true;
 }
@@ -131,12 +149,18 @@ db_store(DB *db, const std::string& filename)
 		return false;
 	}
 
+	out <= (uint32_t)db->packages.size();
 	for (auto &pkg : db->packages) {
-		if (!commit_pkg(out, pkg))
+		if (!write_pkg(out, pkg))
 			return false;
 	}
 
-	return true;
+	if (!write_objlist(out, db->objects))
+		return false;
+
+	out <= (uint32_t)db->required_found.size();
+
+	return out.out;
 }
 
 
