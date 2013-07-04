@@ -53,8 +53,10 @@ log(int level, const char *msg, ...)
 static struct option long_opts[] = {
 	{ "help",    no_argument,       0, 'h' },
 	{ "version", no_argument,       0, -'v' },
-	{ "install", no_argument,       0, 'i' },
 	{ "db",      required_argument, 0, 'd' },
+	{ "install", no_argument,       0, 'i' },
+	{ "dry",     no_argument,       0, -'d' },
+	{ "remove",  no_argument,       0, 'r' },
 	{ "info",    no_argument,       0, 'I' },
 	{ "list",    no_argument,       0, 'L' },
 	{ "missing", no_argument,       0, 'M' },
@@ -88,6 +90,7 @@ help(int x)
 	             "  -d, --db=FILE      set the database file to commit to\n"
 	             "  -i, --install      install packages to a dependency db\n"
 	             "  -r, --remove       remove packages from the database\n"
+	             "  --dry              do not commit the changes to the db\n"
 	             );
 	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
@@ -166,6 +169,7 @@ main(int argc, char **argv)
 	bool         show_packages = false;
 	bool         do_rename     = false;
 	bool         do_relink     = false;
+	bool         dryrun        = false;
 	bool oldmode = true;
 
 	// library path options
@@ -198,6 +202,8 @@ main(int argc, char **argv)
 				do_rename = true;
 				newname = optarg;
 				break;
+
+			case -'d': dryrun = true; break;
 
 			case 'v': ++opt_verbosity; break;
 			case 'i': oldmode = false; do_install    = true; break;
@@ -377,7 +383,7 @@ main(int argc, char **argv)
 	if (show_found)
 		db->show_found();
 
-	if (modified && has_db) {
+	if (!dryrun && modified && has_db) {
 		if (!db->store(dbfile))
 			log(Error, "failed to write to the database\n");
 	}
