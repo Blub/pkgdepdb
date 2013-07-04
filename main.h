@@ -169,6 +169,8 @@ public:
 	bool install_package(Package* &&pkg);
 	bool delete_package (const std::string& name);
 	Elf *find_for       (Elf*, const std::string& lib) const;
+	void link_object    (Elf*);
+	void relink_all     ();
 
 	Package* find_pkg   (const std::string& name) const;
 	PackageList::const_iterator

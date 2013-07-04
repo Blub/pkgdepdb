@@ -163,6 +163,7 @@ DB::install_package(Package* &&pkg)
 		}
 
 		// search for whatever THIS object requires
+#if 0
 		ObjectSet req_found;
 		StringSet req_missing;
 		for (auto &needed : obj->needed) {
@@ -176,6 +177,9 @@ DB::install_package(Package* &&pkg)
 			required_found[obj]   = std::move(req_found);
 		if (req_missing.size())
 			required_missing[obj] = std::move(req_missing);
+#else
+		link_object(obj);
+#endif
 	}
 
 	return true;
@@ -204,6 +208,34 @@ DB::find_for(Elf *obj, const std::string& needed) const
 		return lib;
 	}
 	return 0;
+}
+
+void
+DB::link_object(Elf *obj)
+{
+	ObjectSet req_found;
+	StringSet req_missing;
+	for (auto &needed : obj->needed) {
+		Elf *found = find_for(obj, needed);
+		if (found)
+			req_found.insert(found);
+		else
+			req_missing.insert(needed);
+	}
+	if (req_found.size())
+		required_found[obj]   = std::move(req_found);
+	if (req_missing.size())
+		required_missing[obj] = std::move(req_missing);
+}
+
+void
+DB::relink_all()
+{
+	required_found.clear();
+	required_missing.clear();
+	for (auto &obj : objects) {
+		link_object(obj);
+	}
 }
 
 bool

@@ -65,7 +65,17 @@ change appears.
 .Pp
 Directories can only exist once in the path. When adding an already
 existing path to the list, the old path will be moved by reordering.
+.Pp
+.Em IMPORTANT:
+Changes to the library path do not cause link information
+to be updated. Especially prepending/inserting or deleting library
+paths can have huge effects on which libraries will be used by which
+object, so in order to keep a consistent state, use the
+.Fl -relink
+option after changing library paths.
 .Bl -tag -width Ds
+.It Fl -relink
+Recreate the complete link information with the updated library paths.
 .It Fl -ld-append= Ns Ar dir
 Add to the end of the list.
 .It Fl -ld-prepend= Ns Ar dir

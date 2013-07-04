@@ -67,6 +67,8 @@ static struct option long_opts[] = {
 	{ "ld-insert",  required_argument, 0, -'I' },
 	{ "ld-clear",   no_argument,       0, -'C' },
 
+	{ "relink",     no_argument,       0, -'R' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -93,7 +95,7 @@ help(int x)
 	             "  -P, --pkgs         show the installed packages\n"
 	             "  -n, --rename=NAME  rename the database\n"
 	             );
-	fprintf(out, "db library path options:\n"
+	fprintf(out, "db library path options: (run --relink after these changes)\n"
 	             "  --ld-prepend=DIR   add or move a directory to the\n"
 	             "                     top of the trusted library path\n"
 	             "  --ld-append=DIR    add or move a directory to the\n"
@@ -102,6 +104,7 @@ help(int x)
 	             "  --ld-insert=N:DIR  add or move a directro to position N\n"
 	             "                     of the trusted library path\n"
 	             "  --ld-clear         remove all library paths\n"
+	             "  --relink           relink all objects\n"
 	             );
 	exit(x);
 }
@@ -161,6 +164,7 @@ main(int argc, char **argv)
 	bool         show_found    = false;
 	bool         show_packages = false;
 	bool         do_rename     = false;
+	bool         do_relink     = false;
 	bool oldmode = true;
 
 	// library path options
@@ -202,6 +206,8 @@ main(int argc, char **argv)
 			case 'M': oldmode = false; show_missing  = true; break;
 			case 'F': oldmode = false; show_found    = true; break;
 			case 'P': oldmode = false; show_packages = true; break;
+
+			case -'R': oldmode = false; do_relink = true; break;
 
 			case -'A': ld_append  = optarg; break;
 			case -'P': ld_prepend = optarg; break;
@@ -349,6 +355,11 @@ main(int argc, char **argv)
 			}
 			++optind;
 		}
+	}
+
+	if (do_relink) {
+		modified = true;
+		db->relink_all();
 	}
 
 	if (show_info)
