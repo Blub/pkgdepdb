@@ -5,7 +5,7 @@ DATADIR = $(PREFIX)/share
 MANDIR  = $(DATADIR)/man
 MAN1DIR = $(MANDIR)/man1
 
-PACKAGE_NAME := readpkgelf
+PACKAGE_NAME := pacdepdb
 
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
@@ -14,9 +14,9 @@ VERSION_PATCH := 0
 CXX ?= clang++
 CXXFLAGS += -std=c++11
 CXXFLAGS += -Wall -Wextra -Werror -fno-rtti
-CPPFLAGS += -DREADPKGELF_V_MAJ=$(VERSION_MAJOR)
-CPPFLAGS += -DREADPKGELF_V_MIN=$(VERSION_MINOR)
-CPPFLAGS += -DREADPKGELF_V_PAT=$(VERSION_PATCH)
+CPPFLAGS += -DPACDEPDB_V_MAJ=$(VERSION_MAJOR)
+CPPFLAGS += -DPACDEPDB_V_MIN=$(VERSION_MINOR)
+CPPFLAGS += -DPACDEPDB_V_PAT=$(VERSION_PATCH)
 
 LIBARCHIVE_CFLAGS :=
 LIBARCHIVE_LIBS   := -larchive
@@ -26,7 +26,7 @@ LIBS     += $(LIBARCHIVE_LIBS)
 
 OBJECTS = main.o package.o elf.o db.o db_format.o
 
-BINARY = readpkgelf
+BINARY = pacdepdb
 
 default: all
 
@@ -45,11 +45,11 @@ install: install-bin install-man
 install-prefix:
 	install -d -m755 $(DESTDIR)$(PREFIX)
 install-bin: install-prefix
-	install -d -m755              $(DESTDIR)$(BINDIR)
-	install    -m755 $(BINARY)    $(DESTDIR)$(BINDIR)/$(BINARY)
+	install -d -m755            $(DESTDIR)$(BINDIR)
+	install    -m755 $(BINARY)  $(DESTDIR)$(BINDIR)/$(BINARY)
 install-man: install-prefix
-	install -d -m755              $(DESTDIR)$(MAN1DIR)
-	install    -m644 readpkgelf.1 $(DESTDIR)$(MAN1DIR)/readpkgelf.1
+	install -d -m755            $(DESTDIR)$(MAN1DIR)
+	install    -m644 pacdepdb.1 $(DESTDIR)$(MAN1DIR)/pacdepdb.1
 
 depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null

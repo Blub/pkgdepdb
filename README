@@ -1,4 +1,4 @@
-                              readpkgelf
+                               pacdepdb
 v0.1
 
 Description:
@@ -54,7 +54,7 @@ Installation:
             Default: $(PREFIX)/bin
             Binary files will be installed to this location.
             Files:
-                readpkgelf
+                pacdepdb
 
         DATADIR
             Default: $(PREFIX)/share
@@ -68,7 +68,7 @@ Installation:
             Default: $(MANDIR)/man1
             Section 1 manpage directory.
             Files:
-                readpkgelf.1
+                pacdepdb.1
 
 License:
 
