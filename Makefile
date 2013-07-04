@@ -3,6 +3,7 @@ PREFIX  = /usr/local
 BINDIR  = $(PREFIX)/bin
 DATADIR = $(PREFIX)/share
 MANDIR  = $(DATADIR)/man
+MAN1DIR = $(MANDIR)/man1
 
 PACKAGE_NAME := readpkgelf
 
@@ -47,8 +48,8 @@ install-bin: install-prefix
 	install -d -m755              $(DESTDIR)$(BINDIR)
 	install    -m755 $(BINARY)    $(DESTDIR)$(BINDIR)/$(BINARY)
 install-man: install-prefix
-	install -d -m755              $(DESTDIR)$(MANDIR)/man1
-	install    -m644 readpkgelf.1 $(DESTDIR)$(MANDIR)/man1/readpkgelf.1
+	install -d -m755              $(DESTDIR)$(MAN1DIR)
+	install    -m644 readpkgelf.1 $(DESTDIR)$(MAN1DIR)/readpkgelf.1
 
 depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null

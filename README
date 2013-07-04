@@ -3,10 +3,16 @@ v0.0
 
 Description:
 
-    This is a simple tool to read archive files and print the required
-    libraries of each contains ELF object file.
+    This tool is helpful to  find  library  dependencies  of  packages
+    without unpacking or installing them to a temporary location.   It
+    reads through the archive file, optionally parses a .PKGINFO  file
+    one is encountered encountered, and then prints a list of required
+    libraries of each ELF file contained in the library.
 
-    More features may be added in the future.
+    Additionally it can manage a dependency database.  In this mode it
+    performs a  virtual  installation  of  a  package's  binaries  and
+    libraries into a database, in which only the dependency  lists  is
+    maintained.
 
 Installation:
 
@@ -14,7 +20,6 @@ Installation:
 
         built time:
             a C++11 compatible compiler
-            llvm
             libarchive
             BSD or GNU compatible `make'
         runtime:
@@ -22,8 +27,48 @@ Installation:
 
     Installation:
 
-        run `make'
-        There is no `make install' target yet.
+        run `make' to compile the program
+        run `make install' to install the program and documentation
+
+        Don't forget to set a PREFIX and DESTDIR.
+
+        Typical packaging scripts (such as an Arch PKGBUILD)
+        will want to use:
+
+            $ make
+            $ make PREFIX=/usr DESTDIR=$pkgdir install
+
+    install-variables:
+
+        PREFIX
+            Default: /usr/local
+            The prefix used for installation. This works just like
+            the --prefix option in ./configure would.
+
+        DESTDIR
+            Default: empty
+            Target destination prefix. Usually used by packaging
+            scripts.
+
+        BINDIR
+            Default: $(PREFIX)/bin
+            Binary files will be installed to this location.
+            Files:
+                readpkgelf
+
+        DATADIR
+            Default: $(PREFIX)/share
+            Currently nothing ends up here, but MANDIR uses this path.
+
+        MANDIR
+            Default: $(DATADIR)/man
+            Location where manpages end up.
+
+        MAN1DIR
+            Default: $(MANDIR)/man1
+            Section 1 manpage directory.
+            Files:
+                readpkgelf.1
 
 License:
 
