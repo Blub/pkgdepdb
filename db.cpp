@@ -197,8 +197,15 @@ Elf*
 DB::find_for(Elf *obj, const std::string& needed) const
 {
 	ObjClass objclass = getObjClass(obj);
-	(void)obj;
-	(void)objclass;
-	(void)needed;
+	for (auto &lib : objects) {
+		if (getObjClass(lib) != objclass ||
+		    lib->basename    != needed   ||
+		    !elf_finds(obj, lib->dirname))
+		{
+			continue;
+		}
+		// same class, same name, and visible...
+		return lib;
+	}
 	return 0;
 }
