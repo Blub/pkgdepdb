@@ -145,6 +145,7 @@ public:
 
 using PackageList = std::vector<Package*>;
 using ObjectList  = std::vector<rptr<Elf>>;
+using StringList  = std::vector<std::string>;
 
 using ObjectSet   = std::set<rptr<Elf>>;
 using StringSet   = std::set<std::string>;
@@ -153,12 +154,16 @@ class DB {
 public:
 	~DB();
 
+	std::string name;
+	StringList  library_path;
+
 	PackageList packages;
 	ObjectList  objects;
 
 	std::map<Elf*, ObjectSet> required_found;
 	std::map<Elf*, StringSet> required_missing;
 
+public:
 	bool install_package(Package* &&pkg);
 	bool delete_package (const std::string& name);
 	Elf *find_for       (Elf*, const std::string& lib) const;
@@ -175,6 +180,9 @@ public:
 	bool store(const std::string& filename);
 	bool read (const std::string& filename);
 	bool empty() const;
+
+private:
+	bool elf_finds      (Elf*, const std::string& lib) const;
 };
 
 #endif

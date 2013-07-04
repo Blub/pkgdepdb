@@ -12,6 +12,23 @@
 using std::ofstream;
 using std::ifstream;
 
+// version
+static const size_t
+depdb_version = 1;
+
+// magic header
+static const char
+depdb_magic[] = { 'A', 'r', 'c', 'h',
+                  'B', 'S', 'D',  0,
+                  'd', 'e', 'p', 's',
+                  '~', 'D', 'B', '~' };
+
+using Header = struct {
+	uint8_t  magic[sizeof(depdb_magic)];
+	uint16_t version;
+	uint8_t  reserved[24];
+};
+
 // Simple straight forward data serialization by keeping track
 // of already-serialized objects.
 // Lame, but effective.
@@ -28,11 +45,6 @@ using ObjOutMap = std::map<Elf*,     size_t>;
 using PkgInMap  = std::map<size_t,   Package*>;
 using ObjInMap  = std::map<size_t,   Elf*>;
 
-static const char
-depdb_magic[] = { 'D', 'E', 'P',
-                  'D', 'B',
-                  0, 0, 1 };
-
 class SerialOut {
 public:
 	DB        *db;
@@ -43,8 +55,6 @@ public:
 	SerialOut(DB *db_, const std::string& filename)
 	: db(db_), out(filename.c_str(), std::ios::binary)
 	{
-		if (out)
-			out.write(depdb_magic, sizeof(depdb_magic));
 	}
 };
 
@@ -338,6 +348,16 @@ db_store(DB *db, const std::string& filename)
 		return false;
 	}
 
+	Header hdr;
+	memcpy(hdr.magic, depdb_magic, sizeof(hdr.magic));
+	hdr.version = depdb_version;
+	memset(&hdr.reserved, 0, sizeof(hdr.reserved));
+
+	out <= hdr;
+	out <= db->name;
+	if (!write_stringlist(out, db->library_path))
+		return false;
+
 	out <= (uint32_t)db->packages.size();
 	for (auto &pkg : db->packages) {
 		if (!write_pkg(out, pkg))
@@ -375,12 +395,21 @@ db_read(DB *db, const std::string& filename)
 		return true; // might not exist...
 	}
 
-	char magic[sizeof(depdb_magic)];
-	in.in.read(magic, sizeof(magic));
-	if (memcmp(magic, depdb_magic, sizeof(magic)) != 0) {
+	Header hdr;
+	in >= hdr;
+	if (memcmp(hdr.magic, depdb_magic, sizeof(hdr.magic)) != 0) {
 		log(Error, "not a valid database file: %s\n", filename.c_str());
 		return false;
 	}
+
+	if (hdr.version != depdb_version) {
+		log(Error, "cannot read depdb version %u files\n", (unsigned)hdr.version);
+		return false;
+	}
+
+	in >= db->name;
+	if (!read_stringlist(in, db->library_path))
+		return false;
 
 	uint32_t len;
 

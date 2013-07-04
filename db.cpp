@@ -84,8 +84,8 @@ DB::delete_package(const std::string& name)
 	return true;
 }
 
-static bool
-elf_finds(Elf *elf, const std::string& path)
+bool
+DB::elf_finds(Elf *elf, const std::string& path) const
 {
 	size_t at;
 
@@ -121,6 +121,9 @@ elf_finds(Elf *elf, const std::string& path)
 	{
 		return true;
 	}
+
+	if (std::find(library_path.begin(), library_path.end(), path) != library_path.end())
+		return true;
 
 	return false;
 }
