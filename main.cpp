@@ -111,6 +111,7 @@ main(int argc, char **argv)
 	bool         show_found    = false;
 	bool         show_packages = false;
 	bool         do_rename     = false;
+	bool oldmode = true;
 	for (;;) {
 		int opt_index = 0;
 		int c = getopt_long(argc, argv, "hird:ILMFPvn:", long_opts, &opt_index);
@@ -124,23 +125,25 @@ main(int argc, char **argv)
 				version(0);
 				break;
 			case 'd':
+				oldmode = false;
 				has_db = true;
 				dbfile = optarg;
 				break;
 
 			case 'n':
+				oldmode = false;
 				do_rename = true;
 				newname = optarg;
 				break;
 
 			case 'v': ++verbose;            break;
-			case 'i': do_install    = true; break;
-			case 'r': do_delete     = true; break;
-			case 'I': show_info     = true; break;
-			case 'L': show_list     = true; break;
-			case 'M': show_missing  = true; break;
-			case 'F': show_found    = true; break;
-			case 'P': show_packages = true; break;
+			case 'i': oldmode = false; do_install    = true; break;
+			case 'r': oldmode = false; do_delete     = true; break;
+			case 'I': oldmode = false; show_info     = true; break;
+			case 'L': oldmode = false; show_list     = true; break;
+			case 'M': oldmode = false; show_missing  = true; break;
+			case 'F': oldmode = false; show_found    = true; break;
+			case 'P': oldmode = false; show_packages = true; break;
 
 			case ':':
 			case '?':
@@ -166,7 +169,7 @@ main(int argc, char **argv)
 
 	std::vector<Package*> packages;
 
-	if (!do_delete && !do_install) {
+	if (oldmode) {
 		// non-database mode!
 		while (optind < argc) {
 			Package *package = Package::open(argv[optind++]);
@@ -232,6 +235,18 @@ main(int argc, char **argv)
 				printf("failed to commit package %s to database\n", pkg->name.c_str());
 				break;
 			}
+		}
+	}
+
+	if (do_delete) {
+		while (optind < argc) {
+			log(Message, "uninstalling: %s\n", argv[optind]);
+			modified = true;
+			if (!db->delete_package(argv[optind])) {
+				log(Error, "error uninstalling package: %s\n", argv[optind]);
+				return 1;
+			}
+			++optind;
 		}
 	}
 
