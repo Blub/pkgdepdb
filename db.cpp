@@ -1,6 +1,4 @@
 #include <memory>
-#include <map>
-#include <set>
 #include <algorithm>
 #include <utility>
 
@@ -17,33 +15,6 @@ static inline ObjClass
 getObjClass(Elf *elf) {
 	return getObjClass(elf->ei_class, elf->ei_osabi);
 }
-
-using PackageList = std::vector<Package*>;
-using ObjectList  = std::vector<rptr<Elf>>;
-using ObjectSet   = std::set<rptr<Elf>>;
-using StringList  = std::vector<std::string>;
-using StringSet   = std::set<std::string>;
-
-class DB {
-public:
-	~DB();
-
-	PackageList packages;
-	ObjectList  objects;
-
-	std::map<Elf*, ObjectSet> required_found;
-	std::map<Elf*, StringSet> required_missing;
-
-	bool install_package(Package* &&pkg);
-	bool delete_package (const std::string& name);
-	Elf *find_for       (Elf*, const std::string& lib) const;
-
-	Package* find_pkg   (const std::string& name) const;
-	PackageList::const_iterator
-	         find_pkg_i (const std::string& name) const;
-
-	void show();
-};
 
 void
 db_commit_packages(std::vector<Package*> &&packages)

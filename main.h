@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
+#include <set>
 
 #include <elf.h>
 
@@ -137,6 +139,35 @@ public:
 	std::vector<rptr<Elf> > objects;
 
 	void show_needed();
+};
+
+using PackageList = std::vector<Package*>;
+using ObjectList  = std::vector<rptr<Elf>>;
+
+using ObjectSet   = std::set<rptr<Elf>>;
+using StringSet   = std::set<std::string>;
+
+class DB {
+public:
+	~DB();
+
+	PackageList packages;
+	ObjectList  objects;
+
+	std::map<Elf*, ObjectSet> required_found;
+	std::map<Elf*, StringSet> required_missing;
+
+	bool install_package(Package* &&pkg);
+	bool delete_package (const std::string& name);
+	Elf *find_for       (Elf*, const std::string& lib) const;
+
+	Package* find_pkg   (const std::string& name) const;
+	PackageList::const_iterator
+	         find_pkg_i (const std::string& name) const;
+
+	void show();
+
+	void store(const std::string& filename);
 };
 
 #endif
