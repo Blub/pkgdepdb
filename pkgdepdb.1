@@ -33,6 +33,10 @@ Show version info.
 .It Fl d , Fl -db= Ns Ar file
 Specifies the database filename to use. If it exists it will be read,
 otherwise a new database will be put into place.
+.Pp
+If the filename ends in
+.Cm .gz
+then gzip compression will be used.
 .It Fl i , Fl -install
 Install mode: commit (install) the provided package files into the
 database.
