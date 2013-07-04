@@ -13,8 +13,8 @@ using std::ofstream;
 using std::ifstream;
 
 // version
-static const size_t
-depdb_version = 1;
+size_t
+DB::version = 1;
 
 // magic header
 static const char
@@ -350,7 +350,7 @@ db_store(DB *db, const std::string& filename)
 
 	Header hdr;
 	memcpy(hdr.magic, depdb_magic, sizeof(hdr.magic));
-	hdr.version = depdb_version;
+	hdr.version = DB::version;
 	memset(&hdr.reserved, 0, sizeof(hdr.reserved));
 
 	out <= hdr;
@@ -402,7 +402,7 @@ db_read(DB *db, const std::string& filename)
 		return false;
 	}
 
-	if (hdr.version != depdb_version) {
+	if (hdr.version != DB::version) {
 		log(Error, "cannot read depdb version %u files\n", (unsigned)hdr.version);
 		return false;
 	}

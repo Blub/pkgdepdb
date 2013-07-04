@@ -216,6 +216,16 @@ DB::empty() const
 }
 
 void
+DB::show_info()
+{
+	printf("DB version: %u\n", (unsigned)DB::version);
+	printf("DB name:    [%s]\n", name.c_str());
+	printf("Additional Library Paths:\n");
+	for (auto &p : library_path)
+		printf("  %s\n", p.c_str());
+}
+
+void
 DB::show_packages()
 {
 	printf("Packages:\n");

@@ -51,11 +51,13 @@ static struct option long_opts[] = {
 	{ "version", no_argument,       0, -'v' },
 	{ "install", no_argument,       0, 'i' },
 	{ "db",      required_argument, 0, 'd' },
+	{ "info",    no_argument,       0, 'I' },
 	{ "list",    no_argument,       0, 'L' },
 	{ "missing", no_argument,       0, 'M' },
 	{ "found",   no_argument,       0, 'F' },
 	{ "pkgs",    no_argument,       0, 'P' },
 	{ "verbose", no_argument,       0, 'v' },
+	{ "rename",  required_argument, 0, 'n' },
 
 	{ 0, 0, 0, 0 }
 };
@@ -66,15 +68,17 @@ help(int x)
 	FILE *out = x ? stderr : stdout;
 	fprintf(out, "usage: %s [options] packages...\n", arg0);
 	fprintf(out, "options:\n"
-	             "  -h, --help      show this message\n"
-	             "  --version       show version info\n"
-	             "  -i, --install   install packages to a dependency db\n"
-	             "  -d, --db=FILE   set the database file to commit to\n"
-	             "  -v, --verbose   print more information\n"
-	             "  -L, --list      list packages and object files\n"
-	             "  -M, --missing   show the 'missing' table\n"
-	             "  -F, --found     show the 'found' table\n"
-	             "  -P, --pkgs      show the installed packages\n"
+	             "  -h, --help         show this message\n"
+	             "  --version          show version info\n"
+	             "  -i, --install      install packages to a dependency db\n"
+	             "  -d, --db=FILE      set the database file to commit to\n"
+	             "  -v, --verbose      print more information\n"
+	             "  -I, --info         show general information about the db\n"
+	             "  -L, --list         list packages and object files\n"
+	             "  -M, --missing      show the 'missing' table\n"
+	             "  -F, --found        show the 'found' table\n"
+	             "  -P, --pkgs         show the installed packages\n"
+	             "  -n, --rename=NAME  rename the database\n"
 	             );
 	exit(x);
 }
@@ -94,18 +98,20 @@ main(int argc, char **argv)
 	if (argc < 2)
 		help(1);
 
-	std::string  dbfile;
+	std::string  dbfile, newname;
 	unsigned int verbose = 0;
 	bool         do_install    = false;
 	bool         has_db        = false;
 	bool         modified      = false;
+	bool         show_info     = false;
 	bool         show_list     = false;
 	bool         show_missing  = false;
 	bool         show_found    = false;
 	bool         show_packages = false;
+	bool         do_rename     = false;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hid:LMFPv", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hid:ILMFPvn:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -120,8 +126,14 @@ main(int argc, char **argv)
 				dbfile = optarg;
 				break;
 
-			case 'v': ++verbose;           break;
+			case 'n':
+				do_rename = true;
+				newname = optarg;
+				break;
+
+			case 'v': ++verbose;            break;
 			case 'i': do_install    = true; break;
+			case 'I': show_info     = true; break;
 			case 'L': show_list     = true; break;
 			case 'M': show_missing  = true; break;
 			case 'F': show_found    = true; break;
@@ -170,6 +182,11 @@ main(int argc, char **argv)
 		}
 	}
 
+	if (do_rename) {
+		modified = true;
+		db->name = newname;
+	}
+
 	if (do_install && packages.size()) {
 		log(Message, "installing packages\n");
 		for (auto pkg : packages) {
@@ -180,6 +197,9 @@ main(int argc, char **argv)
 			}
 		}
 	}
+
+	if (show_info)
+		db->show_info();
 
 	if (show_packages)
 		db->show_packages();

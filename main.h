@@ -152,6 +152,8 @@ using StringSet   = std::set<std::string>;
 
 class DB {
 public:
+	static size_t version;
+
 	~DB();
 
 	std::string name;
@@ -172,6 +174,7 @@ public:
 	PackageList::const_iterator
 	         find_pkg_i (const std::string& name) const;
 
+	void show_info();
 	void show_packages();
 	void show_objects();
 	void show_missing();
