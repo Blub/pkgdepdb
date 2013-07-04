@@ -15,11 +15,39 @@ unpacking or installing them to a temporary location. It reads through
 the archive file, optionally parses a .PKGINFO file one is
 encountered, and then prints a list of required libraries of each ELF
 file contained in the library.
+.Pp
+Additionally it can manage a dependency database. In this mode it
+performs a virtual installation of a package's binaries and libraries
+into a database, in which only the dependency lists is maintained.
 .Sh OPTIONS
-There currently are no specific options. But
-.Fl h , Fl -help , Fl v
-and
-.Fl -version
-are recognized.
+.Bl -tag -width Ds
+.It Fl h , Fl -help
+Show the usage message.
+.It Fl -version
+Show version info.
+.It Fl d , Fl -db= Ns Ar file
+Specifies the database filename to use. If it exists it will be read,
+otherwise a new database will be put into place.
+.It Fl i , Fl -install
+Install mode: commit (install) the provided package files into the
+database.
+.It Fl I , Fl -info
+Show some general information about the database: The database format
+version and the database's name.
+.It Fl L , Fl -list
+Show the list of installed binaries and libraries and the dependencies
+they find or lack.
+.It Fl M , Fl -missing
+Show the list of missing files grouped by binary/library files.
+.It Fl F , Fl -found
+For all binaries and libraries, show which files are found
+successfully.
+.It Fl P , Fl -pkgs
+Show a list of installed packages.
+.It Fl n , Fl -rename= Ns Ar name
+Change the database's contained name. This does not affect the
+filename. The database-name is currently not used anywhere except when
+using the -I option to show it.
+.El
 .Sh AUTHOR
 See <http://github.com/Blub/readpkgelf>.
