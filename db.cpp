@@ -336,7 +336,11 @@ DB::show_packages()
 void
 DB::show_objects()
 {
-	printf("\nObjects:\n");
+	if (!objects.size()) {
+		printf("Objects: none\n");
+		return;
+	}
+	printf("Objects:\n");
 	for (auto &obj : objects) {
 		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
 		if (opt_verbosity < 1)
@@ -365,6 +369,10 @@ DB::show_objects()
 void
 DB::show_missing()
 {
+	if (!required_missing.size()) {
+		printf("Missing: nothing\n");
+		return;
+	}
 	printf("Missing:\n");
 	for (auto &mis : required_missing) {
 		Elf       *obj = mis.first;
