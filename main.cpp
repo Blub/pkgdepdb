@@ -9,7 +9,7 @@
 
 #include "main.h"
 
-static int LogLevel = Warn;
+static int LogLevel = Message;
 static const char *arg0 = 0;
 
 enum {
@@ -92,10 +92,11 @@ main(int argc, char **argv)
 	if (argc < 2)
 		help(1);
 
-	bool         do_install = false;
-	bool         has_db = false;
 	std::string  dbfile;
 	unsigned int verbose = 0;
+	bool         do_install   = false;
+	bool         has_db       = false;
+	bool         modified     = false;
 	bool         show_list    = false;
 	bool         show_missing = false;
 	bool         show_found   = false;
@@ -137,7 +138,7 @@ main(int argc, char **argv)
 
 		while (optind < argc) {
 			if (do_install)
-				log(Print, " ... %s\n", argv[optind]);
+				log(Print, "  %s\n", argv[optind]);
 
 			Package *package = Package::open(argv[optind]);
 			if (!package)
@@ -168,6 +169,7 @@ main(int argc, char **argv)
 	if (do_install && packages.size()) {
 		log(Message, "installing packages\n");
 		for (auto pkg : packages) {
+			modified = true;
 			if (!db->install_package(std::move(pkg))) {
 				printf("failed to commit package %s to database\n", pkg->name.c_str());
 				break;
@@ -184,7 +186,7 @@ main(int argc, char **argv)
 	if (show_found)
 		db->show_found();
 
-	if (has_db) {
+	if (modified && has_db) {
 		log(Message, "writing new database\n");
 		if (!db->store(dbfile))
 			log(Error, "failed to write to the database\n");

@@ -147,15 +147,7 @@ DB::install_package(Package* &&pkg)
 				++missing;
 				continue;
 			}
-			/* for vector:
-			bool needs = false;
-			std::remove_if(missing->second.begin(), missing->second.end(),
-				[&obj, &needs](const std::string &lib) {
-					// if lib==name {needs=true} written as side-effect
-					return (lib == obj->basename && (needs = true));
-				});
-			*/
-			// for std::set:
+
 			bool needs = (0 != missing->second.erase(obj->basename));
 
 			if (needs) // the library is indeed required and found:
@@ -177,8 +169,10 @@ DB::install_package(Package* &&pkg)
 			else
 				req_missing.insert(needed);
 		}
-		required_found[obj]   = std::move(req_found);
-		required_missing[obj] = std::move(req_missing);
+		if (req_found.size())
+			required_found[obj]   = std::move(req_found);
+		if (req_missing.size())
+			required_missing[obj] = std::move(req_missing);
 	}
 
 	return true;
@@ -251,6 +245,14 @@ DB::show()
 void
 DB::show_missing()
 {
+	printf("Missing:\n");
+	for (auto &mis : required_missing) {
+		Elf       *obj = mis.first;
+		StringSet &set = mis.second;
+		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		for (auto &s : set)
+			printf("    misses: %s\n", s.c_str());
+	}
 }
 
 void
