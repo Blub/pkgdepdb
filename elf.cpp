@@ -52,7 +52,8 @@ LoadElf(const char *data, size_t size, bool *waserror)
 
 	SecHDR *dynhdr = findsec([](SecHDR *hdr) { return hdr->sh_type == SHT_DYNAMIC; });
 	if (!dynhdr) {
-		log(Error, "failed to find .dynamic section\n");
+		log(Debug, "not a dynamic executable, no .dynamic section found\n");
+		*waserror = false;
 		return 0;
 	}
 
@@ -186,10 +187,8 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror)
 		e = LoadElf32(data, size, waserror);
 	else if (ei_class == ELFCLASS64)
 		e = LoadElf64(data, size, waserror);
-	if (!e) {
-		log(Error, "unrecognized ELF class: %u\n", (unsigned)ei_class);
+	if (!e)
 		return 0;
-	}
 	e->ei_class = ei_class;
 	e->ei_osabi = ei_osabi;
 	return e;
