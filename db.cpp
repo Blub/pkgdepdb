@@ -45,6 +45,19 @@ public:
 	void show();
 };
 
+void
+db_commit_packages(std::vector<Package*> &&packages)
+{
+	DB db;
+	for (auto pkg : packages) {
+		if (!db.install_package(std::move(pkg))) {
+			printf("failed to commit package %s to database\n", pkg->name.c_str());
+			break;
+		}
+	}
+	db.show();
+}
+
 DB::~DB() {
 	for (auto &pkg : packages)
 		delete pkg;
