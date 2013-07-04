@@ -23,9 +23,10 @@ log(int level, const char *msg, ...)
 }
 
 static struct option long_opts[] = {
-	{ "help",    no_argument, 0, 'h' },
-	{ "version", no_argument, 0, 'v' },
-	{ "install", no_argument, 0, 'i' },
+	{ "help",    no_argument,       0, 'h' },
+	{ "version", no_argument,       0, 'v' },
+	{ "install", no_argument,       0, 'i' },
+	{ "db",      required_argument, 0, 'd' },
 
 	{ 0, 0, 0, 0 }
 };
@@ -39,6 +40,7 @@ help(int x)
 	             "  --help          show this message\n"
 	             "  --version       show version info\n"
 	             "  -i, --install   install packages to a dependency db\n"
+	             "  -d, --db=FILE   set the database file to commit to\n"
 	             );
 	exit(x);
 }
@@ -50,8 +52,6 @@ version(int x)
 	exit(x);
 }
 
-void db_commit_packages(std::vector<Package*> &&pkg);
-
 int
 main(int argc, char **argv)
 {
@@ -61,9 +61,11 @@ main(int argc, char **argv)
 		help(1);
 
 	bool do_install = false;
+	bool has_db = false;
+	std::string dbfile;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hvi", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hvid:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -75,6 +77,10 @@ main(int argc, char **argv)
 				break;
 			case 'i':
 				do_install = true;
+				break;
+			case 'd':
+				has_db = true;
+				dbfile = optarg;
 				break;
 			case ':':
 			case '?':
@@ -105,9 +111,22 @@ main(int argc, char **argv)
 		}
 		++optind;
 	}
+
 	if (do_install) {
+		DB db;
 		printf("committing to database...\n");
-		db_commit_packages(std::move(packages));
+		for (auto pkg : packages) {
+			if (!db.install_package(std::move(pkg))) {
+				printf("failed to commit package %s to database\n", pkg->name.c_str());
+				break;
+			}
+		}
+		db.show();
+		if (has_db) {
+			if (!db.store(dbfile)) {
+				log(Error, "failed to write to the database\n");
+			}
+		}
 	}
 
 	return 0;
