@@ -112,22 +112,34 @@ main(int argc, char **argv)
 		++optind;
 	}
 
-	if (do_install) {
-		DB db;
-		printf("committing to database...\n");
-		for (auto pkg : packages) {
-			if (!db.install_package(std::move(pkg))) {
-				printf("failed to commit package %s to database\n", pkg->name.c_str());
-				break;
+	printf("packages loaded...\n");
+	do { // because goto sucks
+
+		if (do_install) {
+			DB db;
+			if (has_db) {
+				printf("reading old database...\n");
+				if (!db.read(dbfile)) {
+					log(Error, "failed to read database\n");
+					break; // because goto sucks
+				}
+			}
+			printf("committing to database...\n");
+			for (auto pkg : packages) {
+				if (!db.install_package(std::move(pkg))) {
+					printf("failed to commit package %s to database\n", pkg->name.c_str());
+					break;
+				}
+			}
+			db.show();
+			if (has_db) {
+				printf("writing new database...\n");
+				if (!db.store(dbfile)) {
+					log(Error, "failed to write to the database\n");
+				}
 			}
 		}
-		db.show();
-		if (has_db) {
-			if (!db.store(dbfile)) {
-				log(Error, "failed to write to the database\n");
-			}
-		}
-	}
+	} while(0);
 
 	return 0;
 }

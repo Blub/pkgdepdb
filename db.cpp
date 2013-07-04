@@ -218,3 +218,12 @@ DB::show()
 			printf("     runpath: %s\n", obj->runpath.c_str());
 	}
 }
+
+bool
+DB::empty() const
+{
+	return packages.size()         == 0 &&
+	       objects.size()          == 0 &&
+	       required_found.size()   == 0 &&
+	       required_missing.size() == 0;
+}

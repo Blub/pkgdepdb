@@ -168,6 +168,8 @@ public:
 	void show();
 
 	bool store(const std::string& filename);
+	bool read (const std::string& filename);
+	bool empty() const;
 };
 
 #endif
