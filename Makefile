@@ -20,9 +20,13 @@ CPPFLAGS += -DPKGDEPDB_V_PAT=$(VERSION_PATCH)
 
 LIBARCHIVE_CFLAGS :=
 LIBARCHIVE_LIBS   := -larchive
+ZLIB_CFLAGS :=
+ZLIB_LIBS   := -lz
 
 CPPFLAGS += $(LIBARCHIVE_CFLAGS)
 LIBS     += $(LIBARCHIVE_LIBS)
+CPPFLAGS += $(ZLIB_CFLAGS)
+LIBS     += $(ZLIB_LIBS)
 
 OBJECTS = main.o package.o elf.o db.o db_format.o
 
