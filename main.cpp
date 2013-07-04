@@ -304,7 +304,6 @@ main(int argc, char **argv)
 
 	std::unique_ptr<DB> db(new DB);
 	if (has_db) {
-		log(Message, "reading database\n");
 		if (!db->read(dbfile)) {
 			log(Error, "failed to read database\n");
 			return 1;
@@ -379,7 +378,6 @@ main(int argc, char **argv)
 		db->show_found();
 
 	if (modified && has_db) {
-		log(Message, "writing new database\n");
 		if (!db->store(dbfile))
 			log(Error, "failed to write to the database\n");
 	}

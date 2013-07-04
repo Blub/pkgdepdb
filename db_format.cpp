@@ -1,16 +1,16 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <zlib.h>
+
 #include <memory>
 #include <algorithm>
 #include <utility>
 
 #include <fstream>
+#include <sstream>
 
 #include "main.h"
-
-using std::ofstream;
-using std::ifstream;
 
 // version
 size_t
@@ -47,27 +47,132 @@ using ObjInMap  = std::map<size_t,   Elf*>;
 
 class SerialOut {
 public:
-	DB        *db;
-	ofstream   out;
-	PkgOutMap  pkgs;
-	ObjOutMap  objs;
+	DB           *db;
+	std::ostream  out;
+	PkgOutMap     pkgs;
+	ObjOutMap     objs;
 
 	SerialOut(DB *db_, const std::string& filename)
-	: db(db_), out(filename.c_str(), std::ios::binary)
+	: db(db_), out(new std::filebuf)
 	{
+		std::filebuf &buf = *reinterpret_cast<std::filebuf*>(out.rdbuf());
+		if (!buf.open(filename, std::ios::out | std::ios::binary))
+			out.clear(std::ios::failbit | std::ios::badbit);
+	}
+
+	SerialOut(DB *db_)
+	: db(db_), out(new std::stringbuf)
+	{
+	}
+
+	~SerialOut()
+	{
+		auto b = out.rdbuf();
+		out.rdbuf(nullptr);
+		delete b;
+	}
+};
+
+class gz_in_buf : public std::streambuf {
+private:
+	bool   eof;
+	gzFile file;
+
+public:
+	operator bool() const { return file; }
+
+	explicit gz_in_buf(const std::string& filename)
+	: eof(false), file(nullptr)
+	{
+		file = gzopen(filename.c_str(), "rb");
+	}
+
+	~gz_in_buf()
+	{
+		if (file)
+			gzclose(file);
+	}
+
+protected:
+	virtual int_type
+	uflow() {
+		if (eof) return traits_type::eof();
+		int b = gzgetc(file);
+		if (b == -1) {
+			eof = true;
+printf("b eof\n");
+			return traits_type::eof();
+		}
+printf("b\n");
+		return b;
+	}
+
+	virtual int_type underflow() { abort(); }
+	virtual int_type pbackfail(int_type c = traits_type::eof()) { (void)c; abort(); }
+
+	virtual pos_type
+	seekpos(pos_type off, std::ios_base::openmode mode)
+	{
+		if (!(mode & std::ios::in))
+			return 0;
+		if (mode & std::ios::in)
+			return gzseek(file, off, SEEK_SET);
+		return gztell(file);
+	}
+
+	virtual pos_type seekoff(off_type off, std::ios_base::seekdir way,
+	                         std::ios_base::openmode mode)
+	{
+		if (!(mode & std::ios::in))
+			return 0;
+		if (way == std::ios::end)
+			return -1;
+		if (way == std::ios::beg)
+			return gzseek(file, off, SEEK_SET);
+		if (way == std::ios::cur)
+			return gzseek(file, off, SEEK_CUR);
+		return gztell(file);
+	}
+
+	virtual std::streamsize
+	xsgetn(char *d, std::streamsize n)
+	{
+		if (!n)  return 0;
+		if (eof) return traits_type::eof();
+		int b = gzread(file, d, n);
+		if (b == -1 || b == 0) {
+			eof = true;
+			return traits_type::eof();
+		}
+		return b;
 	}
 };
 
 class SerialIn {
 public:
-	DB        *db;
-	ifstream   in;
-	PkgInMap   pkgs;
-	ObjInMap   objs;
+	DB           *db;
+	std::istream  in;
+	PkgInMap      pkgs;
+	ObjInMap      objs;
 
 	SerialIn(DB *db_, const std::string& filename)
-	: db(db_), in(filename.c_str(), std::ios::binary)
+	: db(db_), in(new std::filebuf)
 	{
+		std::filebuf &buf = *reinterpret_cast<std::filebuf*>(in.rdbuf());
+		if (!buf.open(filename, std::ios::in | std::ios::binary))
+			in.clear(std::ios::failbit | std::ios::badbit);
+	}
+
+	SerialIn(DB *db_, std::streambuf *buf)
+	: db(db_), in(buf)
+	{
+	}
+
+	~SerialIn()
+	{
+		auto b = in.rdbuf();
+		in.rdbuf(nullptr);
+		delete b;
 	}
 };
 
@@ -339,10 +444,29 @@ read_pkg(SerialIn &in, Package *&pkg)
 	return true;
 }
 
+static inline bool
+ends_with_gz(const std::string& str)
+{
+	size_t pos = str.find_last_of('.');
+	return (pos == str.length()-3 &&
+	        str.compare(pos, 3, ".gz") == 0);
+}
+
 static bool
 db_store(DB *db, const std::string& filename)
 {
-	SerialOut out(db, filename);
+	std::unique_ptr<SerialOut> sout;
+	bool mkgzip = ends_with_gz(filename);
+
+	if (mkgzip)
+		sout.reset(new SerialOut(db));
+	else {
+		log(Message, "writing database\n");
+		sout.reset(new SerialOut(db, filename));
+	}
+
+	SerialOut &out(*sout);
+
 	if (!out.out) {
 		log(Error, "failed to open output file %s for writing\n", filename.c_str());
 		return false;
@@ -383,13 +507,47 @@ db_store(DB *db, const std::string& filename)
 			return false;
 	}
 
+	if (mkgzip) {
+		log(Message, "writing compressed database\n");
+		gzFile gz = gzopen(filename.c_str(), "wb");
+		if (!gz) {
+			log(Error, "failed to open gzip output stream\n");
+			return false;
+		}
+		std::stringbuf *buf = reinterpret_cast<std::stringbuf*>(out.out.rdbuf());
+		std::string data = buf->str();
+		if ((size_t)gzwrite(gz, &data[0], data.length()) != data.length()) {
+			log(Error, "failed to write database to gzip stream\n");
+			gzclose(gz);
+			return false;
+		}
+		gzclose(gz);
+	}
+
 	return out.out;
 }
 
 static bool
 db_read(DB *db, const std::string& filename)
 {
-	SerialIn in(db, filename);
+	std::unique_ptr<SerialIn> sin;
+	bool gzip = ends_with_gz(filename);
+
+	if (gzip) {
+		log(Message, "reading compressed database\n");
+		auto buf = new gz_in_buf(filename);
+		if (!*buf) {
+			delete buf;
+			return true;
+		}
+		sin.reset(new SerialIn(db, buf));
+	}
+	else {
+		log(Message, "reading database\n");
+		sin.reset(new SerialIn(db, filename));
+	}
+
+	SerialIn &in(*sin);
 	if (!in.in) {
 		//log(Error, "failed to open input file %s for reading\n", filename.c_str());
 		return true; // might not exist...
