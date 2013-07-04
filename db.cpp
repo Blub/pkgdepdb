@@ -213,11 +213,16 @@ DB::empty() const
 }
 
 void
-DB::show()
+DB::show_packages()
 {
 	printf("Packages:\n");
 	for (auto &pkg : packages)
 		printf("  -> %s\n", pkg->name.c_str());
+}
+
+void
+DB::show_objects()
+{
 	printf("\nObjects:\n");
 	for (auto &obj : objects) {
 		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());

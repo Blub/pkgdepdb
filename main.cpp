@@ -54,6 +54,7 @@ static struct option long_opts[] = {
 	{ "list",    no_argument,       0, 'L' },
 	{ "missing", no_argument,       0, 'M' },
 	{ "found",   no_argument,       0, 'F' },
+	{ "pkgs",    no_argument,       0, 'P' },
 	{ "verbose", no_argument,       0, 'v' },
 
 	{ 0, 0, 0, 0 }
@@ -73,6 +74,7 @@ help(int x)
 	             "  -L, --list      list packages and object files\n"
 	             "  -M, --missing   show the 'missing' table\n"
 	             "  -F, --found     show the 'found' table\n"
+	             "  -P, --pkgs      show the installed packages\n"
 	             );
 	exit(x);
 }
@@ -94,12 +96,13 @@ main(int argc, char **argv)
 
 	std::string  dbfile;
 	unsigned int verbose = 0;
-	bool         do_install   = false;
-	bool         has_db       = false;
-	bool         modified     = false;
-	bool         show_list    = false;
-	bool         show_missing = false;
-	bool         show_found   = false;
+	bool         do_install    = false;
+	bool         has_db        = false;
+	bool         modified      = false;
+	bool         show_list     = false;
+	bool         show_missing  = false;
+	bool         show_found    = false;
+	bool         show_packages = false;
 	for (;;) {
 		int opt_index = 0;
 		int c = getopt_long(argc, argv, "hid:LMFv", long_opts, &opt_index);
@@ -118,10 +121,11 @@ main(int argc, char **argv)
 				break;
 
 			case 'v': ++verbose;           break;
-			case 'i': do_install   = true; break;
-			case 'L': show_list    = true; break;
-			case 'M': show_missing = true; break;
-			case 'F': show_found   = true; break;
+			case 'i': do_install    = true; break;
+			case 'L': show_list     = true; break;
+			case 'M': show_missing  = true; break;
+			case 'F': show_found    = true; break;
+			case 'P': show_packages = true; break;
 
 			case ':':
 			case '?':
@@ -177,8 +181,11 @@ main(int argc, char **argv)
 		}
 	}
 
+	if (show_packages)
+		db->show_packages();
+
 	if (show_list)
-		db->show();
+		db->show_objects();
 
 	if (show_missing)
 		db->show_missing();

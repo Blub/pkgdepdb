@@ -167,7 +167,8 @@ public:
 	PackageList::const_iterator
 	         find_pkg_i (const std::string& name) const;
 
-	void show();
+	void show_packages();
+	void show_objects();
 	void show_missing();
 	void show_found();
 
