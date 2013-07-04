@@ -100,10 +100,8 @@ protected:
 		int b = gzgetc(file);
 		if (b == -1) {
 			eof = true;
-printf("b eof\n");
 			return traits_type::eof();
 		}
-printf("b\n");
 		return b;
 	}
 
