@@ -73,6 +73,8 @@ static struct option long_opts[] = {
 
 	{ "relink",     no_argument,       0, -'R' },
 
+	{ "json",       no_argument,       0, -'J' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -148,7 +150,7 @@ public:
 	}
 };
 
-
+bool db_store_json(DB *db, const std::string& filename);
 int
 main(int argc, char **argv)
 {
@@ -170,6 +172,7 @@ main(int argc, char **argv)
 	bool         do_rename     = false;
 	bool         do_relink     = false;
 	bool         dryrun        = false;
+	bool         use_json      = false;
 	bool oldmode = true;
 
 	// library path options
@@ -239,6 +242,8 @@ main(int argc, char **argv)
 				                                    strtoul(str.c_str(), nullptr, 0)));
 				break;
 			}
+
+			case -'J': use_json = true; break;
 
 			case ':':
 			case '?':
@@ -384,7 +389,9 @@ main(int argc, char **argv)
 		db->show_found();
 
 	if (!dryrun && modified && has_db) {
-		if (!db->store(dbfile))
+		if (use_json)
+			db_store_json(db.get(), dbfile);
+		else if (!db->store(dbfile))
 			log(Error, "failed to write to the database\n");
 	}
 

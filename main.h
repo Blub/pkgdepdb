@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <functional>
 
 #include <elf.h>
 
@@ -203,6 +204,19 @@ public:
 
 private:
 	bool elf_finds      (Elf*, const std::string& lib) const;
+};
+
+// Utility functions:
+class guard {
+public:
+	bool                  on;
+	std::function<void()> fn;
+	guard(std::function<void()> f)
+	: on(true), fn(f) {}
+	~guard() {
+		if (on) fn();
+	}
+	void release() { on = false; }
 };
 
 #endif

@@ -28,7 +28,7 @@ LIBS     += $(LIBARCHIVE_LIBS)
 CPPFLAGS += $(ZLIB_CFLAGS)
 LIBS     += $(ZLIB_LIBS)
 
-OBJECTS = main.o package.o elf.o db.o db_format.o
+OBJECTS = main.o package.o elf.o db.o db_format.o db_json.o
 
 BINARY = pkgdepdb
 
