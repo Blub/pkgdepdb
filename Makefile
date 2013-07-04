@@ -5,7 +5,7 @@ DATADIR = $(PREFIX)/share
 MANDIR  = $(DATADIR)/man
 MAN1DIR = $(MANDIR)/man1
 
-PACKAGE_NAME := pacdepdb
+PACKAGE_NAME := pkgdepdb
 
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
@@ -14,9 +14,9 @@ VERSION_PATCH := 0
 CXX ?= clang++
 CXXFLAGS += -std=c++11
 CXXFLAGS += -Wall -Wextra -Werror -fno-rtti
-CPPFLAGS += -DPACDEPDB_V_MAJ=$(VERSION_MAJOR)
-CPPFLAGS += -DPACDEPDB_V_MIN=$(VERSION_MINOR)
-CPPFLAGS += -DPACDEPDB_V_PAT=$(VERSION_PATCH)
+CPPFLAGS += -DPKGDEPDB_V_MAJ=$(VERSION_MAJOR)
+CPPFLAGS += -DPKGDEPDB_V_MIN=$(VERSION_MINOR)
+CPPFLAGS += -DPKGDEPDB_V_PAT=$(VERSION_PATCH)
 
 LIBARCHIVE_CFLAGS :=
 LIBARCHIVE_LIBS   := -larchive
@@ -26,7 +26,7 @@ LIBS     += $(LIBARCHIVE_LIBS)
 
 OBJECTS = main.o package.o elf.o db.o db_format.o
 
-BINARY = pacdepdb
+BINARY = pkgdepdb
 
 default: all
 
@@ -49,7 +49,7 @@ install-bin: install-prefix
 	install    -m755 $(BINARY)  $(DESTDIR)$(BINDIR)/$(BINARY)
 install-man: install-prefix
 	install -d -m755            $(DESTDIR)$(MAN1DIR)
-	install    -m644 pacdepdb.1 $(DESTDIR)$(MAN1DIR)/pacdepdb.1
+	install    -m644 pkgdepdb.1 $(DESTDIR)$(MAN1DIR)/pkgdepdb.1
 
 depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null

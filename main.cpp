@@ -114,7 +114,7 @@ help(int x)
 static void
 version(int x)
 {
-	printf("pacdepdb " FULL_VERSION_STRING "\n");
+	printf("pkgdepdb " FULL_VERSION_STRING "\n");
 	exit(x);
 }
 

@@ -9,22 +9,22 @@
 
 #include <elf.h>
 
-#ifndef PACDEPDB_V_MAJ
-# error "PACDEPDB_V_MAJ not defined"
+#ifndef PKGDEPDB_V_MAJ
+# error "PKGDEPDB_V_MAJ not defined"
 #endif
-#ifndef PACDEPDB_V_MIN
-# error "PACDEPDB_V_MIN not defined"
+#ifndef PKGDEPDB_V_MIN
+# error "PKGDEPDB_V_MIN not defined"
 #endif
-#ifndef PACDEPDB_V_PAT
-# error "PACDEPDB_V_PAT not defined"
+#ifndef PKGDEPDB_V_PAT
+# error "PKGDEPDB_V_PAT not defined"
 #endif
 
 #define RPKG_IND_STRING2(x) #x
 #define RPKG_IND_STRING(x) RPKG_IND_STRING2(x)
 #define VERSION_STRING \
-	RPKG_IND_STRING(PACDEPDB_V_MAJ) "." \
-	RPKG_IND_STRING(PACDEPDB_V_MIN) "." \
-	RPKG_IND_STRING(PACDEPDB_V_PAT)
+	RPKG_IND_STRING(PKGDEPDB_V_MAJ) "." \
+	RPKG_IND_STRING(PKGDEPDB_V_MIN) "." \
+	RPKG_IND_STRING(PKGDEPDB_V_PAT)
 
 #ifdef GITINFO
 # define FULL_VERSION_STRING \
