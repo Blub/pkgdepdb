@@ -9,6 +9,11 @@
 .Nm readelf
 .Op Cm options
 .Op Ar files...
+.Pp
+.Nm readelf
+.Fl r
+.Op Cm options
+.Ar package_names...
 .Sh DESCRIPTION
 This tool is helpful to find library dependencies of packages without
 unpacking or installing them to a temporary location. It reads through
@@ -31,6 +36,10 @@ otherwise a new database will be put into place.
 .It Fl i , Fl -install
 Install mode: commit (install) the provided package files into the
 database.
+.It Fl r , Fl -remove
+Delete mode: delete (uninstall) the listed packages from the database.
+In this mode, the non-option parameters are package names, not package
+archive files!
 .It Fl I , Fl -info
 Show some general information about the database: The database format
 version and the database's name.

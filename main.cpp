@@ -71,6 +71,7 @@ help(int x)
 	             "  -h, --help         show this message\n"
 	             "  --version          show version info\n"
 	             "  -i, --install      install packages to a dependency db\n"
+	             "  -r, --remove       remove packages from the database\n"
 	             "  -d, --db=FILE      set the database file to commit to\n"
 	             "  -v, --verbose      print more information\n"
 	             "  -I, --info         show general information about the db\n"
@@ -101,6 +102,7 @@ main(int argc, char **argv)
 	std::string  dbfile, newname;
 	unsigned int verbose = 0;
 	bool         do_install    = false;
+	bool         do_delete     = false;
 	bool         has_db        = false;
 	bool         modified      = false;
 	bool         show_info     = false;
@@ -111,7 +113,7 @@ main(int argc, char **argv)
 	bool         do_rename     = false;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hid:ILMFPvn:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hird:ILMFPvn:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -133,6 +135,7 @@ main(int argc, char **argv)
 
 			case 'v': ++verbose;            break;
 			case 'i': do_install    = true; break;
+			case 'r': do_delete     = true; break;
 			case 'I': show_info     = true; break;
 			case 'L': show_list     = true; break;
 			case 'M': show_missing  = true; break;
@@ -146,9 +149,42 @@ main(int argc, char **argv)
 		}
 	}
 
+	if (do_install && do_delete) {
+		log(Error, "--install and --remove are mutually exclusive\n");
+		help(1);
+	}
+
+	if (do_delete && optind >= argc) {
+		log(Error, "--remove requires a list of package names\n");
+		help(1);
+	}
+
+	if (do_install && optind >= argc) {
+		log(Error, "--install requires a list of package archive files\n");
+		help(1);
+	}
+
 	std::vector<Package*> packages;
 
-	if (optind < argc) {
+	if (!do_delete && !do_install) {
+		// non-database mode!
+		while (optind < argc) {
+			Package *package = Package::open(argv[optind++]);
+			for (auto &obj : package->objects) {
+				const char *objdir  = obj->dirname.c_str();
+				const char *objname = obj->basename.c_str();
+				for (auto &need : obj->needed) {
+					printf("%s : %s/%s NEEDS %s\n",
+					       package->name.c_str(),
+					       objdir, objname,
+					       need.c_str());
+				}
+			}
+			delete package;
+		}
+		return 0;
+	}
+	if (!do_delete && optind < argc) {
 		if (do_install)
 			log(Message, "loading packages...\n");
 
@@ -170,7 +206,8 @@ main(int argc, char **argv)
 			++optind;
 		}
 
-		log(Message, "packages loaded...\n");
+		if (do_install)
+			log(Message, "packages loaded...\n");
 	}
 
 	std::unique_ptr<DB> db(new DB);
