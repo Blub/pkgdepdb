@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <getopt.h>
+#include <ctype.h>
+#include <limits.h>
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -59,6 +61,12 @@ static struct option long_opts[] = {
 	{ "verbose", no_argument,       0, 'v' },
 	{ "rename",  required_argument, 0, 'n' },
 
+	{ "ld-append",  required_argument, 0, -'A' },
+	{ "ld-prepend", required_argument, 0, -'P' },
+	{ "ld-delete",  required_argument, 0, -'D' },
+	{ "ld-insert",  required_argument, 0, -'I' },
+	{ "ld-clear",   no_argument,       0, -'C' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -70,16 +78,30 @@ help(int x)
 	fprintf(out, "options:\n"
 	             "  -h, --help         show this message\n"
 	             "  --version          show version info\n"
+	             "  -v, --verbose      print more information\n"
+	             );
+	fprintf(out, "db management options:\n"
+	             "  -d, --db=FILE      set the database file to commit to\n"
 	             "  -i, --install      install packages to a dependency db\n"
 	             "  -r, --remove       remove packages from the database\n"
-	             "  -d, --db=FILE      set the database file to commit to\n"
-	             "  -v, --verbose      print more information\n"
+	             );
+	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
 	             "  -L, --list         list packages and object files\n"
 	             "  -M, --missing      show the 'missing' table\n"
 	             "  -F, --found        show the 'found' table\n"
 	             "  -P, --pkgs         show the installed packages\n"
 	             "  -n, --rename=NAME  rename the database\n"
+	             );
+	fprintf(out, "db library path options:\n"
+	             "  --ld-prepend=DIR   add or move a directory to the\n"
+	             "                     top of the trusted library path\n"
+	             "  --ld-append=DIR    add or move a directory to the\n"
+	             "                     bottom of the trusted library path\n"
+	             "  --ld-delete=DIR    remove a library path\n"
+	             "  --ld-insert=N:DIR  add or move a directro to position N\n"
+	             "                     of the trusted library path\n"
+	             "  --ld-clear         remove all library paths\n"
 	             );
 	exit(x);
 }
@@ -90,6 +112,37 @@ version(int x)
 	printf("readpkgelf " FULL_VERSION_STRING "\n");
 	exit(x);
 }
+
+// don't ask
+class ArgArg {
+public:
+	bool        on;
+	bool       *mode;
+	std::string arg;
+
+	ArgArg(bool *om) {
+		mode = om;
+		on = false;
+	}
+
+	operator bool() const { return on; }
+	inline bool operator!() const { return !on; }
+	inline void operator=(bool on) {
+		this->on = on;
+	}
+	inline void operator=(const char *arg) {
+		on = true;
+		this->arg = arg;
+	}
+	inline void operator=(std::string &&arg) {
+		on = true;
+		this->arg = std::move(arg);
+	}
+	inline operator const std::string&() const {
+		return arg;
+	}
+};
+
 
 int
 main(int argc, char **argv)
@@ -112,6 +165,15 @@ main(int argc, char **argv)
 	bool         show_packages = false;
 	bool         do_rename     = false;
 	bool oldmode = true;
+
+	// library path options
+	ArgArg ld_append (&oldmode),
+	       ld_prepend(&oldmode),
+	       ld_delete (&oldmode),
+	       ld_insert (&oldmode),
+	       ld_clear  (&oldmode);
+
+	size_t ld_insert_at = 0;
 	for (;;) {
 		int opt_index = 0;
 		int c = getopt_long(argc, argv, "hird:ILMFPvn:", long_opts, &opt_index);
@@ -144,6 +206,29 @@ main(int argc, char **argv)
 			case 'M': oldmode = false; show_missing  = true; break;
 			case 'F': oldmode = false; show_found    = true; break;
 			case 'P': oldmode = false; show_packages = true; break;
+
+			case -'A': ld_append  = optarg; break;
+			case -'P': ld_prepend = optarg; break;
+			case -'D': ld_delete  = optarg; break;
+			case -'C': ld_clear   = true;   break;
+			case -'I':
+			{
+				std::string str(optarg);
+				if (!isdigit(str[0])) {
+					log(Error, "--ld-insert format wrong: has to start with a number\n");
+					help(1);
+					return 1;
+				}
+				size_t colon = str.find_first_of(':');
+				if (std::string::npos == colon) {
+					log(Error, "--ld-insert format wrong, no colon found\n");
+					help(1);
+					return 1;
+				}
+				ld_insert_at = strtoul(str.c_str(), nullptr, 0);
+				ld_insert = std::move(str.substr(colon+1, std::string::npos));
+				break;
+			}
 
 			case ':':
 			case '?':
@@ -226,6 +311,18 @@ main(int argc, char **argv)
 		modified = true;
 		db->name = newname;
 	}
+
+	if (ld_append)
+		modified = db->ld_append(ld_append)   || modified;
+	if (ld_prepend)
+		modified = db->ld_prepend(ld_prepend) || modified;
+	if (ld_delete)
+		modified = db->ld_delete(ld_delete)   || modified;
+	if (ld_insert)
+		modified = db->ld_insert(ld_insert, ld_insert_at)
+		         || modified;
+	if (ld_clear)
+		modified = db->ld_clear()             || modified;
 
 	if (do_install && packages.size()) {
 		log(Message, "installing packages\n");

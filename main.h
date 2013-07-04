@@ -184,6 +184,12 @@ public:
 	bool read (const std::string& filename);
 	bool empty() const;
 
+	bool ld_append(const std::string& dir);
+	bool ld_prepend(const std::string& dir);
+	bool ld_delete(const std::string& dir);
+	bool ld_insert(const std::string& dir, size_t i);
+	bool ld_clear();
+
 private:
 	bool elf_finds      (Elf*, const std::string& lib) const;
 };

@@ -215,14 +215,82 @@ DB::empty() const
 	       required_missing.size() == 0;
 }
 
+bool
+DB::ld_clear()
+{
+	if (library_path.size()) {
+		library_path.clear();
+		return true;
+	}
+	return false;
+}
+
+bool
+DB::ld_append(const std::string& dir)
+{
+	auto old = std::find(library_path.begin(), library_path.end(), dir);
+	if (old == library_path.begin() + (library_path.size()-1))
+		return false;
+	if (old != library_path.end())
+		library_path.erase(old);
+	library_path.push_back(dir);
+	return true;
+}
+
+bool
+DB::ld_prepend(const std::string& dir)
+{
+	auto old = std::find(library_path.begin(), library_path.end(), dir);
+	if (old == library_path.begin())
+		return false;
+	if (old != library_path.end())
+		library_path.erase(old);
+	library_path.insert(library_path.begin(), dir);
+	return true;
+}
+
+bool
+DB::ld_delete(const std::string& dir)
+{
+	auto old = std::find(library_path.begin(), library_path.end(), dir);
+	if (old != library_path.end()) {
+		library_path.erase(old);
+		return true;
+	}
+	return false;
+}
+
+bool
+DB::ld_insert(const std::string& dir, size_t i)
+{
+	if (!library_path.size())
+		i = 0;
+	else if (i >= library_path.size())
+		i = library_path.size()-1;
+
+	auto old = std::find(library_path.begin(), library_path.end(), dir);
+	if (old == library_path.end()) {
+		library_path.insert(library_path.begin() + i, dir);
+		return true;
+	}
+	size_t oldidx = old - library_path.begin();
+	if (oldidx == i)
+		return false;
+	// exists
+	library_path.erase(old);
+	library_path.insert(library_path.begin() + i, dir);
+	return true;
+}
+
 void
 DB::show_info()
 {
 	printf("DB version: %u\n", (unsigned)DB::version);
 	printf("DB name:    [%s]\n", name.c_str());
 	printf("Additional Library Paths:\n");
+	unsigned id = 0;
 	for (auto &p : library_path)
-		printf("  %s\n", p.c_str());
+		printf("  %u: %s\n", id++, p.c_str());
 }
 
 void
