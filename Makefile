@@ -44,6 +44,9 @@ all: $(BINARY)
 $(BINARY): $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
+$(BINARY)-static: $(OBJECTS)
+	libtool --mode=link $(CXX) $(LDFLAGS) -o $@ $(OBJECTS) -all-static $(LIBS)
+
 clean:
 	-rm -f *.o $(BINARY)
 
