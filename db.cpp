@@ -61,8 +61,6 @@ db_commit_packages(std::vector<Package*> &&packages)
 DB::~DB() {
 	for (auto &pkg : packages)
 		delete pkg;
-	for (auto &obj : objects)
-		delete obj;
 }
 
 PackageList::const_iterator
@@ -158,6 +156,7 @@ DB::install_package(Package* &&pkg)
 {
 	if (!delete_package(pkg->name))
 		return false;
+
 	packages.push_back(pkg);
 
 	for (auto &obj : pkg->objects) {
@@ -203,6 +202,8 @@ DB::install_package(Package* &&pkg)
 		}
 		required_found[obj]   = std::move(req_found);
 		required_missing[obj] = std::move(req_missing);
+
+		objects.push_back(obj);
 	}
 
 	return true;
