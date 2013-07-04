@@ -7,8 +7,8 @@ MANDIR  = $(DATADIR)/man
 PACKAGE_NAME := readpkgelf
 
 VERSION_MAJOR := 0
-VERSION_MINOR := 0
-VERSION_PATCH := 1
+VERSION_MINOR := 1
+VERSION_PATCH := 0
 
 CXX ?= clang++
 CXXFLAGS += -std=c++11
