@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <getopt.h>
@@ -11,22 +12,49 @@
 static int LogLevel = Warn;
 static const char *arg0 = 0;
 
+enum {
+    RESET = 0,
+    BOLD  = 1,
+    BLACK = 30,
+    RED,
+    GREEN,
+    YELLOW,
+    BLUE,
+    MAGENTA,
+    CYAN,
+    GRAY,
+    WHITE = GRAY
+};
+
 void
 log(int level, const char *msg, ...)
 {
 	if (level < LogLevel)
 		return;
+
+	FILE *out = (level <= Message) ? stdout : stderr;
+
+	if (level == Message) {
+		if (isatty(fileno(out))) {
+			fprintf(out, "\033[%d;%dm***\033[0;0m ", BOLD, GREEN);
+		} else
+			fprintf(out, "*** ");
+	}
 	va_list ap;
 	va_start(ap, msg);
-	vfprintf(stderr, msg, ap);
+	vfprintf(out, msg, ap);
 	va_end(ap);
 }
 
 static struct option long_opts[] = {
 	{ "help",    no_argument,       0, 'h' },
-	{ "version", no_argument,       0, 'v' },
+	{ "version", no_argument,       0, -'v' },
 	{ "install", no_argument,       0, 'i' },
 	{ "db",      required_argument, 0, 'd' },
+	{ "list",    no_argument,       0, 'L' },
+	{ "missing", no_argument,       0, 'M' },
+	{ "found",   no_argument,       0, 'F' },
+	{ "verbose", no_argument,       0, 'v' },
 
 	{ 0, 0, 0, 0 }
 };
@@ -37,10 +65,14 @@ help(int x)
 	FILE *out = x ? stderr : stdout;
 	fprintf(out, "usage: %s [options] packages...\n", arg0);
 	fprintf(out, "options:\n"
-	             "  --help          show this message\n"
+	             "  -h, --help      show this message\n"
 	             "  --version       show version info\n"
 	             "  -i, --install   install packages to a dependency db\n"
 	             "  -d, --db=FILE   set the database file to commit to\n"
+	             "  -v, --verbose   print more information\n"
+	             "  -L, --list      list packages and object files\n"
+	             "  -M, --missing   show the 'missing' table\n"
+	             "  -F, --found     show the 'found' table\n"
 	             );
 	exit(x);
 }
@@ -60,28 +92,36 @@ main(int argc, char **argv)
 	if (argc < 2)
 		help(1);
 
-	bool do_install = false;
-	bool has_db = false;
-	std::string dbfile;
+	bool         do_install = false;
+	bool         has_db = false;
+	std::string  dbfile;
+	unsigned int verbose = 0;
+	bool         show_list    = false;
+	bool         show_missing = false;
+	bool         show_found   = false;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hvid:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hid:LMFv", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
 			case 'h':
 				help(0);
 				break;
-			case 'v':
+			case -'v':
 				version(0);
-				break;
-			case 'i':
-				do_install = true;
 				break;
 			case 'd':
 				has_db = true;
 				dbfile = optarg;
 				break;
+
+			case 'v': ++verbose;           break;
+			case 'i': do_install   = true; break;
+			case 'L': show_list    = true; break;
+			case 'M': show_missing = true; break;
+			case 'F': show_found   = true; break;
+
 			case ':':
 			case '?':
 				help(1);
@@ -91,55 +131,64 @@ main(int argc, char **argv)
 
 	std::vector<Package*> packages;
 
-	if (do_install)
-		printf("loading packages...\n");
-
-	while (optind < argc) {
+	if (optind < argc) {
 		if (do_install)
-			printf(" ... %s\n", argv[optind]);
+			log(Message, "loading packages...\n");
 
-		Package *package = Package::open(argv[optind]);
-		if (!package)
-			log(Error, "error reading package %s\n", argv[optind]);
-		else {
+		while (optind < argc) {
 			if (do_install)
-				packages.push_back(package);
+				log(Print, " ... %s\n", argv[optind]);
+
+			Package *package = Package::open(argv[optind]);
+			if (!package)
+				log(Error, "error reading package %s\n", argv[optind]);
 			else {
-				package->show_needed();
-				delete package;
+				if (do_install)
+					packages.push_back(package);
+				else {
+					package->show_needed();
+					delete package;
+				}
 			}
+			++optind;
 		}
-		++optind;
+
+		log(Message, "packages loaded...\n");
 	}
 
-	printf("packages loaded...\n");
-	do { // because goto sucks
+	std::unique_ptr<DB> db(new DB);
+	if (has_db) {
+		log(Message, "reading old database\n");
+		if (!db->read(dbfile)) {
+			log(Error, "failed to read old database\n");
+			return 1;
+		}
+	}
 
-		if (do_install) {
-			DB db;
-			if (has_db) {
-				printf("reading old database...\n");
-				if (!db.read(dbfile)) {
-					log(Error, "failed to read database\n");
-					break; // because goto sucks
-				}
-			}
-			printf("committing to database...\n");
-			for (auto pkg : packages) {
-				if (!db.install_package(std::move(pkg))) {
-					printf("failed to commit package %s to database\n", pkg->name.c_str());
-					break;
-				}
-			}
-			db.show();
-			if (has_db) {
-				printf("writing new database...\n");
-				if (!db.store(dbfile)) {
-					log(Error, "failed to write to the database\n");
-				}
+	if (do_install && packages.size()) {
+		log(Message, "installing packages\n");
+		for (auto pkg : packages) {
+			if (!db->install_package(std::move(pkg))) {
+				printf("failed to commit package %s to database\n", pkg->name.c_str());
+				break;
 			}
 		}
-	} while(0);
+	}
+
+	if (show_list)
+		db->show();
+
+	if (show_missing)
+		db->show_missing();
+
+	if (show_found)
+		db->show_found();
+
+	if (has_db) {
+		log(Message, "writing new database\n");
+		if (!db->store(dbfile))
+			log(Error, "failed to write to the database\n");
+	}
 
 	return 0;
 }

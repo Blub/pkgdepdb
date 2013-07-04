@@ -209,6 +209,15 @@ DB::find_for(Elf *obj, const std::string& needed) const
 	return 0;
 }
 
+bool
+DB::empty() const
+{
+	return packages.size()         == 0 &&
+	       objects.size()          == 0 &&
+	       required_found.size()   == 0 &&
+	       required_missing.size() == 0;
+}
+
 void
 DB::show()
 {
@@ -239,11 +248,12 @@ DB::show()
 	       (unsigned long)required_missing.size());
 }
 
-bool
-DB::empty() const
+void
+DB::show_missing()
 {
-	return packages.size()         == 0 &&
-	       objects.size()          == 0 &&
-	       required_found.size()   == 0 &&
-	       required_missing.size() == 0;
+}
+
+void
+DB::show_found()
+{
 }

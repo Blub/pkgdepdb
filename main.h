@@ -35,6 +35,8 @@
 
 enum {
 	Debug,
+	Message, // color ftw
+	Print,   // regular printing
 	Warn,
 	Error
 };
@@ -166,6 +168,8 @@ public:
 	         find_pkg_i (const std::string& name) const;
 
 	void show();
+	void show_missing();
+	void show_found();
 
 	bool store(const std::string& filename);
 	bool read (const std::string& filename);
