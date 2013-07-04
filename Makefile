@@ -32,6 +32,8 @@ OBJECTS = main.o package.o elf.o db.o db_format.o
 
 BINARY = pkgdepdb
 
+.PHONY: uninstall uninstall-bin uninstall-man
+
 default: all
 
 all: $(BINARY)
@@ -46,14 +48,19 @@ clean:
 	-rm -f *.o $(BINARY)
 
 install: install-bin install-man
+uninstall: uninstall-bin uninstall-man
 install-prefix:
 	install -d -m755 $(DESTDIR)$(PREFIX)
 install-bin: install-prefix
 	install -d -m755            $(DESTDIR)$(BINDIR)
 	install    -m755 $(BINARY)  $(DESTDIR)$(BINDIR)/$(BINARY)
+uninstall-bin:
+	rm -f $(DESTDIR)$(BINDIR)/$(BINARY)
 install-man: install-prefix
 	install -d -m755            $(DESTDIR)$(MAN1DIR)
 	install    -m644 pkgdepdb.1 $(DESTDIR)$(MAN1DIR)/pkgdepdb.1
+uninstall-man:
+	rm -f $(DESTDIR)$(MAN1DIR)/pkgdepdb.1
 
 depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null
