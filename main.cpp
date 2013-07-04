@@ -105,7 +105,7 @@ main(int argc, char **argv)
 	bool         show_packages = false;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hid:LMFv", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hid:LMFPv", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
