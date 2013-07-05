@@ -84,36 +84,34 @@ DB::delete_package(const std::string& name)
 	return true;
 }
 
+static bool
+pathlist_contains(const std::string& list, const std::string& path)
+{
+	size_t at = 0;
+	size_t to = list.find_first_of(':', 0);
+	while (to != std::string::npos) {
+		if (list.compare(at, to-at, path) == 0)
+			return true;
+		at = to+1;
+		to = list.find_first_of(':', at);
+	}
+	if (list.compare(at, std::string::npos, path) == 0)
+		return true;
+	return false;
+}
+
 bool
 DB::elf_finds(Elf *elf, const std::string& path) const
 {
-	size_t at;
-
 	// DT_RPATH first
-	if (elf->rpath_set) {
-		at = 0;
-		while (at != std::string::npos) {
-			size_t to = elf->rpath.find_first_of(':', at);
-			std::string p(elf->rpath.substr(at, to));
-			if (p.length() && p == path)
-				return true;
-			at = to;
-		}
-	}
+	if (elf->rpath_set && pathlist_contains(elf->rpath, path))
+		return true;
 
 	// LD_LIBRARY_PATH - ignored
 
 	// DT_RUNPATH
-	if (elf->runpath_set) {
-		at = 0;
-		while (at != std::string::npos) {
-			size_t to = elf->runpath.find_first_of(':', at);
-			std::string p(elf->runpath.substr(at, to));
-			if (p.length() && p == path)
-				return true;
-			at = to;
-		}
-	}
+	if (elf->runpath_set && pathlist_contains(elf->runpath, path))
+		return true;
 
 	// Trusted Paths
 	if (path == "/lib" ||
