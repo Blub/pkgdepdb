@@ -70,6 +70,9 @@ public:
 	std::string              runpath;
 	std::vector<std::string> needed;
 
+public: // utility functions while loading
+	void solve_paths(const std::string& origin);
+
 public: // NOT SERIALIZED:
 	struct {
 		size_t id;

@@ -207,3 +207,39 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror)
 	e->ei_osabi = ei_osabi;
 	return e;
 }
+
+static void
+fixpath(std::string& path)
+{
+	size_t at = 0;
+	do {
+		at = path.find("//", at);
+		if (at == std::string::npos)
+			break;
+		path.erase(path.begin()+at);
+	} while(true);
+}
+
+static void
+replace_origin(std::string& path, const std::string& origin)
+{
+	size_t at = 0;
+	do {
+		at = path.find("$ORIGIN", at);
+		if (at == std::string::npos)
+			break;
+		path.replace(at, 7, origin);
+		// skip this portion
+		at += origin.length();
+	} while (at < path.length());
+	fixpath(path);
+}
+
+void
+Elf::solve_paths(const std::string& origin)
+{
+	if (rpath_set)
+		replace_origin(rpath, origin);
+	if (runpath_set)
+		replace_origin(runpath, origin);
+}

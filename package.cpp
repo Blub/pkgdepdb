@@ -107,6 +107,7 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
 	auto split(std::move(splitpath(filename)));
 	object->dirname  = std::move(std::get<0>(split));
 	object->basename = std::move(std::get<1>(split));
+	object->solve_paths(object->dirname);
 
 	pkg->objects.push_back(object);
 
@@ -213,6 +214,7 @@ Package::open(const std::string& path)
 			Elf *copy = new Elf(*obj);
 			copy->dirname  = std::move(std::get<0>(linkfrom));
 			copy->basename = std::move(std::get<1>(linkfrom));
+			copy->solve_paths(obj->dirname);
 
 			package->objects.push_back(copy);
 			package->load.symlinks.erase(link++);
