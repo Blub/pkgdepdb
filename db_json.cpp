@@ -178,26 +178,31 @@ db_store_json(DB *db, const std::string& filename)
 		json_pkg(out, pkg);
 	}
 
-	fprintf(out, "\n\t],\n"
-	             "\t\"found\": [");
+	fprintf(out, "\n\t]");
 
-	comma = false;
-	for (auto &found : db->required_found) {
-		if (comma) fputc(',', out);
-		comma = true;
-		json_obj_found(out, found.first, found.second);
+	if (!db->required_found.empty()) {
+		fprintf(out, ",\n\t\"found\": [");
+		comma = false;
+		for (auto &found : db->required_found) {
+			if (comma) fputc(',', out);
+			comma = true;
+			json_obj_found(out, found.first, found.second);
+		}
+		fprintf(out, "\n\t]");
 	}
 
-	fprintf(out, "\n\t],\n"
-	             "\t\"missing\": [");
 
-	comma = false;
-	for (auto &mis : db->required_missing) {
-		if (comma) fputc(',', out);
-		comma = true;
-		json_obj_missing(out, mis.first, mis.second);
+	if (!db->required_missing.empty()) {
+		fprintf(out, ",\n\t\"missing\": [");
+		comma = false;
+		for (auto &mis : db->required_missing) {
+			if (comma) fputc(',', out);
+			comma = true;
+			json_obj_missing(out, mis.first, mis.second);
+		}
+		fprintf(out, "\n\t]");
 	}
 
-	fprintf(out, "\n\t]\n}\n");
+	fprintf(out, "\n}\n");
 	return true;
 }
