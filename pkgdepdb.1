@@ -93,17 +93,65 @@ Insert the directory at the specified index.
 .It Fl -ld-clear
 Remove all paths from the db.
 .El
+.Sh EXAMPLES
+When no database or database-action is specified, the provided archive
+files are read, and for each ELF object (binary or library) a list of
+required libraries is printed. This is similar to using
+.Cm readelf Fl d
+on the contents while grepping for
+.Ql NEEDED Ns .
+.Bd -literal -offset indent
+$ pkgdepdb /var/cache/pacman/pkg/lua-5.2.1-4-x86_64.pkg.tar.xz
+lua : /usr/lib/liblua.so NEEDS libm.so.5
+lua : /usr/lib/liblua.so NEEDS libc.so.7
+(...)
+.Ed
+.Pp
+When a database is provided with the
+.Fl d
+switch, database related actions can be performed, such as installing
+packages, querying, or modifying the library path used in the DB.
+.Pp
+Here's an example which starts a new database:
+.Bd -literal -offset indent
+$ pkgdepdb -d dep.core.db.gz -i freebsd-world-9.1-4-x86_64.pkg.tar.xz
+*** loading packages...
+  freebsd-world-9.1-4-x86_64.pkg.tar.xz
+*** packages loaded...
+*** installing packages
+*** writing compressed database
+$
+.Ed
+.Pp
+The created file can be queried for various information, like a list
+of packages or a list of missing libraries:
+.Bd -literal -offset indent
+$ pkgdepdb -d dep.core.db.gz -P
+*** reading compressed database
+Packages:
+  -> freebsd-world - 9.1-4
+.Ed
+.Bd -literal -offset indent
+$ pkgdepdb -d dep.core.db.gz -M
+*** reading compressed database
+Missing:
+  -> /usr/bin / gperf
+    misses: libstdc++.so.6
+  -> /usr/bin / grodvi
+    misses: libstdc++.so.6
+(...)
+.Ed
 .Sh BUGS
 Currently symlinks are treated as file-copies, and they are followed
 at package-load time, this means that there cannot be cross-package
 library-symlinks.
-
+.Pp
 Symlinks aren't kept in the database either, so broken symlinks are
 silently ignored.
-
+.Pp
 Support to store symlinks permanently in the database should be added
 at some point.
-
+.Pp
 The current behavior should work fine in most cases, as packages
 rarely link to files from other packages.
 .Sh AUTHOR
