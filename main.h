@@ -69,6 +69,11 @@ public:
 	std::string              rpath;
 	std::string              runpath;
 	std::vector<std::string> needed;
+
+public: // NOT SERIALIZED:
+	struct {
+		size_t id;
+	} json;
 };
 
 template<typename T>
@@ -150,7 +155,9 @@ public:
 
 public: // NOT SERIALIZED:
 	// used only while loading an archive
-	std::map<std::string, std::string> symlinks;
+	struct {
+		std::map<std::string, std::string> symlinks;
+	} load;
 };
 
 using PackageList = std::vector<Package*>;

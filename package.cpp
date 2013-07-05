@@ -135,7 +135,7 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 			return false;
 		}
 		archive_read_data_skip(tar);
-		pkg->symlinks[filename] = link;
+		pkg->load.symlinks[filename] = link;
 		return true;
 	}
 
@@ -184,7 +184,7 @@ Package::open(const std::string& path)
 	bool changed;
 	do {
 		changed = false;
-		for (auto link = package->symlinks.begin(); link != package->symlinks.end();)
+		for (auto link = package->load.symlinks.begin(); link != package->load.symlinks.end();)
 		{
 			auto linkfrom = splitpath(link->first);
 			decltype(linkfrom) linkto;
@@ -215,10 +215,10 @@ Package::open(const std::string& path)
 			copy->basename = std::move(std::get<1>(linkfrom));
 
 			package->objects.push_back(copy);
-			package->symlinks.erase(link++);
+			package->load.symlinks.erase(link++);
 		}
 	} while (changed);
-	package->symlinks.clear();
+	package->load.symlinks.clear();
 
 	return package.release();
 }
