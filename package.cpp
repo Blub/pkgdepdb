@@ -161,6 +161,79 @@ Package::find(const std::string& dirname, const std::string& basename) const
 	return nullptr;
 }
 
+void
+Package::guess(const std::string& path)
+{
+	// extract the basename:
+	size_t at = path.find_last_of('/');
+	std::string base(at == std::string::npos ? path : path.substr(at+1));
+
+	// at least N.tgz
+	if (base.length() < 5)
+		return;
+
+	// ArchLinux scheme:
+	// ${name}-${pkgver}-${pkgrel}-${CARCH}.pkg.tar.*
+	// Slackware:
+	// ${name}-${pkgver}-${CARCH}-${build}.t{gz,bz2,xz}
+
+	// so the first part up to the first /-\d/ is part of the name
+	size_t to = base.find_first_of("-.");
+
+	// sanity:
+	if (!to || to == std::string::npos)
+		return;
+
+	while (to+1 < base.length() && // gonna check [to+1]
+	       base[to] != '.'      && // a dot ends the name
+	       !(base[to+1] >= '0' && base[to+1] <= '9'))
+	{
+		// name can have dashes, let's move to the next one
+		to = base.find_first_of("-.", to+1);
+	}
+
+	name = base.substr(0, to);
+	if (base[to] != '-' || !(base[to+1] >= '0' && base[to+1] <= '9')) {
+		// no version
+		return;
+	}
+
+	// version
+	size_t from = to+1;
+	to = base.find_first_of('-', from);
+
+	if (to == std::string::npos) {
+		// we'll take it...
+		version = base.substr(from);
+		return;
+	}
+
+	bool slack = true;
+
+	// check for a pkgrel (Arch scheme)
+	if (base[to] == '-' &&
+	    to+1 < base.length() &&
+	    (base[to+1] >= '0' && base[to+1] <= '9'))
+	{
+		slack = false;
+		to = base.find_first_of("-.", to+1);
+	}
+
+	version = base.substr(from, to-from);
+	if (!slack || to == std::string::npos)
+		return;
+
+	// slackware build-name comes right before the extension
+	to = base.find_last_of('.');
+	if (!to || to == std::string::npos)
+		return;
+	from = base.find_last_of("-.", to-1);
+	if (from && from != std::string::npos) {
+		version.append(1, '-');
+		version.append(base.substr(from+1, to-from-1));
+	}
+}
+
 Package*
 Package::open(const std::string& path)
 {
@@ -181,6 +254,9 @@ Package::open(const std::string& path)
 	}
 
 	archive_read_free(tar);
+
+	if (!package->name.length() && !package->version.length())
+		package->guess(path);
 
 	bool changed;
 	do {

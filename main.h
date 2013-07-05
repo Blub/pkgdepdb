@@ -156,6 +156,9 @@ public:
 	void show_needed();
 	Elf* find(const std::string &dirname, const std::string &basename) const;
 
+public: // loading utiltiy functions
+	void guess(const std::string& name);
+
 public: // NOT SERIALIZED:
 	// used only while loading an archive
 	struct {
