@@ -59,6 +59,39 @@ json_obj(size_t id, FILE *out, const Elf *obj)
 	fprintf(out, "\n\t\t}");
 }
 
+template<class OBJLIST>
+static void
+json_objlist(FILE *out, const OBJLIST &list)
+{
+	if (!list.size())
+		return;
+	// let's group them...
+	size_t i = 0;
+	size_t count = list.size()-1;
+	auto iter = list.begin();
+	for (; i != count; ++i, ++iter) {
+		if ((i & 0xF) == 0)
+			fprintf(out, "\n\t\t\t\t");
+		fprintf(out, "%lu, ", (*iter)->json.id);
+	}
+	if ((i & 0xF) == 0)
+		fprintf(out, "%s\n\t\t\t\t", (i ? "" : ","));
+	fprintf(out, "%lu", (*iter)->json.id);
+}
+
+template<class STRLIST>
+static void
+json_strlist(FILE *out, const STRLIST &list)
+{
+	bool comma = false;
+	for (auto &i : list) {
+		if (comma) fputc(',', out);
+		comma = true;
+		fprintf(out, "\n\t\t\t\t");
+		json_quote(out, i);
+	}
+}
+
 static void
 json_pkg(FILE *out, const Package *pkg)
 {
@@ -76,31 +109,36 @@ json_pkg(FILE *out, const Package *pkg)
 	}
 	if (pkg->objects.size()) {
 		fprintf(out, "%s\t\t\t\"objects\": [", sep);
-		// let's group them...
-		size_t i = 0;
-		for (i = 0; i != pkg->objects.size()-1; ++i) {
-			if ((i & 0xF) == 0)
-				fprintf(out, "\n\t\t\t\t");
-			fprintf(out, "%lu, ", pkg->objects[i]->json.id);
-		}
-		if ((i & 0xF) == 0)
-			fprintf(out, "%s\n\t\t\t\t", (i ? "" : ","));
-		fprintf(out, "%lu\n\t\t\t]", pkg->objects[i]->json.id);
+		json_objlist(out, pkg->objects);
+		fprintf(out, "\n\t\t\t]");
 		sep = ",\n";
 	}
 
 	fprintf(out, "\n\t\t}");
 }
 
-template<typename T, typename ITER>
-static inline void
-ForOff(T &t, size_t start, std::function<bool(ITER)> op) {
-	if (start >= t.size())
-		return;
-	for (auto iter = t.begin() + start; iter != t.end(); ++iter) {
-		if (!op(iter))
-			break;
-	}
+static void
+json_obj_found(FILE *out, const Elf *obj, const ObjectSet &found)
+{
+	fprintf(out, "\n\t\t{"
+	             "\n\t\t\t\"obj\": %lu"
+	             "\n\t\t\t\"found\": [",
+	        (unsigned long)obj->json.id);
+	json_objlist(out, found);
+	fprintf(out, "\n\t\t\t]"
+	             "\n\t\t}");
+}
+
+static void
+json_obj_missing(FILE *out, const Elf *obj, const StringSet &missing)
+{
+	fprintf(out, "\n\t\t{"
+	             "\n\t\t\t\"obj\": %lu"
+	             "\n\t\t\t\"missing\": [",
+	        (unsigned long)obj->json.id);
+	json_strlist(out, missing);
+	fprintf(out, "\n\t\t\t]"
+	             "\n\t\t}");
 }
 
 bool
@@ -138,6 +176,26 @@ db_store_json(DB *db, const std::string& filename)
 		if (comma) fputc(',', out);
 		comma = true;
 		json_pkg(out, pkg);
+	}
+
+	fprintf(out, "\n\t],\n"
+	             "\t\"found\": [");
+
+	comma = false;
+	for (auto &found : db->required_found) {
+		if (comma) fputc(',', out);
+		comma = true;
+		json_obj_found(out, found.first, found.second);
+	}
+
+	fprintf(out, "\n\t],\n"
+	             "\t\"missing\": [");
+
+	comma = false;
+	for (auto &mis : db->required_missing) {
+		if (comma) fputc(',', out);
+		comma = true;
+		json_obj_missing(out, mis.first, mis.second);
 	}
 
 	fprintf(out, "\n\t]\n}\n");
