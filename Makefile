@@ -48,7 +48,7 @@ $(BINARY)-static: $(OBJECTS)
 	libtool --mode=link $(CXX) $(LDFLAGS) -o $@ $(OBJECTS) -all-static $(LIBS)
 
 clean:
-	-rm -f *.o $(BINARY)
+	-rm -f *.o $(BINARY) $(BINARY)-static
 
 install: install-bin install-man
 uninstall: uninstall-bin uninstall-man
