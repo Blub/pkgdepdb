@@ -93,5 +93,18 @@ Insert the directory at the specified index.
 .It Fl -ld-clear
 Remove all paths from the db.
 .El
+.Sh BUGS
+Currently symlinks are treated as file-copies, and they are followed
+at package-load time, this means that there cannot be cross-package
+library-symlinks.
+
+Symlinks aren't kept in the database either, so broken symlinks are
+silently ignored.
+
+Support to store symlinks permanently in the database should be added
+at some point.
+
+The current behavior should work fine in most cases, as packages
+rarely link to files from other packages.
 .Sh AUTHOR
 See <http://github.com/Blub/pkgdepdb>.
