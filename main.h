@@ -50,7 +50,7 @@ class Elf {
 public:
 	Elf();
 	Elf(const Elf& cp);
-	static Elf* open(const char *data, size_t size, bool *waserror);
+	static Elf* open(const char *data, size_t size, bool *waserror, const char *name);
 
 public:
 	size_t refcount;

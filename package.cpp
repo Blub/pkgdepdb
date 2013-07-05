@@ -97,7 +97,7 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
 	}
 
 	bool err = false;
-	rptr<Elf> object(Elf::open(&data[0], data.size(), &err));
+	rptr<Elf> object(Elf::open(&data[0], data.size(), &err, filename.c_str()));
 	if (!object.get()) {
 		if (err)
 			log(Error, "error in: %s\n", filename.c_str());
