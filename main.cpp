@@ -370,6 +370,7 @@ main(int argc, char **argv)
 
 	if (do_relink) {
 		modified = true;
+		log(Message, "relinking everything\n");
 		db->relink_all();
 	}
 
