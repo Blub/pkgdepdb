@@ -9,7 +9,7 @@ PACKAGE_NAME := pkgdepdb
 
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
-VERSION_PATCH := 0
+VERSION_PATCH := 0-rc9
 
 CXX ?= clang++
 CXXFLAGS += -std=c++11
@@ -49,6 +49,7 @@ $(BINARY)-static: $(OBJECTS)
 
 clean:
 	-rm -f *.o $(BINARY) $(BINARY)-static
+	-rm -f .cflags
 
 install: install-bin install-man
 uninstall: uninstall-bin uninstall-man

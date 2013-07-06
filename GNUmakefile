@@ -1,6 +1,6 @@
 OBJECTS_SRC = $(subst .o,.cpp,$(OBJECTS))
 
-ifneq ($(shell git describe --always 2>/dev/null),)
+ifneq ($(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null),)
     CPPFLAGS += -DGITINFO="\"$(shell git describe --always)\""
 endif
 
