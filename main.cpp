@@ -95,8 +95,8 @@ help(int x)
 	             "  -i, --install      install packages to a dependency db\n"
 	             "  -r, --remove       remove packages from the database\n"
 	             "  --dry              do not commit the changes to the db\n"
-	             "  --fixpaths         fix up path entries as older dbs didn't handle\n"
-	             "                     ../ in paths (includes --relink)\n"
+	             "  --fixpaths         fix up path entries as older versions didn't\n"
+	             "                     handle ../ in paths (includes --relink)\n"
 	             );
 	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
