@@ -1,0 +1,8 @@
+2013-07-06 Blub (0.1.1 hotfix release)
+
+	* --fixpaths
+	* handling of .. and . in paths at load-time and via --fixpaths
+
+2013-07-06 Blub (0.1)
+
+	* first release of database management
