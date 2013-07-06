@@ -239,7 +239,16 @@ fixpath(std::string& path)
 		at = path.find("//", at);
 		if (at == std::string::npos)
 			break;
-		path.erase(path.begin()+at);
+		path.erase(at, 1);
+	} while(true);
+
+	at = 0;
+	do {
+		at = path.find("/./", at);
+		printf("%i : %s\n", (int)at, path.c_str());
+		if (at == std::string::npos)
+			break;
+		path.erase(at, 2);
 	} while(true);
 
 	at = 0;
