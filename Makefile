@@ -72,6 +72,7 @@ depend:
 
 main.o: main.h
 package.o: main.h
-elf.o: main.h
+elf.o: main.h endian.h
 db.o: main.h
 db_format.o: main.h
+db_json.o: main.h

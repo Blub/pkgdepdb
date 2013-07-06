@@ -5,9 +5,8 @@
 
 #include <sys/endian.h>
 
-#include <type_traits>
-
 #include "main.h"
+#include "endian.h"
 
 Elf::Elf()
 : refcount(0)
@@ -31,24 +30,6 @@ Elf::Elf(const Elf& cp)
   runpath(cp.runpath),
   needed(cp.needed)
 {
-}
-
-template<typename T> inline T Eswap_be(T x);
-template<> inline uint8_t  Eswap_be(uint8_t  x) { return x; }
-template<> inline uint16_t Eswap_be(uint16_t x) { return be16toh(x); }
-template<> inline uint32_t Eswap_be(uint32_t x) { return be32toh(x); }
-template<> inline uint64_t Eswap_be(uint64_t x) { return be64toh(x); }
-template<typename T> inline T Eswap_le(T x);
-template<> inline uint8_t  Eswap_le(uint8_t  x) { return x; }
-template<> inline uint16_t Eswap_le(uint16_t x) { return le16toh(x); }
-template<> inline uint32_t Eswap_le(uint32_t x) { return le32toh(x); }
-template<> inline uint64_t Eswap_le(uint64_t x) { return le64toh(x); }
-
-template<bool BE, typename T> inline T Eswap(T x) {
-	if (BE)
-		return static_cast<T>(Eswap_be<typename std::make_unsigned<T>::type>(x));
-	else
-		return static_cast<T>(Eswap_le<typename std::make_unsigned<T>::type>(x));
 }
 
 template<bool BE, typename HDR, typename SecHDR, typename Dyn>
