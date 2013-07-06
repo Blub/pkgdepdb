@@ -241,6 +241,30 @@ fixpath(std::string& path)
 			break;
 		path.erase(path.begin()+at);
 	} while(true);
+
+	at = 0;
+	do {
+		at = path.find("/../", at);
+		if (at == std::string::npos)
+			break;
+		if (!at) { // beginning
+			path = std::move(path.substr(3));
+			continue;
+		}
+		if (at + 4 == path.length()) { //end
+			path.erase(at, std::string::npos);
+			continue;
+		}
+		//otherwise cut out the previous path:
+		size_t prev = path.rfind('/', at-1);
+		if (prev == std::string::npos) {
+			// no previous dir
+			// eg with ../../ so just skip this path
+			++at;
+			continue;
+		}
+		path.erase(prev, at+3-prev);
+	} while(true);
 }
 
 static void
