@@ -31,12 +31,14 @@ LIBS     += $(ZLIB_LIBS)
 OBJECTS = main.o package.o elf.o db.o db_format.o db_json.o
 
 BINARY = pkgdepdb
+STATIC_BINARY = $(BINARY)-static
 
-.PHONY: uninstall uninstall-bin uninstall-man
+.PHONY: uninstall uninstall-bin uninstall-man static
 
 default: all
 
 all: $(BINARY)
+static: $(STATIC_BINARY)
 
 .cpp.o:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
@@ -44,7 +46,7 @@ all: $(BINARY)
 $(BINARY): $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
-$(BINARY)-static: $(OBJECTS)
+$(STATIC_BINARY): $(OBJECTS)
 	libtool --mode=link $(CXX) $(LDFLAGS) -o $@ $(OBJECTS) -all-static $(LIBS)
 
 clean:
