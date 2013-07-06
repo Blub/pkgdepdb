@@ -75,6 +75,8 @@ static struct option long_opts[] = {
 
 	{ "json",       no_argument,       0, -'J' },
 
+	{ "fixpaths",   no_argument,       0, -'F' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -93,6 +95,8 @@ help(int x)
 	             "  -i, --install      install packages to a dependency db\n"
 	             "  -r, --remove       remove packages from the database\n"
 	             "  --dry              do not commit the changes to the db\n"
+	             "  --fixpaths         fix up path entries as older dbs didn't handle\n"
+	             "                     ../ in paths (includes --relink)\n"
 	             );
 	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
@@ -171,6 +175,7 @@ main(int argc, char **argv)
 	bool         show_packages = false;
 	bool         do_rename     = false;
 	bool         do_relink     = false;
+	bool         do_fixpaths   = false;
 	bool         dryrun        = false;
 	bool         use_json      = false;
 	bool oldmode = true;
@@ -217,7 +222,8 @@ main(int argc, char **argv)
 			case 'F': oldmode = false; show_found    = true; break;
 			case 'P': oldmode = false; show_packages = true; break;
 
-			case -'R': oldmode = false; do_relink = true; break;
+			case -'R': oldmode = false; do_relink   = true; break;
+			case -'F': oldmode = false; do_fixpaths = true; break;
 
 			case -'A': ld_append  = optarg; break;
 			case -'P': ld_prepend = optarg; break;
@@ -251,6 +257,8 @@ main(int argc, char **argv)
 				break;
 		}
 	}
+	if (do_fixpaths)
+		do_relink = true;
 
 	if (do_install && do_delete) {
 		log(Error, "--install and --remove are mutually exclusive\n");
@@ -344,6 +352,12 @@ main(int argc, char **argv)
 	}
 	if (ld_clear)
 		modified = db->ld_clear()             || modified;
+
+	if (do_fixpaths) {
+		modified = true;
+		log(Message, "fixing up path entries\n");
+		db->fix_paths();
+	}
 
 	if (do_install && packages.size()) {
 		log(Message, "installing packages\n");

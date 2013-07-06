@@ -231,7 +231,7 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
 	return e;
 }
 
-static void
+void
 fixpath(std::string& path)
 {
 	size_t at = 0;

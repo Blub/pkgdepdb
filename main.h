@@ -177,6 +177,8 @@ using StringList  = std::vector<std::string>;
 using ObjectSet   = std::set<rptr<Elf>>;
 using StringSet   = std::set<std::string>;
 
+void fixpath(std::string& path);
+
 class DB {
 public:
 	static size_t version;
@@ -198,6 +200,7 @@ public:
 	Elf *find_for       (Elf*, const std::string& lib) const;
 	void link_object    (Elf*);
 	void relink_all     ();
+	void fix_paths      ();
 
 	Package* find_pkg   (const std::string& name) const;
 	PackageList::const_iterator

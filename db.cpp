@@ -236,6 +236,15 @@ DB::relink_all()
 	}
 }
 
+void
+DB::fix_paths()
+{
+	for (auto &obj : objects) {
+		fixpath(obj->rpath);
+		fixpath(obj->runpath);
+	}
+}
+
 bool
 DB::empty() const
 {
