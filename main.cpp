@@ -96,10 +96,10 @@ help(int x)
 	             );
 	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
-	             "  -L, --list         list packages and object files\n"
+	             "  -L, --list         list object files\n"
 	             "  -M, --missing      show the 'missing' table\n"
 	             "  -F, --found        show the 'found' table\n"
-	             "  -P, --pkgs         show the installed packages\n"
+	             "  -P, --pkgs         show the installed packages (and -v their files)\n"
 	             "  -n, --rename=NAME  rename the database\n"
 	             );
 	fprintf(out, "db library path options: (run --relink after these changes)\n"

@@ -327,8 +327,13 @@ void
 DB::show_packages()
 {
 	printf("Packages:\n");
-	for (auto &pkg : packages)
+	for (auto &pkg : packages) {
 		printf("  -> %s - %s\n", pkg->name.c_str(), pkg->version.c_str());
+		if (opt_verbosity >= 1) {
+			for (auto &obj : pkg->objects)
+				printf("    contains %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		}
+	}
 }
 
 void
