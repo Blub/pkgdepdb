@@ -245,7 +245,6 @@ fixpath(std::string& path)
 	at = 0;
 	do {
 		at = path.find("/./", at);
-		printf("%i : %s\n", (int)at, path.c_str());
 		if (at == std::string::npos)
 			break;
 		path.erase(at, 2);
