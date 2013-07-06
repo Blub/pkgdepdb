@@ -3,8 +3,6 @@
 
 #include <elf.h>
 
-#include <sys/endian.h>
-
 #include "main.h"
 #include "endian.h"
 
