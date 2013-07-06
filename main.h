@@ -72,6 +72,11 @@ public:
 public: // utility functions while loading
 	void solve_paths(const std::string& origin);
 
+public: // utility functions for printing stuff
+	const char *classString() const;
+	const char *dataString()  const;
+	const char *osabiString() const;
+
 public: // NOT SERIALIZED:
 	struct {
 		size_t id;

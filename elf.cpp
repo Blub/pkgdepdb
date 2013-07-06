@@ -18,13 +18,14 @@ Elf::Elf()
 
 Elf::Elf(const Elf& cp)
 : refcount(0),
-  dirname(cp.dirname),
+  dirname (cp.dirname),
   basename(cp.basename),
   ei_class(cp.ei_class),
+  ei_data (cp.ei_data),
   ei_osabi(cp.ei_osabi),
-  rpath_set(cp.rpath_set),
+  rpath_set  (cp.rpath_set),
   runpath_set(cp.runpath_set),
-  rpath(cp.rpath),
+  rpath  (cp.rpath),
   runpath(cp.runpath),
   needed(cp.needed)
 {
@@ -264,4 +265,52 @@ Elf::solve_paths(const std::string& origin)
 		replace_origin(rpath, origin);
 	if (runpath_set)
 		replace_origin(runpath, origin);
+}
+
+const char*
+Elf::classString() const
+{
+	switch (ei_class) {
+		case ELFCLASSNONE: return "NONE";
+		case ELFCLASS32:   return "ELF32";
+		case ELFCLASS64:   return "ELF64";
+		default: return "UNKNOWN";
+	}
+}
+
+const char*
+Elf::dataString() const
+{
+	switch (ei_data) {
+		case ELFDATANONE: return "NONE";
+		case ELFDATA2LSB: return "2's complement, little-endian";
+		case ELFDATA2MSB: return "2's complement, big-endian";
+		default: return "UNKNOWN";
+	}
+}
+
+const char*
+Elf::osabiString() const
+{
+	switch (ei_osabi) {
+		case 0:    return "None";
+		case 1:    return "HP-UX";
+		case 2:    return "NetBSD";
+		case 3:    return "Linux";
+		case 4:    return "GNU/Hurd";
+		case 5:    return "86Open common IA32 ABI";
+		case 6:    return "Solaris";
+		case 7:    return "AIX";
+		case 8:    return "IRIX";
+		case 9:    return "UNIX - FreeBSD";
+		case 10:   return "UNIX - TRU64";
+		case 11:   return "Novell Modesto";
+		case 12:   return "OpenBSD";
+		case 13:   return "Open VMS";
+		case 14:   return "HP Non-Stop Kernel";
+		case 15:   return "Amiga Research OS";
+		case 97:   return "ARM";
+		case 255:  return "Standalone (embedded) application";
+		default: return "UNKNOWN";
+	}
 }

@@ -343,6 +343,11 @@ DB::show_objects()
 		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
 		if (opt_verbosity < 1)
 			continue;
+		printf("     class: %u (%s)\n", (unsigned)obj->ei_class, obj->classString());
+		printf("     data:  %u (%s)\n", (unsigned)obj->ei_data,  obj->dataString());
+		printf("     osabi: %u (%s)\n", (unsigned)obj->ei_osabi, obj->osabiString());
+		if (opt_verbosity < 2)
+			continue;
 		printf("     finds:\n"); {
 			auto &set = required_found[obj];
 			for (auto &found : set)
