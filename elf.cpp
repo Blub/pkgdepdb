@@ -1,4 +1,11 @@
 #include <stdio.h>
+#include <stdint.h>
+
+#include <elf.h>
+
+#include <sys/endian.h>
+
+#include <type_traits>
 
 #include "main.h"
 
@@ -26,16 +33,29 @@ Elf::Elf(const Elf& cp)
 {
 }
 
-template<typename HDR, typename SecHDR, typename Dyn>
+template<typename T> inline T Eswap_be(T x);
+template<> inline uint8_t  Eswap_be(uint8_t  x) { return x; }
+template<> inline uint16_t Eswap_be(uint16_t x) { return be16toh(x); }
+template<> inline uint32_t Eswap_be(uint32_t x) { return be32toh(x); }
+template<> inline uint64_t Eswap_be(uint64_t x) { return be64toh(x); }
+template<typename T> inline T Eswap_le(T x);
+template<> inline uint8_t  Eswap_le(uint8_t  x) { return x; }
+template<> inline uint16_t Eswap_le(uint16_t x) { return le16toh(x); }
+template<> inline uint32_t Eswap_le(uint32_t x) { return le32toh(x); }
+template<> inline uint64_t Eswap_le(uint64_t x) { return le64toh(x); }
+
+template<bool BE, typename T> inline T Eswap(T x) {
+	if (BE)
+		return static_cast<T>(Eswap_be<typename std::make_unsigned<T>::type>(x));
+	else
+		return static_cast<T>(Eswap_le<typename std::make_unsigned<T>::type>(x));
+}
+
+template<bool BE, typename HDR, typename SecHDR, typename Dyn>
 Elf*
 LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 {
 	std::unique_ptr<Elf> object(new Elf);
-
-	//unsigned char *elf_ident = (unsigned char*)data;
-	//unsigned char ei_class = elf_ident[EI_CLASS];
-	//unsigned char ei_osabi = elf_ident[EI_OSABI];
-	//db_ident = (ei_class << 16) | (ei_osabi << 8) | 32;
 
 	auto checksize = [size,name](size_t off, size_t sz, const char *msg) -> bool {
 		if (off + sz > size) {
@@ -46,13 +66,14 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 		return true;
 	};
 
-	HDR   *hdr   = (HDR*)(data);
-	size_t shnum = hdr->e_shnum;
+	HDR  *hdr   = (HDR*)(data);
+	auto  shnum = Eswap<BE>(hdr->e_shnum);
+	auto  e_shoff = Eswap<BE>(hdr->e_shoff);
 
-	if (!checksize(hdr->e_shoff, sizeof(SecHDR), "looking for section headers"))
+	if (!checksize(e_shoff, sizeof(SecHDR), "looking for section headers"))
 		return 0;
 
-	SecHDR *sec_start = (SecHDR*)(data + hdr->e_shoff);
+	SecHDR *sec_start = (SecHDR*)(data + e_shoff);
 	if (!checksize((char*)(sec_start + shnum-1) - data, sizeof(*sec_start), "section header array"))
 		return 0;
 	auto findsec = [=](std::function<bool(SecHDR*)> cond) -> SecHDR* {
@@ -64,20 +85,20 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 		return 0;
 	};
 
-	SecHDR *dynhdr = findsec([](SecHDR *hdr) { return hdr->sh_type == SHT_DYNAMIC; });
+	SecHDR *dynhdr = findsec([](SecHDR *hdr) { return Eswap<BE>(hdr->sh_type) == SHT_DYNAMIC; });
 	if (!dynhdr) {
 		log(Debug, "%s: not a dynamic executable, no .dynamic section found\n", name);
 		*waserror = false;
 		return 0;
 	}
 
-	if (dynhdr->sh_entsize != sizeof(Dyn)) {
+	if (Eswap<BE>(dynhdr->sh_entsize) != sizeof(Dyn)) {
 		log(Error, "%s: invalid entsize for dynamic section\n", name);
 		return 0;
 	}
 
-	Dyn   *dyn_start = (Dyn*)(data + dynhdr->sh_offset);
-	size_t dyncount = dynhdr->sh_size / sizeof(Dyn);
+	Dyn   *dyn_start = (Dyn*)(data + Eswap<BE>(dynhdr->sh_offset));
+	size_t dyncount = Eswap<BE>(dynhdr->sh_size) / sizeof(Dyn);
 
 	if (!checksize((char*)(dyn_start + dyncount-1)-data, sizeof(Dyn), ".dynamic entries"))
 		return 0;
@@ -87,10 +108,11 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 
 	for (size_t i = 0; i != dyncount; ++i) {
 		Dyn *dyn = dyn_start + i;
-		if (dyn->d_tag == DT_STRTAB)
+		auto d_tag = Eswap<BE>(dyn->d_tag);
+		if (d_tag == DT_STRTAB)
 			dynstr = dyn;
-		if (dyn->d_tag == DT_STRSZ)
-			strsz  = dyn->d_un.d_val;
+		if (d_tag == DT_STRSZ)
+			strsz  = Eswap<BE>(dyn->d_un.d_val);
 	}
 	if (!dynstr) {
 		log(Error, "%s: No DT_STRTAB\n", name);
@@ -103,15 +125,15 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 
 	// find string section with the offset from DT_STRTAB
 	SecHDR *dynstrsec = findsec([dynstr](SecHDR *hdr) {
-		return hdr->sh_type == SHT_STRTAB &&
-		       hdr->sh_addr == dynstr->d_un.d_ptr;
+		return Eswap<BE>(hdr->sh_type) == SHT_STRTAB &&
+		       Eswap<BE>(hdr->sh_addr) == Eswap<BE>(dynstr->d_un.d_ptr);
 	});
 	if (!dynstrsec) {
 		log(Error, "%s: Found no .dynstr section\n", name);
 		return 0;
 	}
 
-	size_t dynstr_at = dynstrsec->sh_offset;
+	size_t dynstr_at = Eswap<BE>(dynstrsec->sh_offset);
 	if (!checksize(dynstr_at, strsz, "looking for .dynstr section"))
 		return 0;
 
@@ -136,21 +158,23 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 	for (size_t i = 0; i != dyncount; ++i) {
 		Dyn        *dyn = dyn_start + i;
 		const char *str;
-		switch (dyn->d_tag) {
+		auto d_tag = Eswap<BE>(dyn->d_tag);
+		auto d_ptr = Eswap<BE>(dyn->d_un.d_ptr);
+		switch (d_tag) {
 			case DT_NEEDED:
-				if (! (str = get_string(dyn->d_un.d_ptr)) )
+				if (! (str = get_string(d_ptr)) )
 					return 0;
 				object->needed.push_back(str);
 				break;
 			case DT_RPATH:
 				object->rpath_set = true;
-				if (! (str = get_string(dyn->d_un.d_ptr)) )
+				if (! (str = get_string(d_ptr)) )
 					return 0;
 				object->rpath = str;
 				break;
 			case DT_RUNPATH:
 				object->runpath_set = true;
-				if (! (str = get_string(dyn->d_un.d_ptr)) )
+				if (! (str = get_string(d_ptr)) )
 					return 0;
 				object->runpath = str;
 				break;
@@ -163,8 +187,10 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 	return object.release();
 }
 
-auto LoadElf32 = &LoadElf<Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
-auto LoadElf64 = &LoadElf<Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
+auto LoadElf32LE = &LoadElf<false, Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
+auto LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
+auto LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
+auto LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
 
 Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
 {
@@ -181,11 +207,20 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
 
 	*waserror = true;
 	unsigned char ei_class   = elf_ident[EI_CLASS];
+	unsigned char ei_data    = elf_ident[EI_DATA];
 	unsigned char ei_version = elf_ident[EI_VERSION];
 	unsigned char ei_osabi   = elf_ident[EI_OSABI];
 
 	if (ei_version != EV_CURRENT) {
 		log(Error, "%s: invalid ELF version: %u\n", name, (unsigned)ei_version);
+		return 0;
+	}
+
+	if (ei_data != ELFDATA2LSB &&
+	    ei_data != ELFDATA2MSB)
+	{
+		log(Error, "%s: unrecognized ELF data type: %u (neither ELFDATA2LSB nor ELFDATA2MSB)\n",
+		    name, (unsigned)ei_data);
 		return 0;
 	}
 
@@ -197,13 +232,21 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
 	}
 
 	Elf *e = 0;
-	if (ei_class == ELFCLASS32)
-		e = LoadElf32(data, size, waserror, name);
-	else if (ei_class == ELFCLASS64)
-		e = LoadElf64(data, size, waserror, name);
+	if (ei_class == ELFCLASS32) {
+		if (ei_data == ELFDATA2LSB)
+			e = LoadElf32LE(data, size, waserror, name);
+		else
+			e = LoadElf32BE(data, size, waserror, name);
+	} else if (ei_class == ELFCLASS64) {
+		if (ei_data == ELFDATA2LSB)
+			e = LoadElf64LE(data, size, waserror, name);
+		else
+			e = LoadElf64BE(data, size, waserror, name);
+	}
 	if (!e)
 		return 0;
 	e->ei_class = ei_class;
+	e->ei_data  = ei_data;
 	e->ei_osabi = ei_osabi;
 	return e;
 }

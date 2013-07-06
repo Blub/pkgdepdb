@@ -8,8 +8,6 @@
 #include <set>
 #include <functional>
 
-#include <elf.h>
-
 #ifndef PKGDEPDB_V_MAJ
 # error "PKGDEPDB_V_MAJ not defined"
 #endif
@@ -61,6 +59,7 @@ public:
 
 	// classification:
 	unsigned char ei_class; // 32/64 bit
+	unsigned char ei_data;  // endianess
 	unsigned char ei_osabi; // freebsd/linux/...
 
 	// requirements:

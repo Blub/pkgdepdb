@@ -35,6 +35,7 @@ json_obj(size_t id, FILE *out, const Elf *obj)
 	fprintf(out, ",\n\t\t\t\"basename\": ");
 	json_quote(out, obj->basename);
 	fprintf(out, ",\n\t\t\t\"ei_class\": %u", (unsigned)obj->ei_class);
+	fprintf(out, ",\n\t\t\t\"ei_data\":  %u", (unsigned)obj->ei_data);
 	fprintf(out, ",\n\t\t\t\"ei_osabi\": %u", (unsigned)obj->ei_osabi);
 	if (obj->rpath_set) {
 		fprintf(out, ",\n\t\t\t\"rpath\": ");

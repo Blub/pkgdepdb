@@ -4,16 +4,16 @@
 
 #include "main.h"
 
-using ObjClass = unsigned short;
+using ObjClass = uint32_t;
 
 static inline ObjClass
-getObjClass(unsigned char ei_class, unsigned char ei_osabi) {
-	return (ei_class << 8) | ei_osabi;
+getObjClass(unsigned char ei_class, unsigned char ei_data, unsigned char ei_osabi) {
+	return (ei_data << 16) | (ei_class << 8) | ei_osabi;
 }
 
 static inline ObjClass
 getObjClass(Elf *elf) {
-	return getObjClass(elf->ei_class, elf->ei_osabi);
+	return getObjClass(elf->ei_class, elf->ei_data, elf->ei_osabi);
 }
 
 DB::~DB() {

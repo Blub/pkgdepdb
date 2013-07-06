@@ -329,6 +329,7 @@ write_obj(SerialOut &out, Elf *obj)
 	out <= obj->dirname
 	    <= obj->basename
 	    <= obj->ei_class
+	    <= obj->ei_data
 	    <= obj->ei_osabi
 	    <= (uint8_t)obj->rpath_set
 	    <= (uint8_t)obj->runpath_set
@@ -374,6 +375,7 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 	in >= obj->dirname
 	   >= obj->basename
 	   >= obj->ei_class
+	   >= obj->ei_data
 	   >= obj->ei_osabi
 	   >= rpset
 	   >= runpset
