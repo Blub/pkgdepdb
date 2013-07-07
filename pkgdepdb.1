@@ -44,8 +44,19 @@ database.
 Delete mode: delete (uninstall) the listed packages from the database.
 In this mode, the non-option parameters are package names, not package
 archive files!
+.It Fl n , Fl -rename= Ns Ar name
+Change the database's contained name. This does not affect the
+filename. The database-name is currently not used anywhere except when
+using the -I option to show it.
 .It Fl -dry
 Dry run: do not commit the changes to the database file.
+.It Fl v , Fl -verbose
+Increase the verbosity level. May be specified multiple times. Default
+verbosity level is 0.
+.El
+.Pp
+The following query options are available:
+.Bl -tag -width Ds
 .It Fl I , Fl -info
 Show some general information about the database: The database format
 version and the database's name.
@@ -58,11 +69,25 @@ Show the list of missing files grouped by binary/library files.
 For all binaries and libraries, show which files are found
 successfully.
 .It Fl P , Fl -pkgs
-Show a list of installed packages.
-.It Fl n , Fl -rename= Ns Ar name
-Change the database's contained name. This does not affect the
-filename. The database-name is currently not used anywhere except when
-using the -I option to show it.
+Show a list of installed packages. With
+.Fl v
+the list of contained object files is shown for each package as well.
+.El
+.Pp
+The following query filters are available:
+.Bl -tag -width Ds
+.It Fl b , Fl -broken
+Filter for: -P
+.br
+Only show packages with broken libraries.
+.br
+Changes the behavior of
+.Fl v
+to only show libraries with missing files as well.
+Verbosity level 2
+.Ns ( Ns Fl vv Ns
+) can be used to show the list of missing libraries for each broken
+library.
 .El
 .Pp
 The following options are used to modify the library search paths used
