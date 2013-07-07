@@ -224,8 +224,8 @@ void
 DB::fix_paths()
 {
 	for (auto &obj : objects) {
-		fixpath(obj->rpath);
-		fixpath(obj->runpath);
+		fixpathlist(obj->rpath);
+		fixpathlist(obj->runpath);
 	}
 }
 

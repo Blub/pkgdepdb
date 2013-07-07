@@ -231,7 +231,7 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
 	return e;
 }
 
-void
+static void
 fixpath(std::string& path)
 {
 	size_t at = 0;
@@ -283,6 +283,26 @@ fixpath(std::string& path)
 	} while(true);
 }
 
+void
+fixpathlist(std::string& list)
+{
+	std::string old(std::move(list));
+	list = "";
+	size_t at = 0;
+	size_t to = old.find_first_of(':', 0);
+	while (to != std::string::npos) {
+		std::string sub(old.substr(at, to-at));
+		fixpath(sub);
+		list.append(std::move(sub));
+		list.append(1, ':');
+		at = to+1;
+		to = old.find_first_of(':', at);
+	}
+	std::string sub(old.substr(at, to-at));
+	fixpath(sub);
+	list.append(std::move(sub));
+}
+
 static void
 replace_origin(std::string& path, const std::string& origin)
 {
@@ -295,7 +315,7 @@ replace_origin(std::string& path, const std::string& origin)
 		// skip this portion
 		at += origin.length();
 	} while (at < path.length());
-	fixpath(path);
+	fixpathlist(path);
 }
 
 void
