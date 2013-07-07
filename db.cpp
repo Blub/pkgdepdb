@@ -316,15 +316,48 @@ DB::show_info()
 		printf("  %u: %s\n", id++, p.c_str());
 }
 
-void
-DB::show_packages()
+bool
+DB::is_broken(const Elf *obj) const
 {
-	printf("Packages:\n");
+	return required_missing.find(const_cast<Elf*>(obj)) != required_missing.end();
+}
+
+bool
+DB::is_broken(const Package *pkg) const
+{
+	for (auto &obj : pkg->objects) {
+		if (is_broken(obj))
+			return true;
+	}
+	return false;
+}
+
+void
+DB::show_packages(bool filter_broken)
+{
+	(void)filter_broken;
+	printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
 	for (auto &pkg : packages) {
+		if (filter_broken && !is_broken(pkg))
+			continue;
 		printf("  -> %s - %s\n", pkg->name.c_str(), pkg->version.c_str());
 		if (opt_verbosity >= 1) {
-			for (auto &obj : pkg->objects)
-				printf("    contains %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+			if (filter_broken) {
+				for (auto &obj : pkg->objects) {
+					if (is_broken(obj)) {
+						printf("    broken: %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+						if (opt_verbosity >= 2) {
+							auto list = required_missing.find(obj);
+							for (auto &missing : list->second)
+								printf("      misses: %s\n", missing.c_str());
+						}
+					}
+				}
+			}
+			else {
+				for (auto &obj : pkg->objects)
+					printf("    contains %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+			}
 		}
 	}
 }

@@ -65,6 +65,8 @@ static struct option long_opts[] = {
 	{ "verbose", no_argument,       0, 'v' },
 	{ "rename",  required_argument, 0, 'n' },
 
+	{ "broken",  no_argument,       0, 'b' },
+
 	{ "ld-append",  required_argument, 0, -'A' },
 	{ "ld-prepend", required_argument, 0, -'P' },
 	{ "ld-delete",  required_argument, 0, -'D' },
@@ -105,6 +107,9 @@ help(int x)
 	             "  -F, --found        show the 'found' table\n"
 	             "  -P, --pkgs         show the installed packages (and -v their files)\n"
 	             "  -n, --rename=NAME  rename the database\n"
+	             );
+	fprintf(out, "db query filters:\n"
+	             "  -b, --broken       only packages with broken libs (use with -P)\n"
 	             );
 	fprintf(out, "db library path options: (run --relink after these changes)\n"
 	             "  --ld-prepend=DIR   add or move a directory to the\n"
@@ -178,6 +183,7 @@ main(int argc, char **argv)
 	bool         do_fixpaths   = false;
 	bool         dryrun        = false;
 	bool         use_json      = false;
+	bool         filter_broken = false;
 	bool oldmode = true;
 
 	// library path options
@@ -189,7 +195,7 @@ main(int argc, char **argv)
 
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hird:ILMFPvn:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hird:ILMFPbvn:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -214,13 +220,15 @@ main(int argc, char **argv)
 			case -'d': dryrun = true; break;
 
 			case 'v': ++opt_verbosity; break;
-			case 'i': oldmode = false; do_install    = true; break;
-			case 'r': oldmode = false; do_delete     = true; break;
-			case 'I': oldmode = false; show_info     = true; break;
-			case 'L': oldmode = false; show_list     = true; break;
-			case 'M': oldmode = false; show_missing  = true; break;
-			case 'F': oldmode = false; show_found    = true; break;
-			case 'P': oldmode = false; show_packages = true; break;
+
+			case 'i':  oldmode = false; do_install    = true; break;
+			case 'r':  oldmode = false; do_delete     = true; break;
+			case 'I':  oldmode = false; show_info     = true; break;
+			case 'L':  oldmode = false; show_list     = true; break;
+			case 'M':  oldmode = false; show_missing  = true; break;
+			case 'F':  oldmode = false; show_found    = true; break;
+			case 'P':  oldmode = false; show_packages = true; break;
+			case 'b':  oldmode = false; filter_broken = true; break;
 
 			case -'R': oldmode = false; do_relink   = true; break;
 			case -'F': oldmode = false; do_fixpaths = true; break;
@@ -392,7 +400,7 @@ main(int argc, char **argv)
 		db->show_info();
 
 	if (show_packages)
-		db->show_packages();
+		db->show_packages(filter_broken);
 
 	if (show_list)
 		db->show_objects();

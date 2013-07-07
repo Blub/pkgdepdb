@@ -207,7 +207,7 @@ public:
 	         find_pkg_i (const std::string& name) const;
 
 	void show_info();
-	void show_packages();
+	void show_packages(bool filter_broken);
 	void show_objects();
 	void show_missing();
 	void show_found();
@@ -223,7 +223,10 @@ public:
 	bool ld_clear();
 
 private:
-	bool elf_finds      (Elf*, const std::string& lib) const;
+	bool elf_finds(Elf*, const std::string& lib) const;
+
+	bool is_broken(const Package *pkg) const;
+	bool is_broken(const Elf *elf) const;
 };
 
 // Utility functions:
