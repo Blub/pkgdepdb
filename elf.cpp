@@ -255,7 +255,8 @@ fixpath(std::string& path)
 	       path[path.length()-2] == '.' &&
 	       path[path.length()-3] == '/')
 	{
-		path.erase(path.length()-3);
+		at = path.find_last_of('/', path.length()-4);
+		path.erase(at);
 	}
 
 	at = 0;
