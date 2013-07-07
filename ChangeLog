@@ -1,7 +1,9 @@
 2013-07-07 Blub
 
 	* db.cpp: -L shows rpath and runpath with a single -v now
-	* elf.cpp: fixpaths now properly handles the whole pathlist
+	* elf.cpp: pathlists are now handled differently, prevous
+	           path fixes may have broken rpath/runpath entries
+	           so please rebuild your databases...
 
 2013-07-06 Blub (0.1.1 hotfix release)
 
