@@ -344,6 +344,10 @@ DB::show_objects()
 		printf("     class: %u (%s)\n", (unsigned)obj->ei_class, obj->classString());
 		printf("     data:  %u (%s)\n", (unsigned)obj->ei_data,  obj->dataString());
 		printf("     osabi: %u (%s)\n", (unsigned)obj->ei_osabi, obj->osabiString());
+		if (obj->rpath_set)
+			printf("     rpath: %s\n", obj->rpath.c_str());
+		if (obj->runpath_set)
+			printf("     runpath: %s\n", obj->runpath.c_str());
 		if (opt_verbosity < 2)
 			continue;
 		printf("     finds:\n"); {
@@ -356,10 +360,6 @@ DB::show_objects()
 			for (auto &miss : set)
 				printf("       -> %s\n", miss.c_str());
 		}
-		if (obj->rpath_set)
-			printf("     rpath: %s\n", obj->rpath.c_str());
-		if (obj->runpath_set)
-			printf("     runpath: %s\n", obj->runpath.c_str());
 	}
 	printf("\n`found` entry set size: %lu\n",
 	       (unsigned long)required_found.size());
