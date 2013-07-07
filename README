@@ -14,6 +14,8 @@ Description:
     libraries into a database, in which only the dependency  lists  is
     maintained.
 
+    Read the manpage for more information, including usage examples.
+
 Installation:
 
     Dependencies:
