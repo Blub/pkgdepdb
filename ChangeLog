@@ -4,6 +4,8 @@
 	* elf.cpp: pathlists are now handled differently, prevous
 	           path fixes may have broken rpath/runpath entries
 	           so please rebuild your databases...
+	* more: added a filter for -P to show only broken packages:
+	        --broken. Verbosity levels affect the output.
 
 2013-07-06 Blub (0.1.1 hotfix release)
 
