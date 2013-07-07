@@ -1,5 +1,6 @@
 2013-07-07 Blub
 	* db.cpp: -L shows rpath and runpath with a single -v now
+	* elf.cpp: /.. at the end of paths handled - use --fixpaths
 
 2013-07-06 Blub (0.1.1 hotfix release)
 
