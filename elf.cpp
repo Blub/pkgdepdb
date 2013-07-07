@@ -250,6 +250,14 @@ fixpath(std::string& path)
 		path.erase(at, 2);
 	} while(true);
 
+	while (path.length() >= 3 &&
+	       path[path.length()-1] == '.' &&
+	       path[path.length()-2] == '.' &&
+	       path[path.length()-3] == '/')
+	{
+		path.erase(path.length()-3);
+	}
+
 	at = 0;
 	do {
 		at = path.find("/../", at);
