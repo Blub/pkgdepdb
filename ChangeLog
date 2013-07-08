@@ -1,3 +1,9 @@
+2013-07-08 Blub
+
+	* queries/json:
+		json formatted output for -M and -F queries
+	* options: -q to raise the LogLevel to Print
+
 2013-07-07 Blub
 
 	* db.cpp: -L shows rpath and runpath with a single -v now
