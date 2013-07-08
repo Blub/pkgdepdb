@@ -299,8 +299,22 @@ DB::ld_prepend(const std::string& dir)
 }
 
 bool
+DB::ld_delete(size_t i)
+{
+	if (!library_path.size() || i >= library_path.size())
+		return false;
+	library_path.erase(library_path.begin() + i);
+	return true;
+}
+
+bool
 DB::ld_delete(const std::string& dir)
 {
+	if (!dir.length())
+		return false;
+	if (dir[0] >= '0' && dir[0] <= '9') {
+		return ld_delete(strtoul(dir.c_str(), nullptr, 0));
+	}
 	auto old = std::find(library_path.begin(), library_path.end(), dir);
 	if (old != library_path.end()) {
 		library_path.erase(old);
