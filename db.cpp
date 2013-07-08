@@ -475,7 +475,7 @@ DB::show_info()
 			printf("  %u: %s\n", id++, ign.c_str());
 	}
 	if (package_library_path.size()) {
-		printf("Ignoring package-specific library paths exist:\n");
+		printf("Package-specific library paths:\n");
 		id = 0;
 		for (auto &iter : package_library_path) {
 			printf("  %s:\n", iter.first.c_str());
