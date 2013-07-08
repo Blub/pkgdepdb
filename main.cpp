@@ -138,7 +138,7 @@ help(int x)
 	             "  pkg-ld-insert:PKG:ID:PATH\n"
 	             "                     add a path to the package's library path\n"
 	             "  pkg-ld-delete:PKG:PATH\n"
-	             "  pkg-ld-delete:PKG:ID\n"
+	             "  pkg-ld-delete-id:PKG:ID\n"
 	             "                     delete a package's library path\n"
 	             );
 	exit(x);
