@@ -43,6 +43,8 @@ enum {
 void log(int level, const char *msg, ...);
 
 extern unsigned int opt_verbosity;
+extern bool         opt_quiet;
+extern bool         opt_use_json;
 
 class Elf {
 public:
@@ -210,7 +212,9 @@ public:
 	void show_packages(bool filter_broken);
 	void show_objects();
 	void show_missing();
+	void show_missing_json();
 	void show_found();
+	void show_found_json();
 
 	bool store(const std::string& filename);
 	bool read (const std::string& filename);

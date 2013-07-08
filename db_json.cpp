@@ -3,25 +3,84 @@
 #include "main.h"
 
 static void
+json_in_quote(FILE *out, const std::string& str)
+{
+	for (size_t i = 0; i != str.length(); ++i) {
+		switch (str[i]) {
+			case '"':  fputc('\\', out); fputc('"', out); break;
+			case '\\': fputc('\\', out); fputc('\\', out); break;
+			case '\b': fputc('\\', out); fputc('b', out); break;
+			case '\f': fputc('\\', out); fputc('f', out); break;
+			case '\n': fputc('\\', out); fputc('n', out); break;
+			case '\r': fputc('\\', out); fputc('r', out); break;
+			case '\t': fputc('\\', out); fputc('t', out); break;
+			default:
+				fputc(str[i], out);
+				break;
+		}
+	}
+}
+
+static void
 json_quote(FILE *out, const std::string& str)
 {
 	fprintf(out, "\"");
-	for (size_t i = 0; i != str.length(); ++i) {
-		if (str[i] == '\n') {
-			fputc('\\', out);
-			fputc('n', out);
-			continue;
-		}
-		if (str[i] == '\r') {
-			fputc('\\', out);
-			fputc('r', out);
-			continue;
-		}
-		if (str[i] == '\"' || str[i] == '\\')
-			fputc('\\', out);
-		fputc(str[i], out);
-	}
+	json_in_quote(out, str);
 	fprintf(out, "\"");
+}
+
+static void
+print_objname(const Elf *obj)
+{
+	putchar('"');
+	json_in_quote(stdout, obj->dirname);
+	putchar('/');
+	json_in_quote(stdout, obj->basename);
+	putchar('"');
+}
+
+void
+DB::show_found_json()
+{
+	printf("{ \"found_objects\": {");
+	const char *mainsep = "\n\t";
+	for (auto &fnd : required_found) {
+		const Elf *obj = fnd.first;
+		printf("%s", mainsep); mainsep = ",\n\t";
+		print_objname(obj);
+		printf(": [");
+
+		ObjectSet &set = fnd.second;
+		const char *sep = "\n\t\t";
+		for (auto &s : set) {
+			printf("%s", sep); sep = ",\n\t\t";
+			json_quote(stdout, s->basename);
+		}
+		printf("\n\t]");
+	}
+	printf("\n} }\n");
+}
+
+void
+DB::show_missing_json()
+{
+	printf("{ \"missing_objects\": {");
+	const char *mainsep = "\n\t";
+	for (auto &mis : required_missing) {
+		const Elf *obj = mis.first;
+		printf("%s", mainsep); mainsep = ",\n\t";
+		print_objname(obj);
+		printf(": [");
+
+		StringSet &set = mis.second;
+		const char *sep = "\n\t\t";
+		for (auto &s : set) {
+			printf("%s", sep); sep = ",\n\t\t";
+			json_quote(stdout, s);
+		}
+		printf("\n\t]");
+	}
+	printf("\n} }\n");
 }
 
 static void

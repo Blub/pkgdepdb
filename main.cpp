@@ -14,7 +14,8 @@
 static int LogLevel = Message;
 static const char *arg0 = 0;
 
-unsigned int opt_verbosity = 0;
+unsigned int  opt_verbosity = 0;
+bool          opt_use_json  = false;
 
 enum {
     RESET = 0,
@@ -53,6 +54,7 @@ log(int level, const char *msg, ...)
 static struct option long_opts[] = {
 	{ "help",    no_argument,       0, 'h' },
 	{ "version", no_argument,       0, -'v' },
+	{ "quiet",   no_argument,       0, 'q' },
 	{ "db",      required_argument, 0, 'd' },
 	{ "install", no_argument,       0, 'i' },
 	{ "dry",     no_argument,       0, -'d' },
@@ -91,6 +93,7 @@ help(int x)
 	             "  -h, --help         show this message\n"
 	             "  --version          show version info\n"
 	             "  -v, --verbose      print more information\n"
+	             "  -q, --quiet        suppress progress messages\n"
 	             );
 	fprintf(out, "db management options:\n"
 	             "  -d, --db=FILE      set the database file to commit to\n"
@@ -182,7 +185,6 @@ main(int argc, char **argv)
 	bool         do_relink     = false;
 	bool         do_fixpaths   = false;
 	bool         dryrun        = false;
-	bool         use_json      = false;
 	bool         filter_broken = false;
 	bool oldmode = true;
 
@@ -195,7 +197,7 @@ main(int argc, char **argv)
 
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hird:ILMFPbvn:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -204,6 +206,9 @@ main(int argc, char **argv)
 				break;
 			case -'v':
 				version(0);
+				break;
+			case 'q':
+				LogLevel = Print;
 				break;
 			case 'd':
 				oldmode = false;
@@ -257,7 +262,7 @@ main(int argc, char **argv)
 				break;
 			}
 
-			case -'J': use_json = true; break;
+			case -'J': opt_use_json = true; break;
 
 			case ':':
 			case '?':
@@ -412,7 +417,7 @@ main(int argc, char **argv)
 		db->show_found();
 
 	if (!dryrun && modified && has_db) {
-		if (use_json)
+		if (opt_use_json)
 			db_store_json(db.get(), dbfile);
 		else if (!db->store(dbfile))
 			log(Error, "failed to write to the database\n");

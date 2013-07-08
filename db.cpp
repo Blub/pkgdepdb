@@ -403,6 +403,8 @@ DB::show_objects()
 void
 DB::show_missing()
 {
+	if (opt_use_json)
+		return show_missing_json();
 	if (!required_missing.size()) {
 		printf("Missing: nothing\n");
 		return;
@@ -420,6 +422,8 @@ DB::show_missing()
 void
 DB::show_found()
 {
+	if (opt_use_json)
+		return show_found_json();
 	printf("Found:\n");
 	for (auto &fnd : required_found) {
 		Elf       *obj = fnd.first;
