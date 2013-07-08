@@ -207,13 +207,14 @@ public:
 	std::map<Elf*, ObjectSet> required_found;
 	std::map<Elf*, StringSet> required_missing;
 
-	StringSet   ignore_file_rules;
+	StringSet                         ignore_file_rules;
+	std::map<std::string, StringList> package_library_path;
 
 public:
 	bool install_package(Package* &&pkg);
 	bool delete_package (const std::string& name);
 	Elf *find_for       (Elf*, const std::string& lib) const;
-	void link_object    (Elf*);
+	void link_object    (Elf*, Package *owner);
 	void relink_all     ();
 	void fix_paths      ();
 

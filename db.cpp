@@ -165,7 +165,7 @@ DB::install_package(Package* &&pkg)
 		}
 
 		// search for whatever THIS object requires
-		link_object(obj);
+		link_object(obj, pkg);
 	}
 
 	return true;
@@ -197,8 +197,9 @@ DB::find_for(Elf *obj, const std::string& needed) const
 }
 
 void
-DB::link_object(Elf *obj)
+DB::link_object(Elf *obj, Package *owner)
 {
+	(void)owner;
 	if (ignore_file_rules.size()) {
 		std::string full = obj->dirname + "/" + obj->basename;
 		if (ignore_file_rules.find(full) != ignore_file_rules.end())
@@ -225,8 +226,10 @@ DB::relink_all()
 {
 	required_found.clear();
 	required_missing.clear();
-	for (auto &obj : objects) {
-		link_object(obj);
+	for (auto &pkg : packages) {
+		for (auto &obj : pkg->objects) {
+			link_object(obj, pkg);
+		}
 	}
 }
 
