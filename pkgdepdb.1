@@ -53,6 +53,10 @@ Dry run: do not commit the changes to the database file.
 .It Fl v , Fl -verbose
 Increase the verbosity level. May be specified multiple times. Default
 verbosity level is 0.
+.It Fl q , Fl -quiet
+Not the opposite of
+.Fl v
+but rather disables progress-messages.
 .El
 .Pp
 The following query options are available:
@@ -85,8 +89,8 @@ Changes the behavior of
 .Fl v
 to only show libraries with missing files as well.
 Verbosity level 2
-.Ns ( Ns Fl vv Ns
-) can be used to show the list of missing libraries for each broken
+.Po Fl vv Pc
+can be used to show the list of missing libraries for each broken
 library.
 .El
 .Pp
