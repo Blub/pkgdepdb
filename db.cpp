@@ -440,6 +440,16 @@ DB::show_info()
 		for (auto &ign : ignore_file_rules)
 			printf("  %u: %s\n", id++, ign.c_str());
 	}
+	if (package_library_path.size()) {
+		printf("Ignoring package-specific library paths exist:\n");
+		id = 0;
+		for (auto &iter : package_library_path) {
+			printf("  %s:\n", iter.first.c_str());
+			id = 0;
+			for (auto &path : iter.second)
+				printf("    %u: %s\n", id++, path.c_str());
+		}
+	}
 }
 
 bool

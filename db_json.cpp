@@ -143,6 +143,22 @@ DB::show_info_json()
 		}
 		printf("\n\t]");
 	}
+	if (package_library_path.size()) {
+		printf(",\n\t\"package_libray_paths\": {");
+		sep = "\n\t\t";
+		for (auto &iter : package_library_path) {
+			printf("%s", sep); sep = ",\n\t\t";
+			json_quote(stdout, iter.first);
+			printf(": [");
+			const char *psep = "\n\t\t\t";
+			for (auto &path : iter.second) {
+				printf("%s", psep); psep = ",\n\t\t\t";
+				json_quote(stdout, path);
+			}
+			printf("\n\t\t]");
+		}
+		printf("\n\t}");
+	}
 
 	printf("\n}\n");
 }

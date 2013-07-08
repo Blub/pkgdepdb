@@ -159,10 +159,12 @@ public:
 		on = true;
 		this->arg.push_back(arg);
 	}
+	/*
 	inline void operator=(std::string &&arg) {
 		on = true;
 		this->arg.push_back(std::move(arg));
 	}
+	*/
 };
 
 static bool parse_rule(DB *db, const std::string& rule);
@@ -204,7 +206,7 @@ main(int argc, char **argv)
 
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -542,24 +544,6 @@ parse_rule(DB *db, const std::string& rule)
 	) {
 		return ret;
 	}
-
-/*
-	if (rule.compare(0, 11, "pkg-ld-add:") == 0) {
-		if (rule.length() < 12) {
-			log(Error, "malformed rule: `%s'\n", rule.c_str());
-			log(Error, "format: pkg-ld-add:package:path\n");
-			return false;
-		}
-	}
-	if (rule.compare(0, 11, "pkg-ld-del:") == 0) {
-		if (rule.length() < 12) {
-			log(Error, "malformed rule: `%s'\n", rule.c_str());
-			log(Error, "format: pkg-ld-del:package:path\n");
-			return false;
-		}
-		return db->pkg_ld_append(strtoul(rule.substr(12).c_str(), nullptr, 0));
-	}
-*/
 	log(Error, "no such rule command: `%s'\n", rule.c_str());
 	return false;
 }
