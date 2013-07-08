@@ -48,6 +48,8 @@ extern unsigned int opt_verbosity;
 extern bool         opt_quiet;
 extern bool         opt_use_json;
 
+class Package;
+
 class Elf {
 public:
 	Elf();
@@ -85,6 +87,8 @@ public: // NOT SERIALIZED:
 	struct {
 		size_t id;
 	} json;
+
+	Package *owner;
 };
 
 template<typename T>
@@ -213,7 +217,7 @@ public:
 public:
 	bool install_package(Package* &&pkg);
 	bool delete_package (const std::string& name);
-	Elf *find_for       (Elf*, const std::string& lib) const;
+	Elf *find_for       (Elf*, const std::string& lib, const StringList *extrapath) const;
 	void link_object    (Elf*, Package *owner);
 	void relink_all     ();
 	void fix_paths      ();
@@ -248,7 +252,7 @@ public:
 	bool unignore_file(size_t id);
 
 private:
-	bool elf_finds(Elf*, const std::string& lib) const;
+	bool elf_finds(Elf*, const std::string& lib, const StringList *extrapath) const;
 
 	bool is_broken(const Package *pkg) const;
 	bool is_broken(const Elf *elf) const;

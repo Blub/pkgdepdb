@@ -69,7 +69,16 @@ DB::delete_package(const std::string& name)
 			found.second.erase(ref);
 			// search for this dependency anew
 			Elf *seeker = found.first;
-			Elf *other  = find_for(seeker, elf->basename);
+			Elf *other;
+			if (!seeker->owner || !package_library_path.size())
+				other = find_for(seeker, elf->basename, nullptr);
+			else {
+				auto iter = package_library_path.find(seeker->owner->name);
+				if (iter == package_library_path.end())
+					other = find_for(seeker, elf->basename, nullptr);
+				else
+					other = find_for(seeker, elf->basename, &iter->second);
+			}
 			if (!other) {
 				// it's missing now
 				required_missing[seeker].insert(elf->basename);
@@ -105,7 +114,7 @@ pathlist_contains(const std::string& list, const std::string& path)
 }
 
 bool
-DB::elf_finds(Elf *elf, const std::string& path) const
+DB::elf_finds(Elf *elf, const std::string& path, const StringList *extrapaths) const
 {
 	// DT_RPATH first
 	if (elf->rpath_set && pathlist_contains(elf->rpath, path))
@@ -127,6 +136,11 @@ DB::elf_finds(Elf *elf, const std::string& path) const
 	if (std::find(library_path.begin(), library_path.end(), path) != library_path.end())
 		return true;
 
+	if (extrapaths) {
+		if (std::find(extrapaths->begin(), extrapaths->end(), path) != extrapaths->end())
+			return true;
+	}
+
 	return false;
 }
 
@@ -138,6 +152,13 @@ DB::install_package(Package* &&pkg)
 
 	packages.push_back(pkg);
 
+	const StringList *libpaths = 0;
+	if (package_library_path.size()) {
+		auto iter = package_library_path.find(pkg->name);
+		if (iter != package_library_path.end())
+			libpaths = &iter->second;
+	}
+
 	for (auto &obj : pkg->objects)
 		objects.push_back(obj);
 
@@ -147,7 +168,7 @@ DB::install_package(Package* &&pkg)
 		for (auto missing = required_missing.begin(); missing != required_missing.end();) {
 			Elf *seeker = missing->first;
 			if (getObjClass(seeker) != objclass ||
-			    !elf_finds(seeker, obj->dirname))
+			    !elf_finds(seeker, obj->dirname, libpaths))
 			{
 				++missing;
 				continue;
@@ -172,22 +193,21 @@ DB::install_package(Package* &&pkg)
 }
 
 Elf*
-DB::find_for(Elf *obj, const std::string& needed) const
+DB::find_for(Elf *obj, const std::string& needed, const StringList *extrapath) const
 {
 	log(Debug, "dependency of %s/%s   :  %s\n", obj->dirname.c_str(), obj->basename.c_str(), needed.c_str());
 	ObjClass objclass = getObjClass(obj);
 	for (auto &lib : objects) {
-		if (getObjClass(lib) != objclass)
+		if (getObjClass(lib) != objclass) {
 			log(Debug, "  skipping %s/%s (objclass)\n", lib->dirname.c_str(), lib->basename.c_str());
-		else if (lib->basename    != needed)
+			continue;
+		}
+		if (lib->basename    != needed) {
 			log(Debug, "  skipping %s/%s (wrong name)\n", lib->dirname.c_str(), lib->basename.c_str());
-		else if (!elf_finds(obj, lib->dirname))
+			continue;
+		}
+		if (!elf_finds(obj, lib->dirname, extrapath)) {
 			log(Debug, "  skipping %s/%s (not visible)\n", lib->dirname.c_str(), lib->basename.c_str());
-
-		if (getObjClass(lib) != objclass ||
-		    lib->basename    != needed   ||
-		    !elf_finds(obj, lib->dirname))
-		{
 			continue;
 		}
 		// same class, same name, and visible...
@@ -199,17 +219,22 @@ DB::find_for(Elf *obj, const std::string& needed) const
 void
 DB::link_object(Elf *obj, Package *owner)
 {
-	(void)owner;
 	if (ignore_file_rules.size()) {
 		std::string full = obj->dirname + "/" + obj->basename;
 		if (ignore_file_rules.find(full) != ignore_file_rules.end())
 			return;
 	}
+	const StringList *libpaths = 0;
+	if (package_library_path.size()) {
+		auto iter = package_library_path.find(owner->name);
+		if (iter != package_library_path.end())
+			libpaths = &iter->second;
+	}
 
 	ObjectSet req_found;
 	StringSet req_missing;
 	for (auto &needed : obj->needed) {
-		Elf *found = find_for(obj, needed);
+		Elf *found = find_for(obj, needed, libpaths);
 		if (found)
 			req_found.insert(found);
 		else

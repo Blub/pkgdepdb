@@ -14,6 +14,8 @@ Elf::Elf()
 
 	rpath_set   =
 	runpath_set = false;
+
+	owner = 0;
 }
 
 Elf::Elf(const Elf& cp)
@@ -27,7 +29,8 @@ Elf::Elf(const Elf& cp)
   runpath_set(cp.runpath_set),
   rpath  (cp.rpath),
   runpath(cp.runpath),
-  needed(cp.needed)
+  needed(cp.needed),
+  owner(cp.owner)
 {
 }
 

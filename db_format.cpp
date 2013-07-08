@@ -442,6 +442,8 @@ read_pkg(SerialIn &in, Package *&pkg)
 	   >= pkg->version;
 	if (!read_objlist(in, pkg->objects))
 		return false;
+	for (auto &o : pkg->objects)
+		o->owner = pkg;
 	return true;
 }
 
