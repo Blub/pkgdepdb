@@ -40,6 +40,79 @@ print_objname(const Elf *obj)
 }
 
 void
+DB::show_packages_json(bool filter_broken)
+{
+	printf("{");
+	if (filter_broken)
+		printf("\n\t\"filters\": [ \"broken\" ],");
+	else
+		printf("\n\t\"filters\": [],");
+
+	if (!packages.size()) {
+		printf("\n\t\"packages\": []\n}\n");
+		return;
+	}
+
+	printf("\n\t\"packages\": [");
+
+	const char *mainsep = "\n\t\t";
+	for (auto &pkg : packages) {
+		if (filter_broken && !is_broken(pkg))
+			continue;
+		printf("%s{", mainsep); mainsep = ",\n\t\t";
+		printf("\n\t\t\t\"name\": ");
+		json_quote(stdout, pkg->name);
+		printf(",\n\t\t\t\"version\": ");
+		json_quote(stdout, pkg->version);
+		if (opt_verbosity >= 1) {
+			if (filter_broken) {
+				printf(",\n\t\t\t\"broken\": [");
+				const char *sep = "\n\t\t\t\t";
+				for (auto &obj : pkg->objects) {
+					if (!is_broken(obj))
+						continue;
+					if (opt_verbosity >= 2) {
+						printf("%s{", sep); sep = ",\n\t\t\t\t";
+						printf("\n\t\t\t\t\t\"object\": ");
+						print_objname(obj);
+						printf("\n\t\t\t\t\t\"misses\": [");
+						auto list = required_missing.find(obj);
+						const char *missep = "\n\t\t\t\t\t\t";
+						for (auto &missing : list->second) {
+							printf("%s", missep);
+							missep = ",\n\t\t\t\t\t\t";
+							json_quote(stdout, missing);
+						}
+						printf("\n\t\t\t\t\t]");
+						printf("\n\t\t\t\t}");
+					} else {
+						printf("%s", sep); sep = ",\n\t\t\t\t";
+						print_objname(obj);
+					}
+				}
+				printf("\n\t\t\t]");
+			}
+			else {
+				if (!pkg->objects.size())
+					printf(",\n\t\t\t\"contains\": []");
+				else {
+					printf(",\n\t\t\t\"contains\": [");
+					const char *sep = "\n\t\t\t\t";
+					for (auto &obj : pkg->objects) {
+						printf("%s", sep); sep = ",\n\t\t\t\t";
+						print_objname(obj);
+					}
+					printf("\n\t\t\t]");
+				}
+			}
+		}
+		printf("\n\t\t}");
+	}
+
+	printf("\n\t]\n}\n");
+}
+
+void
 DB::show_objects_json()
 {
 	if (!objects.size()) {

@@ -335,7 +335,9 @@ DB::is_broken(const Package *pkg) const
 void
 DB::show_packages(bool filter_broken)
 {
-	(void)filter_broken;
+	if (opt_use_json)
+		return show_packages_json(filter_broken);
+
 	printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
 	for (auto &pkg : packages) {
 		if (filter_broken && !is_broken(pkg))
