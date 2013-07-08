@@ -128,6 +128,19 @@ help(int x)
 	             "  --ld-clear         remove all library paths\n"
 	             "  --relink           relink all objects\n"
 	             );
+	fprintf(out, "rules for --rule:\n"
+	             "  ignore:FILENAME    add a file-ignore rule\n"
+	             "  unignore:FILENAME  remove a file-ignore rule\n"
+	             "  unignore-id:ID     remove a file-ignore rule by its id\n"
+	             "  pkg-ld-clear:PKG   clear a pacakge's library path\n"
+	             "  pkg-ld-append:PKG:PATH\n"
+	             "  pkg-ld-prepend:PKG:PATH\n"
+	             "  pkg-ld-insert:PKG:ID:PATH\n"
+	             "                     add a path to the package's library path\n"
+	             "  pkg-ld-delete:PKG:PATH\n"
+	             "  pkg-ld-delete:PKG:ID\n"
+	             "                     delete a package's library path\n"
+	             );
 	exit(x);
 }
 
