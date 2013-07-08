@@ -4,6 +4,12 @@
 		json formatted output for all queries for the sake of
 		machine readability.
 	* options: -q to raise the LogLevel to Print
+	* database version 2:
+		contains per-package library paths and a list of files
+		which are to be ignored at link-time.
+	* rules:
+		-R / --rule takes a rule command to modify rules like
+		file-ignores or package library paths.
 
 2013-07-07 Blub
 
