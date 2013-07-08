@@ -289,25 +289,13 @@ DB::ld_clear()
 bool
 DB::ld_append(const std::string& dir)
 {
-	auto old = std::find(library_path.begin(), library_path.end(), dir);
-	if (old == library_path.begin() + (library_path.size()-1))
-		return false;
-	if (old != library_path.end())
-		library_path.erase(old);
-	library_path.push_back(dir);
-	return true;
+	return ld_insert(dir, library_path.size()-1);
 }
 
 bool
 DB::ld_prepend(const std::string& dir)
 {
-	auto old = std::find(library_path.begin(), library_path.end(), dir);
-	if (old == library_path.begin())
-		return false;
-	if (old != library_path.end())
-		library_path.erase(old);
-	library_path.insert(library_path.begin(), dir);
-	return true;
+	return ld_insert(dir, 0);
 }
 
 bool
@@ -340,6 +328,71 @@ DB::ld_insert(const std::string& dir, size_t i)
 	// exists
 	library_path.erase(old);
 	library_path.insert(library_path.begin() + i, dir);
+	return true;
+}
+
+bool
+DB::pkg_ld_insert(const std::string& package, const std::string& dir, size_t i)
+{
+	StringList &path(package_library_path[package]);
+
+	if (!path.size())
+		i = 0;
+	else if (i >= path.size())
+		i = path.size()-1;
+
+	auto old = std::find(path.begin(), path.end(), dir);
+	if (old == path.end()) {
+		path.insert(path.begin() + i, dir);
+		return true;
+	}
+	size_t oldidx = old - path.begin();
+	if (oldidx == i)
+		return false;
+	// exists
+	path.erase(old);
+	path.insert(path.begin() + i, dir);
+	return true;
+}
+
+bool
+DB::pkg_ld_delete(const std::string& package, const std::string& dir)
+{
+	auto iter = package_library_path.find(package);
+	if (iter == package_library_path.end())
+		return false;
+
+	StringList &path(iter->second);
+	auto old = std::find(path.begin(), path.end(), dir);
+	if (old != path.end()) {
+		path.erase(old);
+		return true;
+	}
+	return false;
+}
+
+bool
+DB::pkg_ld_delete(const std::string& package, size_t i)
+{
+	auto iter = package_library_path.find(package);
+	if (iter == package_library_path.end())
+		return false;
+
+	StringList &path(iter->second);
+	if (i >= path.size())
+		return false;
+	path.erase(path.begin()+i);
+	return true;
+}
+
+bool
+DB::pkg_ld_clear(const std::string& package)
+{
+	auto iter = package_library_path.find(package);
+	if (iter == package_library_path.end())
+		return false;
+
+	package_library_path.erase(iter);
 	return true;
 }
 

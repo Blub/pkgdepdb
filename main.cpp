@@ -440,33 +440,126 @@ main(int argc, char **argv)
 }
 
 static bool
+try_rule(const std::string& rule,
+         const std::string& what,
+         const char        *usage,
+         bool              *ret,
+         std::function<bool(const std::string&)> fn)
+{
+	if (rule.compare(0, what.length(), what) == 0) {
+		if (rule.length() < what.length()+1) {
+			log(Error, "malformed rule: `%s`\n", rule.c_str());
+			log(Error, "format: %s%s\n", what.c_str(), usage);
+			*ret = false;
+			return true;
+		}
+		*ret = fn(rule.substr(what.length()));
+		return true;
+	}
+	return false;
+}
+
+static bool
 parse_rule(DB *db, const std::string& rule)
 {
-	if (rule.compare(0, 7, "ignore:") == 0) {
-		if (rule.length() < 8) {
-			log(Error, "malformed rule: `%s'\n", rule.c_str());
-			log(Error, "format: ignore:FILENAME\n");
-			return false;
-		}
-		return db->ignore_file(rule.substr(7));
-	}
-	if (rule.compare(0, 9, "unignore:") == 0) {
-		if (rule.length() < 10) {
-			log(Error, "malformed rule: `%s'\n", rule.c_str());
-			log(Error, "format: unignore:FILENAME\n");
-			return false;
-		}
-		return db->unignore_file(rule.substr(9));
-	}
-	if (rule.compare(0, 12, "unignore-id:") == 0) {
-		if (rule.length() < 13) {
-			log(Error, "malformed rule: `%s'\n", rule.c_str());
-			log(Error, "format: unignore:FILENAME\n");
-			return false;
-		}
-		return db->unignore_file(strtoul(rule.substr(12).c_str(), nullptr, 0));
+	bool ret = false;
+
+	if (try_rule(rule, "ignore:", "FILENAME", &ret,
+		[db](const std::string &cmd) {
+			return db->ignore_file(cmd);
+		})
+		|| try_rule(rule, "unignore:", "FILENAME", &ret, 
+		[db](const std::string &cmd) {
+			return db->unignore_file(cmd);
+		})
+		|| try_rule(rule, "unignore-id:", "ID", &ret, 
+		[db](const std::string &cmd) {
+			return db->unignore_file(strtoul(cmd.c_str(), nullptr, 0));
+		})
+		|| try_rule(rule, "pkg-ld-clear:", "PKG", &ret,
+		[db,&rule](const std::string &cmd) {
+			return db->pkg_ld_clear(cmd);
+		})
+		|| try_rule(rule, "pkg-ld-append:", "PKG:PATH", &ret,
+		[db,&rule](const std::string &cmd) {
+			size_t s = cmd.find_first_of(':');
+			if (s == std::string::npos) {
+				log(Error, "malformed rule: `%s`\n", rule.c_str());
+				log(Error, "format: pkg-ld-append:PKG:PATH\n");
+				return false;
+			}
+			std::string pkg(cmd.substr(0, s));
+			StringList &lst(db->package_library_path[pkg]);
+			return db->pkg_ld_insert(pkg, cmd.substr(s+1), lst.size());
+		})
+		|| try_rule(rule, "pkg-ld-prepend:", "PKG:PATH", &ret,
+		[db,&rule](const std::string &cmd) {
+			size_t s = cmd.find_first_of(':');
+			if (s == std::string::npos) {
+				log(Error, "malformed rule: `%s`\n", rule.c_str());
+				log(Error, "format: pkg-ld-prepend:PKG:PATH\n");
+				return false;
+			}
+			return db->pkg_ld_insert(cmd.substr(0, s), cmd.substr(s+1), 0);
+		})
+		|| try_rule(rule, "pkg-ld-insert:", "PKG:ID:PATH", &ret,
+		[db,&rule](const std::string &cmd) {
+			size_t s1, s2;
+			s1 = cmd.find_first_of(':');
+			if (s1 != std::string::npos)
+				s2 = cmd.find_first_of(':', s1+1);
+			if (s1 == std::string::npos ||
+			    s2 == std::string::npos)
+			{
+				log(Error, "malformed rule: `%s`\n", rule.c_str());
+				log(Error, "format: pkg-ld-insert:PKG:ID:PATH\n");
+				return false;
+			}
+			return db->pkg_ld_insert(cmd.substr(0, s1),
+			                         cmd.substr(s2+1),
+			                         strtoul(cmd.substr(s1, s2-s1).c_str(), nullptr, 0));
+		})
+		|| try_rule(rule, "pkg-ld-delete:", "PKG:PATH", &ret,
+		[db,&rule](const std::string &cmd) {
+			size_t s = cmd.find_first_of(':');
+			if (s == std::string::npos) {
+				log(Error, "malformed rule: `%s`\n", rule.c_str());
+				log(Error, "format: pkg-ld-delete:PKG:PATH\n");
+				return false;
+			}
+			return db->pkg_ld_delete(cmd.substr(0, s), cmd.substr(s+1));
+		})
+		|| try_rule(rule, "pkg-ld-delete-id:", "PKG:ID", &ret,
+		[db,&rule](const std::string &cmd) {
+			size_t s = cmd.find_first_of(':');
+			if (s == std::string::npos) {
+				log(Error, "malformed rule: `%s`\n", rule.c_str());
+				log(Error, "format: pkg-ld-delete-id:PKG:ID\n");
+				return false;
+			}
+			return db->pkg_ld_delete(cmd.substr(0, s), strtoul(cmd.substr(s+1).c_str(), nullptr, 0));
+		})
+	) {
+		return ret;
 	}
 
+/*
+	if (rule.compare(0, 11, "pkg-ld-add:") == 0) {
+		if (rule.length() < 12) {
+			log(Error, "malformed rule: `%s'\n", rule.c_str());
+			log(Error, "format: pkg-ld-add:package:path\n");
+			return false;
+		}
+	}
+	if (rule.compare(0, 11, "pkg-ld-del:") == 0) {
+		if (rule.length() < 12) {
+			log(Error, "malformed rule: `%s'\n", rule.c_str());
+			log(Error, "format: pkg-ld-del:package:path\n");
+			return false;
+		}
+		return db->pkg_ld_append(strtoul(rule.substr(12).c_str(), nullptr, 0));
+	}
+*/
 	log(Error, "no such rule command: `%s'\n", rule.c_str());
 	return false;
 }

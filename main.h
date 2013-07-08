@@ -251,6 +251,11 @@ public:
 	bool unignore_file(const std::string& name);
 	bool unignore_file(size_t id);
 
+	bool pkg_ld_insert(const std::string& package, const std::string& path, size_t i);
+	bool pkg_ld_delete(const std::string& package, const std::string& path);
+	bool pkg_ld_delete(const std::string& package, size_t i);
+	bool pkg_ld_clear (const std::string& package);
+
 private:
 	bool elf_finds(Elf*, const std::string& lib, const StringList *extrapath) const;
 
