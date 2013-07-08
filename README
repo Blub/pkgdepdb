@@ -6,8 +6,8 @@ Description:
     This tool is helpful to  find  library  dependencies  of  packages
     without unpacking or installing them to a temporary location.   It
     reads through the archive file, optionally parses a .PKGINFO  file
-    if one is encountered encountered,  and  then  prints  a  list  of
-    required libraries of each ELF file contained in the library.
+    if one  is  encountered,  and  then  prints  a  list  of  required
+    libraries of each ELF file contained in the library.
 
     Additionally it can manage a dependency database.  In this mode it
     performs a  virtual  installation  of  a  package's  binaries  and
