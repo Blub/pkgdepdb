@@ -113,6 +113,28 @@ DB::show_packages_json(bool filter_broken)
 }
 
 void
+DB::show_info_json()
+{
+	printf("{");
+	printf( "\n\t\"db_version\": %u", (unsigned)loaded_version);
+	printf(",\n\t\"db_name\": "); json_quote(stdout, name);
+	printf(",\n\t\"library_path\": [");
+	if (!library_path.size()) {
+		printf("]\n}\n");
+		return;
+	}
+	unsigned id = 0;
+	const char *sep = "\n\t\t";
+	for (auto &p : library_path) {
+		printf("%s", sep);
+		sep = ",\n\t\t";
+		json_quote(stdout, p);
+		printf(" // %u", id++);
+	}
+	printf("\n\t]\n}\n");
+}
+
+void
 DB::show_objects_json()
 {
 	if (!objects.size()) {

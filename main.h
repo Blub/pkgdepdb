@@ -1,6 +1,8 @@
 #ifndef WDEPTRACK_MAIN_H__
 #define WDEPTRACK_MAIN_H__
 
+#include <stdint.h>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -183,9 +185,12 @@ void fixpathlist(std::string& pathlist);
 
 class DB {
 public:
-	static size_t version;
+	static uint16_t version;
 
+	DB();
 	~DB();
+
+	uint16_t    loaded_version;
 
 	std::string name;
 	StringList  library_path;
@@ -209,6 +214,7 @@ public:
 	         find_pkg_i (const std::string& name) const;
 
 	void show_info();
+	void show_info_json();
 	void show_packages(bool filter_broken);
 	void show_packages_json(bool filter_broken);
 	void show_objects();

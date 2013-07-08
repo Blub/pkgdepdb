@@ -16,6 +16,10 @@ getObjClass(Elf *elf) {
 	return getObjClass(elf->ei_class, elf->ei_data, elf->ei_osabi);
 }
 
+DB::DB() {
+	loaded_version = DB::version;
+}
+
 DB::~DB() {
 	for (auto &pkg : packages)
 		delete pkg;
@@ -308,7 +312,10 @@ DB::ld_insert(const std::string& dir, size_t i)
 void
 DB::show_info()
 {
-	printf("DB version: %u\n", (unsigned)DB::version);
+	if (opt_use_json)
+		return show_info_json();
+
+	printf("DB version: %u\n", loaded_version);
 	printf("DB name:    [%s]\n", name.c_str());
 	printf("Additional Library Paths:\n");
 	unsigned id = 0;

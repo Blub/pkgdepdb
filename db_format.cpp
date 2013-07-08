@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <string.h>
 
 #include <zlib.h>
@@ -13,7 +12,7 @@
 #include "main.h"
 
 // version
-size_t
+uint16_t
 DB::version = 1;
 
 // magic header
@@ -562,6 +561,7 @@ db_read(DB *db, const std::string& filename)
 		return false;
 	}
 
+	db->loaded_version = hdr.version;
 	if (hdr.version != DB::version) {
 		log(Error, "cannot read depdb version %u files\n", (unsigned)hdr.version);
 		return false;
