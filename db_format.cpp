@@ -13,7 +13,7 @@
 
 // version
 uint16_t
-DB::version = 1;
+DB::version = 2;
 
 // magic header
 static const char
@@ -508,6 +508,9 @@ db_store(DB *db, const std::string& filename)
 			return false;
 	}
 
+	if (!write_stringset(out, db->ignore_file_rules))
+		return false;
+
 	if (mkgzip) {
 		log(Message, "writing compressed database\n");
 		gzFile gz = gzopen(filename.c_str(), "wb");
@@ -562,7 +565,10 @@ db_read(DB *db, const std::string& filename)
 	}
 
 	db->loaded_version = hdr.version;
-	if (hdr.version != DB::version) {
+	// supported versions:
+	if (hdr.version != 1 &&
+	    hdr.version != DB::version)
+	{
 		log(Error, "cannot read depdb version %u files\n", (unsigned)hdr.version);
 		return false;
 	}
@@ -606,6 +612,12 @@ db_read(DB *db, const std::string& filename)
 		}
 		db->required_missing[obj.get()] = std::move(sset);
 	}
+
+	if (hdr.version < 2)
+		return true;
+
+	if (!read_stringset(in, db->ignore_file_rules))
+		return false;
 
 	return true;
 }
