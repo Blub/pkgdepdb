@@ -126,12 +126,25 @@ DB::show_info_json()
 	unsigned id = 0;
 	const char *sep = "\n\t\t";
 	for (auto &p : library_path) {
-		printf("%s", sep);
-		sep = ",\n\t\t";
+		printf("%s", sep); sep = ",\n\t\t";
 		json_quote(stdout, p);
 		printf(" // %u", id++);
 	}
-	printf("\n\t]\n}\n");
+	printf("\n\t]");
+
+	if (ignore_file_rules.size()) {
+		printf(",\n\t\"ignore_files\": [");
+		sep = "\n\t\t";
+		id = 0;
+		for (auto &p : ignore_file_rules) {
+			printf("%s", sep); sep = ",\n\t\t";
+			json_quote(stdout, p);
+			printf(" // %u", id++);
+		}
+		printf("\n\t]");
+	}
+
+	printf("\n}\n");
 }
 
 void

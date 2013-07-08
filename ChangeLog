@@ -1,7 +1,8 @@
 2013-07-08 Blub
 
 	* queries/json:
-		json formatted output for -M and -F queries
+		json formatted output for all queries for the sake of
+		machine readability.
 	* options: -q to raise the LogLevel to Print
 
 2013-07-07 Blub

@@ -309,6 +309,32 @@ DB::ld_insert(const std::string& dir, size_t i)
 	return true;
 }
 
+bool
+DB::ignore_file(const std::string& filename)
+{
+	return std::get<1>(ignore_file_rules.insert(filename));
+}
+
+bool
+DB::unignore_file(const std::string& filename)
+{
+	return (ignore_file_rules.erase(filename) > 0);
+}
+
+bool
+DB::unignore_file(size_t id)
+{
+	if (id >= ignore_file_rules.size())
+		return false;
+	auto iter = ignore_file_rules.begin();
+	while (id) {
+		++iter;
+		--id;
+	}
+	ignore_file_rules.erase(iter);
+	return true;
+}
+
 void
 DB::show_info()
 {
@@ -321,6 +347,12 @@ DB::show_info()
 	unsigned id = 0;
 	for (auto &p : library_path)
 		printf("  %u: %s\n", id++, p.c_str());
+	if (ignore_file_rules.size()) {
+		printf("Ignoring the following files:\n");
+		id = 0;
+		for (auto &ign : ignore_file_rules)
+			printf("  %u: %s\n", id++, ign.c_str());
+	}
 }
 
 bool

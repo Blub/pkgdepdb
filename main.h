@@ -187,6 +187,12 @@ class DB {
 public:
 	static uint16_t version;
 
+	using IgnoreMissingRule = struct {
+		std::string package;
+		std::string object;
+		std::string what;
+	};
+
 	DB();
 	~DB();
 
@@ -200,6 +206,8 @@ public:
 
 	std::map<Elf*, ObjectSet> required_found;
 	std::map<Elf*, StringSet> required_missing;
+
+	StringSet   ignore_file_rules;
 
 public:
 	bool install_package(Package* &&pkg);
@@ -233,6 +241,10 @@ public:
 	bool ld_delete(const std::string& dir);
 	bool ld_insert(const std::string& dir, size_t i);
 	bool ld_clear();
+
+	bool ignore_file(const std::string& name);
+	bool unignore_file(const std::string& name);
+	bool unignore_file(size_t id);
 
 private:
 	bool elf_finds(Elf*, const std::string& lib) const;

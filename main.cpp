@@ -75,6 +75,8 @@ static struct option long_opts[] = {
 	{ "ld-insert",  required_argument, 0, -'I' },
 	{ "ld-clear",   no_argument,       0, -'C' },
 
+	{ "rule",       required_argument, 0, 'R' },
+
 	{ "relink",     no_argument,       0, -'R' },
 
 	{ "json",       no_argument,       0, -'J' },
@@ -102,6 +104,7 @@ help(int x)
 	             "  --dry              do not commit the changes to the db\n"
 	             "  --fixpaths         fix up path entries as older versions didn't\n"
 	             "                     handle ../ in paths (includes --relink)\n"
+	             "  -R, --rule=CMD     modify rules\n"
 	             );
 	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
@@ -162,7 +165,10 @@ public:
 	}
 };
 
+static bool parse_rule(DB *db, const std::string& rule);
+
 bool db_store_json(DB *db, const std::string& filename);
+
 int
 main(int argc, char **argv)
 {
@@ -192,12 +198,13 @@ main(int argc, char **argv)
 	ArgArg ld_append (&oldmode),
 	       ld_prepend(&oldmode),
 	       ld_delete (&oldmode),
-	       ld_clear  (&oldmode);
+	       ld_clear  (&oldmode),
+	       rulemod   (&oldmode);
 	std::vector<std::tuple<std::string,size_t>> ld_insert;
 
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -238,6 +245,7 @@ main(int argc, char **argv)
 			case -'R': oldmode = false; do_relink   = true; break;
 			case -'F': oldmode = false; do_fixpaths = true; break;
 
+			case  'R': rulemod    = optarg; break;
 			case -'A': ld_append  = optarg; break;
 			case -'P': ld_prepend = optarg; break;
 			case -'D': ld_delete  = optarg; break;
@@ -347,6 +355,11 @@ main(int argc, char **argv)
 		db->name = newname;
 	}
 
+	if (rulemod) {
+		for (auto &rule : rulemod.arg)
+			modified = parse_rule(db.get(), rule) || modified;
+	}
+
 	if (ld_append) {
 		for (auto &dir : ld_append.arg)
 			modified = db->ld_append(dir)  || modified;
@@ -424,4 +437,36 @@ main(int argc, char **argv)
 	}
 
 	return 0;
+}
+
+static bool
+parse_rule(DB *db, const std::string& rule)
+{
+	if (rule.compare(0, 7, "ignore:") == 0) {
+		if (rule.length() < 8) {
+			log(Error, "malformed rule: `%s'\n", rule.c_str());
+			log(Error, "format: ignore:FILENAME\n");
+			return false;
+		}
+		return db->ignore_file(rule.substr(7));
+	}
+	if (rule.compare(0, 9, "unignore:") == 0) {
+		if (rule.length() < 10) {
+			log(Error, "malformed rule: `%s'\n", rule.c_str());
+			log(Error, "format: unignore:FILENAME\n");
+			return false;
+		}
+		return db->unignore_file(rule.substr(9));
+	}
+	if (rule.compare(0, 12, "unignore-id:") == 0) {
+		if (rule.length() < 13) {
+			log(Error, "malformed rule: `%s'\n", rule.c_str());
+			log(Error, "format: unignore:FILENAME\n");
+			return false;
+		}
+		return db->unignore_file(rule.substr(12));
+	}
+
+	log(Error, "no such rule command: `%s'\n", rule.c_str());
+	return false;
 }
