@@ -125,8 +125,10 @@ DB::show_objects_json()
 	for (auto &obj : objects) {
 		printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
 		print_objname(obj);
-		if (opt_verbosity < 1)
+		if (opt_verbosity < 1) {
+			printf("\n\t}");
 			continue;
+		}
 		do {
 			printf("\n\t\t\"class\": %u, // %s", (unsigned)obj->ei_class, obj->classString());
 			printf("\n\t\t\"data\":  %u, // %s", (unsigned)obj->ei_data,  obj->dataString());
@@ -154,7 +156,7 @@ DB::show_objects_json()
 					print_objname(found);
 				}
 			}
-			printf("\n\t\t\t],\n\t\t\"misses\": ["); {
+			printf("\n\t\t],\n\t\t\"misses\": ["); {
 				auto &set = required_missing[obj];
 				const char *sep = "\n\t\t\t";
 				for (auto &miss : set) {
@@ -163,7 +165,7 @@ DB::show_objects_json()
 				}
 			}
 
-			printf("\n\t\t\t]\n\t}");
+			printf("\n\t\t]\n\t}");
 		} while(0);
 	}
 	printf("\n] }\n");
