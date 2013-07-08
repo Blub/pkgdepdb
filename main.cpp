@@ -464,7 +464,7 @@ parse_rule(DB *db, const std::string& rule)
 			log(Error, "format: unignore:FILENAME\n");
 			return false;
 		}
-		return db->unignore_file(rule.substr(12));
+		return db->unignore_file(strtoul(rule.substr(12).c_str(), nullptr, 0));
 	}
 
 	log(Error, "no such rule command: `%s'\n", rule.c_str());
