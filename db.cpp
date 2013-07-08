@@ -286,16 +286,24 @@ DB::ld_clear()
 	return false;
 }
 
+static std::string
+fixcpath(const std::string& dir)
+{
+	std::string s(dir);
+	fixpath(s);
+	return std::move(dir);
+}
+
 bool
 DB::ld_append(const std::string& dir)
 {
-	return ld_insert(dir, library_path.size()-1);
+	return ld_insert(fixcpath(dir), library_path.size()-1);
 }
 
 bool
 DB::ld_prepend(const std::string& dir)
 {
-	return ld_insert(dir, 0);
+	return ld_insert(fixcpath(dir), 0);
 }
 
 bool
@@ -308,13 +316,15 @@ DB::ld_delete(size_t i)
 }
 
 bool
-DB::ld_delete(const std::string& dir)
+DB::ld_delete(const std::string& dir_)
 {
-	if (!dir.length())
+	if (!dir_.length())
 		return false;
-	if (dir[0] >= '0' && dir[0] <= '9') {
-		return ld_delete(strtoul(dir.c_str(), nullptr, 0));
+	if (dir_[0] >= '0' && dir_[0] <= '9') {
+		return ld_delete(strtoul(dir_.c_str(), nullptr, 0));
 	}
+	std::string dir(dir_);
+	fixpath(dir);
 	auto old = std::find(library_path.begin(), library_path.end(), dir);
 	if (old != library_path.end()) {
 		library_path.erase(old);
@@ -324,8 +334,10 @@ DB::ld_delete(const std::string& dir)
 }
 
 bool
-DB::ld_insert(const std::string& dir, size_t i)
+DB::ld_insert(const std::string& dir_, size_t i)
 {
+	std::string dir(dir_);
+	fixpath(dir);
 	if (!library_path.size())
 		i = 0;
 	else if (i >= library_path.size())
@@ -346,8 +358,10 @@ DB::ld_insert(const std::string& dir, size_t i)
 }
 
 bool
-DB::pkg_ld_insert(const std::string& package, const std::string& dir, size_t i)
+DB::pkg_ld_insert(const std::string& package, const std::string& dir_, size_t i)
 {
+	std::string dir(dir_);
+	fixpath(dir);
 	StringList &path(package_library_path[package]);
 
 	if (!path.size())
@@ -370,8 +384,10 @@ DB::pkg_ld_insert(const std::string& package, const std::string& dir, size_t i)
 }
 
 bool
-DB::pkg_ld_delete(const std::string& package, const std::string& dir)
+DB::pkg_ld_delete(const std::string& package, const std::string& dir_)
 {
+	std::string dir(dir_);
+	fixpath(dir);
 	auto iter = package_library_path.find(package);
 	if (iter == package_library_path.end())
 		return false;
@@ -413,13 +429,13 @@ DB::pkg_ld_clear(const std::string& package)
 bool
 DB::ignore_file(const std::string& filename)
 {
-	return std::get<1>(ignore_file_rules.insert(filename));
+	return std::get<1>(ignore_file_rules.insert(fixcpath(filename)));
 }
 
 bool
 DB::unignore_file(const std::string& filename)
 {
-	return (ignore_file_rules.erase(filename) > 0);
+	return (ignore_file_rules.erase(fixcpath(filename)) > 0);
 }
 
 bool
