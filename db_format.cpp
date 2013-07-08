@@ -513,6 +513,13 @@ db_store(DB *db, const std::string& filename)
 	if (!write_stringset(out, db->ignore_file_rules))
 		return false;
 
+	out <= (uint32_t)db->package_library_path.size();
+	for (auto iter : db->package_library_path) {
+		out <= iter.first;
+		if (!write_stringlist(out, iter.second))
+			return false;
+	}
+
 	if (mkgzip) {
 		log(Message, "writing compressed database\n");
 		gzFile gz = gzopen(filename.c_str(), "wb");
@@ -620,6 +627,14 @@ db_read(DB *db, const std::string& filename)
 
 	if (!read_stringset(in, db->ignore_file_rules))
 		return false;
+
+	in >= len;
+	for (uint32_t i = 0; i != len; ++i) {
+		std::string pkg;
+		in >= pkg;
+		if (!read_stringlist(in, db->package_library_path[pkg]))
+			return false;
+	}
 
 	return true;
 }
