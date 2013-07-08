@@ -396,6 +396,8 @@ DB::pkg_ld_delete(const std::string& package, const std::string& dir_)
 	auto old = std::find(path.begin(), path.end(), dir);
 	if (old != path.end()) {
 		path.erase(old);
+		if (!path.size())
+			package_library_path.erase(iter);
 		return true;
 	}
 	return false;
@@ -412,6 +414,8 @@ DB::pkg_ld_delete(const std::string& package, size_t i)
 	if (i >= path.size())
 		return false;
 	path.erase(path.begin()+i);
+	if (!path.size())
+		package_library_path.erase(iter);
 	return true;
 }
 
