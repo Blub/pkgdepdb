@@ -199,6 +199,12 @@ DB::find_for(Elf *obj, const std::string& needed) const
 void
 DB::link_object(Elf *obj)
 {
+	if (ignore_file_rules.size()) {
+		std::string full = obj->dirname + "/" + obj->basename;
+		if (ignore_file_rules.find(full) != ignore_file_rules.end())
+			return;
+	}
+
 	ObjectSet req_found;
 	StringSet req_missing;
 	for (auto &needed : obj->needed) {
