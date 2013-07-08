@@ -10,6 +10,8 @@
 	* rules:
 		-R / --rule takes a rule command to modify rules like
 		file-ignores or package library paths.
+	* path strings:
+		path strings in rules or --ld parameters now get sanitized
 
 2013-07-07 Blub
 
