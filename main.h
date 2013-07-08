@@ -211,6 +211,7 @@ public:
 	void show_info();
 	void show_packages(bool filter_broken);
 	void show_objects();
+	void show_objects_json();
 	void show_missing();
 	void show_missing_json();
 	void show_found();

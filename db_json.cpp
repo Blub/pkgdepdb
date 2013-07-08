@@ -40,8 +40,70 @@ print_objname(const Elf *obj)
 }
 
 void
+DB::show_objects_json()
+{
+	if (!objects.size()) {
+		printf("{ \"objects\": [] }\n");
+		return;
+	}
+
+	printf("{ \"objects\": [");
+	const char *mainsep = "\n\t";
+	for (auto &obj : objects) {
+		printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
+		print_objname(obj);
+		if (opt_verbosity < 1)
+			continue;
+		do {
+			printf("\n\t\t\"class\": %u, // %s", (unsigned)obj->ei_class, obj->classString());
+			printf("\n\t\t\"data\":  %u, // %s", (unsigned)obj->ei_data,  obj->dataString());
+			if (opt_verbosity >= 2 || obj->rpath_set || obj->runpath_set)
+				printf("\n\t\t\"osabi\": %u, // %s", (unsigned)obj->ei_osabi, obj->osabiString());
+			else
+				printf("\n\t\t\"osabi\": %u  // %s", (unsigned)obj->ei_osabi, obj->osabiString());
+			if (obj->rpath_set) {
+				printf(",\n\t\t\"rpath\": ");
+				json_quote(stdout, obj->rpath);
+			}
+			if (obj->runpath_set) {
+				printf(",\n\t\t\"runpath\": ");
+				json_quote(stdout, obj->runpath);
+			}
+			if (opt_verbosity < 2) {
+				printf("\n\t}");
+				break;
+			}
+			printf(",\n\t\t\"finds\": ["); {
+				auto &set = required_found[obj];
+				const char *sep = "\n\t\t\t";
+				for (auto &found : set) {
+					printf("%s", sep); sep = ",\n\t\t\t";
+					print_objname(found);
+				}
+			}
+			printf("\n\t\t\t],\n\t\t\"misses\": ["); {
+				auto &set = required_missing[obj];
+				const char *sep = "\n\t\t\t";
+				for (auto &miss : set) {
+					printf("%s", sep); sep = ",\n\t\t\t";
+					json_quote(stdout, miss);
+				}
+			}
+
+			printf("\n\t\t\t]\n\t}");
+		} while(0);
+	}
+	printf("\n] }\n");
+}
+
+void
 DB::show_found_json()
 {
+	if (!required_found.size()) {
+		printf("{ \"found_objects\": {} }\n");
+		return;
+	}
+
 	printf("{ \"found_objects\": {");
 	const char *mainsep = "\n\t";
 	for (auto &fnd : required_found) {
@@ -64,6 +126,11 @@ DB::show_found_json()
 void
 DB::show_missing_json()
 {
+	if (!required_missing.size()) {
+		printf("{ \"missing_objects\": {} }\n");
+		return;
+	}
+
 	printf("{ \"missing_objects\": {");
 	const char *mainsep = "\n\t";
 	for (auto &mis : required_missing) {
