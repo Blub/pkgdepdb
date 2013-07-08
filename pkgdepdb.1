@@ -57,6 +57,10 @@ verbosity level is 0.
 Not the opposite of
 .Fl v
 but rather disables progress-messages.
+.It Fl R , Fl -rule=RULECOMMAND
+Modify the databases ruleset. See the
+.Sx RULES
+section.
 .El
 .Pp
 The following query options are available:
@@ -121,6 +125,56 @@ Delete from the list.
 Insert the directory at the specified index.
 .It Fl -ld-clear
 Remove all paths from the db.
+.El
+.Sh RULES
+In order to make it easier to maintain packages, the ability to add
+additional rules to the database has been added. For instance, the
+freebsd-kernel package in ArchBSD contains the file
+.Pa /boot/kernel/kernel
+which also contains an ELF header which has an entry claiming it
+depends on the file
+.Pa hack.So Ns . br
+This file can be ignored with file-ignore rule.
+.Pp
+Another set of rules are package-specific library-paths. These are
+useful when a package sets the LD_LIBRARY_PATH variable. These rules
+only match the package's name,
+.Em not
+its version!
+.Pp
+The currently active rules are shown with the
+.Fl -info
+query, which includes IDs for each rule which can be used as a
+shortcut during modification.
+.Pp
+Here's the list of rule modification commands:
+.Bl -tag -width Ds
+.It Fl -rule Cm ignore: Ns Ar file
+Add a file-ignore rule. These are unique and will not create
+duplicates.
+.It Fl -rule Cm unignore: Ns Ar file
+Remove the file-ignore rule matching exactly the provided file.
+.It Fl -rule Cm unignore-id: Ns Ar fileID
+Remove the file-ignore rule with the provided ID as shown using the
+.Fl -info
+query.
+.It Fl -rule Cm pkg-ld-clear: Ns Ar package
+Remove the package specific library path list for the provided
+package.
+.It Fl -rule Cm pkg-ld-append: Ns Ar package Ns Ar path
+Append the specified path to the specified package's library path list.
+.It Fl -rule Cm pkg-ld-prepend: Ns Ar package Ns Ar path
+Prepend the specified path to the specified package's library path list.
+.It Fl -rule Cm pkg-ld-insert: Ns Ar package Ns Ar ID Ns Ar path
+Insert the specified path to the specified package's library path list
+before the index matching the ID as seen using the
+.Fl -info
+query.
+.It Fl -rule Cm pkg-ld-delete: Ns Ar package Ns Ar path
+Remove the specified path from the package's library path list.
+.It Fl -rule Cm pkg-ld-delete: Ns Ar package Ns Ar ID
+Remove the specified path from the package's library path list using
+the path's ID.
 .El
 .Sh EXAMPLES
 When no database or database-action is specified, the provided archive
