@@ -50,16 +50,14 @@ ends_word(const char c) {
 static bool
 read_info(Package *pkg, struct archive *tar, size_t size)
 {
-	std::string str;
-	str.resize(size); // runs in O(n) but C++ has no proper way of
-	                  // generating an uninitialized array of data
-	                  // and getting a string out of it without EVER
-	                  // copying...
-	ssize_t rc = archive_read_data(tar, &str[0], size);
+	std::vector<char> data(size);
+	ssize_t rc = archive_read_data(tar, &data[0], size);
 	if ((size_t)rc != size) {
 		log(Error, "failed to read .PKGINFO");
 		return false;
 	}
+
+	std::string str(&data[0], data.size());
 
 	size_t pos = 0;
 	auto skipwhite = [&]() {
