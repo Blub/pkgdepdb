@@ -224,6 +224,33 @@ Missing:
     misses: libstdc++.so.6
 (...)
 .Ed
+.Sh CONFIG
+pkgdepdb tries to read configuration files in the following order:
+.Bl -enum -compact
+.It
+~/.pkgdepdb/config
+.It
+%%SYSCONFDIR%%/pkgdepdb.conf
+.El
+.Pp
+The configuration can contain comment lines starting with #, empty
+lines as well as the following all-optional entries:
+.Bd -literal -offset indent
+# Default database (as if the --db parameter was used)
+database = /path/to/default/database
+# Default verbosity level (amount of -v parameters)
+verbosity = 1
+# Be quiet (as if the -q parameter was used)
+quiet = true
+# or:
+# quiet = false
+.Ed
+.Pp
+.Em NOTE Ns :
+The default database entry strips leading whitespaces, but
+.Em NOT
+trailing whitespaces. Anything after the first non-white character is
+copied as-is.
 .Sh BUGS
 Currently symlinks are treated as file-copies, and they are followed
 at package-load time, this means that there cannot be cross-package
@@ -237,5 +264,12 @@ at some point.
 .Pp
 The current behavior should work fine in most cases, as packages
 rarely link to files from other packages.
+.Sh FILES
+.Bl -dash -compact
+.It
+.Pa ~/.pkgdepdb/config
+.It
+.Pa %%SYSCONFDIR%%/pkgdepdb.conf
+.El
 .Sh AUTHOR
 See <http://github.com/Blub/pkgdepdb>.

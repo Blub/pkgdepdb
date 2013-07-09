@@ -33,14 +33,15 @@ LIBS     += $(ZLIB_LIBS)
 
 OBJECTS = main.o config.o package.o elf.o db.o db_format.o db_json.o
 
-BINARY = pkgdepdb
+BINARY        = pkgdepdb
 STATIC_BINARY = $(BINARY)-static
+MANPAGES      = pkgdepdb.1
 
 .PHONY: uninstall uninstall-bin uninstall-man static
 
 default: all
 
-all: $(BINARY)
+all: $(BINARY) $(MANPAGES)
 static: $(STATIC_BINARY)
 
 .cpp.o:
@@ -51,6 +52,11 @@ $(BINARY): $(OBJECTS)
 
 $(STATIC_BINARY): $(OBJECTS)
 	libtool --mode=link $(CXX) $(LDFLAGS) -o $@ $(OBJECTS) -all-static $(LIBS)
+
+pkgdepdb.1: pkgdepdb.1.in
+	sed -e "s,%%SYSCONFDIR%%,$(SYSCONFDIR),g" \
+	    pkgdepdb.1.in \
+	    > pkgdepdb.1
 
 clean:
 	-rm -f *.o $(BINARY) $(BINARY)-static
