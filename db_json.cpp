@@ -141,26 +141,33 @@ DB::show_info_json()
 		printf("]\n}\n");
 		return;
 	}
-	unsigned id = 0;
-	const char *sep = "\n\t\t";
-	for (auto &p : library_path) {
-		printf("%s", sep); sep = ",\n\t\t";
-		json_quote(stdout, p);
-		printf(" // %u", id++);
+	size_t i = 0;
+	while (i != library_path.size()) {
+		printf("\n\t\t");
+		json_quote(stdout, library_path[i]);
+		if (++i != library_path.size()) {
+			printf(" // %u", (unsigned)i);
+			break;
+		}
+		printf(", // %u", (unsigned)(i-1));
 	}
 	printf("\n\t]");
 
+	unsigned id;
 	if (ignore_file_rules.size()) {
 		printf(",\n\t\"ignore_files\": [");
-		sep = "\n\t\t";
 		id = 0;
 		for (auto &p : ignore_file_rules) {
-			printf("%s", sep); sep = ",\n\t\t";
+			printf("\n\t\t");
 			json_quote(stdout, p);
-			printf(" // %u", id++);
+			if (id+1 == ignore_file_rules.size())
+				printf(" // %u", id++);
+			else
+				printf(", // %u", id++);
 		}
 		printf("\n\t]");
 	}
+	const char *sep;
 	if (package_library_path.size()) {
 		printf(",\n\t\"package_libray_paths\": {");
 		sep = "\n\t\t";
@@ -179,12 +186,14 @@ DB::show_info_json()
 	}
 	if (base_packages.size()) {
 		printf(",\n\t\"base_packages\": [");
-		sep = "\n\t\t";
 		id = 0;
 		for (auto &p : base_packages) {
-			printf("%s", sep); sep = ",\n\t\t";
+			printf("\n\t\t");
 			json_quote(stdout, p);
-			printf(" // %u", id++);
+			if (id+1 == base_packages.size())
+				printf(" // %u", id++);
+			else
+				printf(", // %u", id++);
 		}
 		printf("\n\t]");
 	}
