@@ -220,6 +220,8 @@ main(int argc, char **argv)
 	std::vector<std::tuple<std::string,size_t>> ld_insert;
 
 	LogLevel = Message;
+	if (!ReadConfig())
+		return 1;
 	for (;;) {
 		int opt_index = 0;
 		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:", long_opts, &opt_index);
@@ -338,6 +340,19 @@ main(int argc, char **argv)
 		}
 		return 0;
 	}
+
+	if (!has_db) {
+		if (opt_default_db.length()) {
+			has_db = true;
+			dbfile = std::move(opt_default_db);
+		}
+	}
+
+	if (!has_db) {
+		log(Message, "no database selected\n");
+		return 0;
+	}
+
 	if (!do_delete && optind < argc) {
 		if (do_install)
 			log(Message, "loading packages...\n");
@@ -365,12 +380,6 @@ main(int argc, char **argv)
 	}
 
 	std::unique_ptr<DB> db(new DB);
-	if (!has_db) {
-		if (opt_default_db.length()) {
-			has_db = true;
-			dbfile = std::move(opt_default_db);
-		}
-	}
 	if (has_db) {
 		if (!db->read(dbfile)) {
 			log(Error, "failed to read database\n");

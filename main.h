@@ -53,6 +53,8 @@ extern unsigned int opt_verbosity;
 extern bool         opt_quiet;
 extern bool         opt_use_json;
 
+bool ReadConfig();
+
 class Package;
 
 class Elf {
