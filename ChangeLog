@@ -4,6 +4,9 @@
 		Added a bitfield to mask rules and library paths from being to
 		the database.  Writing a database with no  rule  entries  will
 		cause version 1 to be used.
+	* configuration file:
+		will now look  for  config  files  ~/.pkgdepdb/config  or  for
+		pkgdepdb.conf in $(SYSCONFDIR)
 
 2013-07-08 Blub
 
