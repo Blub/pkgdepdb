@@ -348,16 +348,7 @@ main(int argc, char **argv)
 		// non-database mode!
 		while (optind < argc) {
 			Package *package = Package::open(argv[optind++]);
-			for (auto &obj : package->objects) {
-				const char *objdir  = obj->dirname.c_str();
-				const char *objname = obj->basename.c_str();
-				for (auto &need : obj->needed) {
-					printf("%s : %s/%s NEEDS %s\n",
-					       package->name.c_str(),
-					       objdir, objname,
-					       need.c_str());
-				}
-			}
+			package->show_needed();
 			delete package;
 		}
 		return 0;
@@ -382,7 +373,6 @@ main(int argc, char **argv)
 		while (optind < argc) {
 			if (do_install)
 				log(Print, "  %s\n", argv[optind]);
-
 			Package *package = Package::open(argv[optind]);
 			if (!package)
 				log(Error, "error reading package %s\n", argv[optind]);
