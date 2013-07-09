@@ -179,6 +179,16 @@ Remove the specified path from the package's library path list.
 .It Fl -rule Cm pkg-ld-delete-id: Ns Ar package Ns Ar ID
 Remove the specified path from the package's library path list using
 the path's ID.
+.It Fl -rule Cm base-add: Ns Ar PKG
+Add the provided package to the list of base packages. The package
+does not need to exist. It's merely a list of strings.
+.It Fl -rule Cm base-remove: Ns Ar PKG
+Remove an existing package from the base package list by name.
+.It Fl -rule Cm base-remove-id: Ns Ar ID
+Remove an existing package from the base package list by id as shown
+via the
+.Fl info
+query.
 .El
 .Sh EXAMPLES
 When no database or database-action is specified, the provided archive
