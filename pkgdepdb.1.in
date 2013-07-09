@@ -290,6 +290,8 @@ quiet = true
 # and use them if they are present in the database
 package_depends = true
 # or false
+# The json option works just like --json
+json = off
 .Ed
 .Pp
 .Em NOTE Ns :
