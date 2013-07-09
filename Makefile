@@ -37,12 +37,14 @@ BINARY        = pkgdepdb
 STATIC_BINARY = $(BINARY)-static
 MANPAGES      = pkgdepdb.1
 
-.PHONY: uninstall uninstall-bin uninstall-man static
+.PHONY: man manpages uninstall uninstall-bin uninstall-man static
 
 default: all
 
-all: $(BINARY) $(MANPAGES)
-static: $(STATIC_BINARY)
+all:      $(BINARY)
+static:   $(STATIC_BINARY)
+man:      $(MANPAGES)
+manpages: $(MANPAGES)
 
 .cpp.o:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
@@ -71,7 +73,7 @@ install-bin: install-prefix
 	install    -m755 $(BINARY)  $(DESTDIR)$(BINDIR)/$(BINARY)
 uninstall-bin:
 	rm -f $(DESTDIR)$(BINDIR)/$(BINARY)
-install-man: install-prefix
+install-man: $(MANPAGES) install-prefix
 	install -d -m755            $(DESTDIR)$(MAN1DIR)
 	install    -m644 pkgdepdb.1 $(DESTDIR)$(MAN1DIR)/pkgdepdb.1
 uninstall-man:
