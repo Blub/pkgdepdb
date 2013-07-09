@@ -483,6 +483,32 @@ DB::unignore_file(size_t id)
 	return true;
 }
 
+bool
+DB::add_base_package(const std::string& name)
+{
+	return std::get<1>(base_packages.insert(name));
+}
+
+bool
+DB::remove_base_package(const std::string& name)
+{
+	return (base_packages.erase(name) > 0);
+}
+
+bool
+DB::remove_base_package(size_t id)
+{
+	if (id >= base_packages.size())
+		return false;
+	auto iter = base_packages.begin();
+	while (id) {
+		++iter;
+		--id;
+	}
+	base_packages.erase(iter);
+	return true;
+}
+
 void
 DB::show_info()
 {

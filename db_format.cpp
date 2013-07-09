@@ -25,7 +25,8 @@ depdb_magic[] = { 'A', 'r', 'c', 'h',
 namespace DBFlags {
 	enum {
 		IgnoreRules   = (1<<0),
-		PackageLDPath = (1<<1)
+		PackageLDPath = (1<<1),
+		BasePackages  = (1<<2)
 	};
 }
 
@@ -513,6 +514,8 @@ db_store(DB *db, const std::string& filename)
 			hdr.flags |= DBFlags::IgnoreRules;
 		if (db->package_library_path.size())
 			hdr.flags |= DBFlags::PackageLDPath;
+		if (db->base_packages.size())
+			hdr.flags |= DBFlags::BasePackages;
 
 		// if it contains rulesets it must be version 2
 		if (hdr.flags)
@@ -563,6 +566,11 @@ db_store(DB *db, const std::string& filename)
 			if (!write_stringlist(out, iter.second))
 				return false;
 		}
+	}
+
+	if (hdr.flags & DBFlags::BasePackages) {
+		if (!write_stringset(out, db->base_packages))
+			return false;
 	}
 
 	if (mkgzip) {

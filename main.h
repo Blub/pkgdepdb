@@ -227,6 +227,7 @@ public:
 
 	StringSet                         ignore_file_rules;
 	std::map<std::string, StringList> package_library_path;
+	StringSet                         base_packages;
 
 public:
 	bool install_package(Package* &&pkg);
@@ -255,16 +256,20 @@ public:
 	bool read (const std::string& filename);
 	bool empty() const;
 
-	bool ld_append(const std::string& dir);
+	bool ld_append (const std::string& dir);
 	bool ld_prepend(const std::string& dir);
-	bool ld_delete(const std::string& dir);
-	bool ld_delete(size_t i);
-	bool ld_insert(const std::string& dir, size_t i);
-	bool ld_clear();
+	bool ld_delete (const std::string& dir);
+	bool ld_delete (size_t i);
+	bool ld_insert (const std::string& dir, size_t i);
+	bool ld_clear  ();
 
-	bool ignore_file(const std::string& name);
+	bool ignore_file  (const std::string& name);
 	bool unignore_file(const std::string& name);
 	bool unignore_file(size_t id);
+
+	bool add_base_package   (const std::string& name);
+	bool remove_base_package(const std::string& name);
+	bool remove_base_package(size_t id);
 
 	bool pkg_ld_insert(const std::string& package, const std::string& path, size_t i);
 	bool pkg_ld_delete(const std::string& package, const std::string& path);
