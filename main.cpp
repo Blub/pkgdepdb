@@ -217,7 +217,9 @@ parse_json_bit(const char *bit)
 		++bit;
 	}
 
-	if (!strcmp(bit, "all")) {
+	if (!strcmp(bit, "a") ||
+	    !strcmp(bit, "all"))
+	{
 		if (mode == '-')
 			opt_json = 0;
 		else
