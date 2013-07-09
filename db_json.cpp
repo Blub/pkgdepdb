@@ -65,6 +65,24 @@ DB::show_packages_json(bool filter_broken)
 		printf(",\n\t\t\t\"version\": ");
 		json_quote(stdout, pkg->version);
 		if (opt_verbosity >= 1) {
+			if (pkg->depends.size()) {
+				printf(",\n\t\t\t\"depends\": [");
+				const char *sep = "\n\t\t\t\t";
+				for (auto &dep : pkg->depends) {
+					printf("%s", sep); sep = ",\n\t\t\t\t";
+					json_quote(stdout, dep);
+				}
+				printf("\n\t\t\t]");
+			}
+			if (pkg->optdepends.size()) {
+				printf(",\n\t\t\t\"optdepends\": [");
+				const char *sep = "\n\t\t\t\t";
+				for (auto &dep : pkg->optdepends) {
+					printf("%s", sep); sep = ",\n\t\t\t\t";
+					json_quote(stdout, dep);
+				}
+				printf("\n\t\t\t]");
+			}
 			if (filter_broken) {
 				printf(",\n\t\t\t\"broken\": [");
 				const char *sep = "\n\t\t\t\t";

@@ -276,6 +276,9 @@ private:
 
 	bool is_broken(const Package *pkg) const;
 	bool is_broken(const Elf *elf) const;
+
+public: // NOT SERIALIZED:
+	bool contains_package_depends;
 };
 
 // Utility functions:

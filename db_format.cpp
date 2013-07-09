@@ -13,7 +13,7 @@
 
 // version
 uint16_t
-DB::CURRENT = 2;
+DB::CURRENT = 3;
 
 // magic header
 static const char
@@ -398,7 +398,7 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 }
 
 static bool
-write_pkg(SerialOut &out, Package *pkg)
+write_pkg(SerialOut &out, Package *pkg, bool depdata)
 {
 	// check if the package has already been serialized
 	auto prev = out.pkgs.find(pkg);
@@ -416,11 +416,19 @@ write_pkg(SerialOut &out, Package *pkg)
 	    <= pkg->version;
 	if (!write_objlist(out, pkg->objects))
 		return false;
+
+	if (depdata) {
+		if (!write_stringlist(out, pkg->depends) ||
+		    !write_stringlist(out, pkg->optdepends))
+		{
+			return false;
+		}
+	}
 	return true;
 }
 
 static bool
-read_pkg(SerialIn &in, Package *&pkg)
+read_pkg(SerialIn &in, Package *&pkg, bool depdata)
 {
 	ObjRef r;
 	in >= r;
@@ -452,6 +460,14 @@ read_pkg(SerialIn &in, Package *&pkg)
 		return false;
 	for (auto &o : pkg->objects)
 		o->owner = pkg;
+
+	if (depdata) {
+		if (!read_stringlist(in, pkg->depends) ||
+		    !read_stringlist(in, pkg->optdepends))
+		{
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -490,14 +506,18 @@ db_store(DB *db, const std::string& filename)
 	hdr.version = 1;
 
 	// Figure out which database format version this will be
-	if (db->ignore_file_rules.size())
-		hdr.flags |= DBFlags::IgnoreRules;
-	if (db->package_library_path.size())
-		hdr.flags |= DBFlags::PackageLDPath;
+	if (db->contains_package_depends)
+		hdr.version = 3;
+	else {
+		if (db->ignore_file_rules.size())
+			hdr.flags |= DBFlags::IgnoreRules;
+		if (db->package_library_path.size())
+			hdr.flags |= DBFlags::PackageLDPath;
 
-	// if it contains rulesets it must be version 2
-	if (hdr.flags)
-		hdr.version = 2;
+		// if it contains rulesets it must be version 2
+		if (hdr.flags)
+			hdr.version = 2;
+	}
 
 	// okay
 
@@ -508,7 +528,7 @@ db_store(DB *db, const std::string& filename)
 
 	out <= (uint32_t)db->packages.size();
 	for (auto &pkg : db->packages) {
-		if (!write_pkg(out, pkg))
+		if (!write_pkg(out, pkg, hdr.version >= 3))
 			return false;
 	}
 
@@ -608,6 +628,9 @@ db_read(DB *db, const std::string& filename)
 		return false;
 	}
 
+	if (hdr.version >= 3)
+		db->contains_package_depends = true;
+
 	in >= db->name;
 	if (!read_stringlist(in, db->library_path)) {
 		log(Error, "failed reading library paths\n");
@@ -619,7 +642,7 @@ db_read(DB *db, const std::string& filename)
 	in >= len;
 	db->packages.resize(len);
 	for (uint32_t i = 0; i != len; ++i) {
-		if (!read_pkg(in, db->packages[i])) {
+		if (!read_pkg(in, db->packages[i], hdr.version >= 3)) {
 			log(Error, "failed reading packages\n");
 			return false;
 		}
