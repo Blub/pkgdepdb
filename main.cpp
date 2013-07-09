@@ -103,7 +103,7 @@ help(int x)
 	             "  -v, --verbose      print more information\n"
 	             "  -q, --quiet        suppress progress messages\n"
 	             "  --depends=<YES|NO> enable or disable package dependencies\n"
-	             "  --json=PART        activate json mode for parts of the program\n"
+	             "  -J, --json=PART    activate json mode for parts of the program\n"
 	             );
 	fprintf(out, "json options:\n"
 	             "  off, n, none       no json output\n"
