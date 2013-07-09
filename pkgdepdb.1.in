@@ -57,6 +57,10 @@ verbosity level is 0.
 Not the opposite of
 .Fl v
 but rather disables progress-messages.
+.It Fl -depends=<yes|no>
+Enable or disable package-dependency tracking. While disabled, newly
+installed packages will not contain any dependency or
+optional-dependency information.
 .It Fl R , Fl -rule=RULECOMMAND
 Modify the databases ruleset. See the
 .Sx RULES
