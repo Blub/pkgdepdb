@@ -18,6 +18,9 @@
 		A list of base packages can be created which contains  a  list
 		of packages which will be  assumed  installed  during  package
 		aware dependency checks.
+	* json option:
+		--json or -J now take a parameter specifying where json format
+		is supposed to be used.
 
 2013-07-08 Blub
 
