@@ -1,0 +1,20 @@
+2013-07-XX Release 0.1.2
+
+	- A rebuild of databases will be required (format changes)
+	- Database format version improved
+	- lots of queries (eg. for broken packages)
+	- optional json output for query
+	- database rules:
+		* ignore files
+		* package-specific library paths
+		* base-package list
+	- package dependency list
+		depend and optdepend PKGINFO entries are stored but  currently
+		not utilized
+	- configuration file
+		~/.pkgdepdb/config  or  SYSCONFDIR/pkgdepdb.conf  is  read  to
+		figure out some default options
+
+2013-07-06 Release 0.1.1
+
+	Rudimentary database generation and package reading
