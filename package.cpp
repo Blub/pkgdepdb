@@ -43,6 +43,10 @@ ends_word(const char c) {
 	return c_isspace(c) || c == '=';
 }
 
+// NOTE:
+// Judgding from pacman/libalpm source code this function
+// is way less strict about the formatting, as we skip whitespace
+// between every word, whereas pacman matches /^(\w+) = (.*)$/ exactly.
 static bool
 read_info(Package *pkg, struct archive *tar, size_t size)
 {
