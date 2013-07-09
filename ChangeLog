@@ -7,6 +7,13 @@
 	* configuration file:
 		will now look  for  config  files  ~/.pkgdepdb/config  or  for
 		pkgdepdb.conf in $(SYSCONFDIR)
+	* package dependency tracking:
+		Now also reading depend= and optdepend= entries from  .PKGINFO
+		files.  Databases with package-dependency info  will  use  the
+		database format version 3 as it modifies the way packages  are
+		serialized.
+		Dependency tracking can be enabled or disabled in  the  config
+		or via the --depends commandline switch.
 
 2013-07-08 Blub
 
