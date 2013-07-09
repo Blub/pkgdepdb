@@ -33,21 +33,24 @@ care_about(struct archive_entry *entry)
 static bool
 read_info(Package *pkg, struct archive *tar, size_t size)
 {
-	std::unique_ptr<char> data(new char[size]);
-	ssize_t rc = archive_read_data(tar, data.get(), size);
+	std::string str;
+	str.resize(size); // runs in O(n) but C++ has no proper way of
+	                  // generating an uninitialized array of data
+	                  // and getting a string out of it without EVER
+	                  // copying...
+	ssize_t rc = archive_read_data(tar, &str[0], size);
 	if ((size_t)rc != size) {
 		log(Error, "failed to read .PKGINFO");
 		return false;
 	}
 
-	std::string str(data.get());
 	size_t pos = str.find("pkgname = ");
 	if (pos == std::string::npos) {
 		log(Error, "missing pkgname entry in .PKGINFO");
 		return false;
 	}
 
-	if (pos != 0 && data.get()[pos-1] != '\n') {
+	if (pos != 0 && str[pos-1] != '\n') {
 		log(Error, "corrupted .PKGINFO");
 		return false;
 	}
@@ -60,7 +63,7 @@ read_info(Package *pkg, struct archive *tar, size_t size)
 		return true;
 	}
 
-	if (pos != 0 && data.get()[pos-1] != '\n') {
+	if (pos != 0 && str[pos-1] != '\n') {
 		log(Warn, "corrupted .PKGINFO; skipping pkgver");
 		return true;
 	}
