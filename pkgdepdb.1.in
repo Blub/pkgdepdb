@@ -61,7 +61,35 @@ but rather disables progress-messages.
 Enable or disable package-dependency tracking. While disabled, newly
 installed packages will not contain any dependency or
 optional-dependency information.
-.It Fl R , Fl -rule=RULECOMMAND
+.It Fl J , Fl -json= Ns Ar MODE
+Change the json mode. By default json will not be used anywhere.
+.Ar MODE
+can start with a
+.Ql +
+or
+.Ql -
+to add or remove json modes, otherwise the json mode will be set to
+exactly the specified mode.
+.br
+The following modes are recognized:
+.Bl -dash -compact
+.It
+.Ar all Ns , Ar a Ns :
+Use json for both query outputs and to store the database.
+.It
+.Ar off Ns , Ar no Ns , Ar none Ns , Ar n Ns :
+Don't use json anywhere. (subtracting this does nothing).
+.It
+.Ar on Ns , Ar query Ns , Ar q Ns :
+Use json for query outputs.
+.It
+.Ar db Ns :
+Use json to store the database.
+.El
+.Pp
+.Em WARNING Ns :
+There is no support to read json formatted databases yet.
+.It Fl R , Fl -rule= Ns Ar RULECOMMAND
 Modify the databases ruleset. See the
 .Sx RULES
 section.
