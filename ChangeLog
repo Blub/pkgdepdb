@@ -14,6 +14,10 @@
 		serialized.
 		Dependency tracking can be enabled or disabled in  the  config
 		or via the --depends commandline switch.
+	* base package list:
+		A list of base packages can be created which contains  a  list
+		of packages which will be  assumed	installed  during  package
+		aware dependency checks.
 
 2013-07-08 Blub
 
