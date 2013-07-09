@@ -1,3 +1,10 @@
+2013-07-09 Blub
+
+	* database format change:
+		Added a bitfield to mask rules and library paths from being to
+		the database.  Writing a database with no  rule  entries  will
+		cause version 1 to be used.
+
 2013-07-08 Blub
 
 	* queries/json:
