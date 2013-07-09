@@ -72,6 +72,10 @@ Installation:
             Files:
                 pkgdepdb.1
 
+        SYSCONFDIR
+            Default: $(PREFIX)/etc
+            Location which will be searched for `pkgdepdb.conf`.
+
     Deinstallation:
 
         There exists an `uninstall' make-target, however you  have	to
