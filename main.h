@@ -61,8 +61,9 @@ namespace JSONBits {
 	};
 }
 
-bool ReadConfig();
-bool CfgStrToBool(const std::string& line);
+bool ReadConfig     ();
+bool CfgStrToBool   (const std::string& line);
+bool CfgParseJSONBit(const char *bit);
 
 class Package;
 

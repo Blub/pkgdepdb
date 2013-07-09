@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -202,69 +201,6 @@ static bool parse_rule(DB *db, const std::string& rule);
 
 bool db_store_json(DB *db, const std::string& filename);
 
-static void
-parse_json_bit(const char *bit)
-{
-	if (!*bit)
-		return;
-	int mode = 0;
-	if (bit[0] == '+') {
-		mode = '+';
-		++bit;
-	}
-	else if (bit[0] == '-') {
-		mode = '-';
-		++bit;
-	}
-
-	if (!strcmp(bit, "a") ||
-	    !strcmp(bit, "all"))
-	{
-		if (mode == '-')
-			opt_json = 0;
-		else
-			opt_json = static_cast<decltype(opt_json)>(-1);
-		return;
-	}
-
-	if (!strcmp(bit, "off") ||
-	    !strcmp(bit, "n")   ||
-	    !strcmp(bit, "no")  ||
-	    !strcmp(bit, "none") )
-	{
-		if (mode == 0)
-			opt_json = 0;
-		return;
-	}
-
-	if (!strcmp(bit, "on") ||
-	    !strcmp(bit, "q")  ||
-	    !strcmp(bit, "query") )
-	{
-		if (mode == '+')
-			opt_json |= JSONBits::Query;
-		else if (mode == '-')
-			opt_json &= ~JSONBits::Query;
-		else
-			opt_json = JSONBits::Query;
-		return;
-	}
-
-	if (!strcmp(bit, "db"))
-	{
-		if (mode == '+')
-			opt_json |= JSONBits::DB;
-		else if (mode == '-')
-			opt_json &= ~JSONBits::DB;
-		else
-			opt_json = JSONBits::DB;
-		return;
-	}
-
-	log(Error, "unknown json bit: %s\n", bit);
-	help(1);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -373,7 +309,10 @@ main(int argc, char **argv)
 				break;
 			}
 
-			case 'J': parse_json_bit(optarg); break;
+			case 'J':
+				if (!CfgParseJSONBit(optarg))
+					help(1);
+				break;
 
 			case ':':
 			case '?':

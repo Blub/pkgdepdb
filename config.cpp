@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 
 #include <iostream>
@@ -77,6 +78,76 @@ cfg_package_depends(std::string &line)
 }
 
 bool
+CfgParseJSONBit(const char *bit)
+{
+	if (!*bit)
+		return true;
+	int mode = 0;
+	if (bit[0] == '+') {
+		mode = '+';
+		++bit;
+	}
+	else if (bit[0] == '-') {
+		mode = '-';
+		++bit;
+	}
+
+	if (!strcmp(bit, "a") ||
+	    !strcmp(bit, "all"))
+	{
+		if (mode == '-')
+			opt_json = 0;
+		else
+			opt_json = static_cast<decltype(opt_json)>(-1);
+		return true;
+	}
+
+	if (!strcmp(bit, "off") ||
+	    !strcmp(bit, "n")   ||
+	    !strcmp(bit, "no")  ||
+	    !strcmp(bit, "none") )
+	{
+		if (mode == 0)
+			opt_json = 0;
+		return true;
+	}
+
+	if (!strcmp(bit, "on") ||
+	    !strcmp(bit, "q")  ||
+	    !strcmp(bit, "query") )
+	{
+		if (mode == '+')
+			opt_json |= JSONBits::Query;
+		else if (mode == '-')
+			opt_json &= ~JSONBits::Query;
+		else
+			opt_json = JSONBits::Query;
+		return true;
+	}
+
+	if (!strcmp(bit, "db"))
+	{
+		if (mode == '+')
+			opt_json |= JSONBits::DB;
+		else if (mode == '-')
+			opt_json &= ~JSONBits::DB;
+		else
+			opt_json = JSONBits::DB;
+		return true;
+	}
+
+	log(Error, "unknown json bit: %s\n", bit);
+	return false;
+}
+
+static bool
+cfg_json(std::string &line)
+{
+	(void)CfgParseJSONBit(line.c_str());
+	return true;
+}
+
+bool
 ReadConfig(std::istream &in, const char *path)
 {
 	std::string line;
@@ -101,7 +172,8 @@ ReadConfig(std::istream &in, const char *path)
 			std::make_tuple("database",         cfg_database),
 			std::make_tuple("verbosity",        cfg_verbosity),
 			std::make_tuple("quiet",            cfg_quiet),
-			std::make_tuple("package_depends",  cfg_package_depends)
+			std::make_tuple("package_depends",  cfg_package_depends),
+			std::make_tuple("josn",             cfg_json)
 		};
 
 		for (auto &r : rules) {
