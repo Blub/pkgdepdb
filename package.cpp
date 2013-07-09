@@ -48,7 +48,7 @@ ends_word(const char c) {
 // is way less strict about the formatting, as we skip whitespace
 // between every word, whereas pacman matches /^(\w+) = (.*)$/ exactly.
 static bool
-read_info(Package *pkg, struct archive *tar, size_t size)
+read_info(Package *pkg, struct archive *tar, const size_t size)
 {
 	std::vector<char> data(size);
 	ssize_t rc = archive_read_data(tar, &data[0], size);
@@ -72,6 +72,10 @@ read_info(Package *pkg, struct archive *tar, size_t size)
 
 	auto getvalue = [&](const char *entryname, std::string &out) -> bool {
 		skipwhite();
+		if (pos >= size) {
+			log(Error, "invalid %s entry in .PKGINFO", entryname);
+			return false;
+		}
 		if (str[pos] != '=') {
 			log(Error, "Error in .PKGINFO");
 			return false;
@@ -127,7 +131,9 @@ read_info(Package *pkg, struct archive *tar, size_t size)
 		if (isentry("optdepend", sizeof("optdepend")-1)) {
 			if (!getvalue("optdepend", es))
 				return false;
-			es.erase(es.find_first_of(':'));
+			size_t c = es.find_first_of(':');
+			if (c != std::string::npos)
+				es.erase(c);
 			if (es.length())
 				pkg->optdepends.push_back(es);
 			continue;
