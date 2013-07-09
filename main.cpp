@@ -18,7 +18,7 @@ std::string   opt_default_db = "";
 unsigned int  opt_verbosity = 0;
 bool          opt_use_json  = false;
 bool          opt_quiet     = false;
-bool          opt_package_depends = false;
+bool          opt_package_depends = true;
 
 enum {
     RESET = 0,
