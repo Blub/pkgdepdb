@@ -512,7 +512,7 @@ DB::remove_base_package(size_t id)
 void
 DB::show_info()
 {
-	if (opt_use_json)
+	if (opt_json & JSONBits::Query)
 		return show_info_json();
 
 	printf("DB version: %u\n", loaded_version);
@@ -564,7 +564,7 @@ DB::is_broken(const Package *pkg) const
 void
 DB::show_packages(bool filter_broken)
 {
-	if (opt_use_json)
+	if (opt_json & JSONBits::Query)
 		return show_packages_json(filter_broken);
 
 	printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
@@ -600,7 +600,7 @@ DB::show_packages(bool filter_broken)
 void
 DB::show_objects()
 {
-	if (opt_use_json)
+	if (opt_json & JSONBits::Query)
 		return show_objects_json();
 
 	if (!objects.size()) {
@@ -641,7 +641,7 @@ DB::show_objects()
 void
 DB::show_missing()
 {
-	if (opt_use_json)
+	if (opt_json & JSONBits::Query)
 		return show_missing_json();
 
 	if (!required_missing.size()) {
@@ -661,7 +661,7 @@ DB::show_missing()
 void
 DB::show_found()
 {
-	if (opt_use_json)
+	if (opt_json & JSONBits::Query)
 		return show_found_json();
 
 	printf("Found:\n");

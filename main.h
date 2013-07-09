@@ -51,8 +51,15 @@ void log(int level, const char *msg, ...);
 extern std::string  opt_default_db;
 extern unsigned int opt_verbosity;
 extern bool         opt_quiet;
-extern bool         opt_use_json;
 extern bool         opt_package_depends;
+extern unsigned int opt_json;
+
+namespace JSONBits {
+	enum {
+		Query = (1<<0),
+		DB    = (1<<1)
+	};
+}
 
 bool ReadConfig();
 bool CfgStrToBool(const std::string& line);

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -16,7 +17,7 @@ static const char *arg0 = 0;
 
 std::string   opt_default_db = "";
 unsigned int  opt_verbosity = 0;
-bool          opt_use_json  = false;
+unsigned int  opt_json      = 0;
 bool          opt_quiet     = false;
 bool          opt_package_depends = true;
 
@@ -82,7 +83,7 @@ static struct option long_opts[] = {
 
 	{ "relink",     no_argument,       0, -'R' },
 
-	{ "json",       no_argument,       0, -'J' },
+	{ "json",       required_argument, 0, 'J' },
 
 	{ "fixpaths",   no_argument,       0, -'F' },
 
@@ -102,6 +103,14 @@ help(int x)
 	             "  -v, --verbose      print more information\n"
 	             "  -q, --quiet        suppress progress messages\n"
 	             "  --depends=<YES|NO> enable or disable package dependencies\n"
+	             "  --json=PART        activate json mode for parts of the program\n"
+	             );
+	fprintf(out, "json options:\n"
+	             "  off, n, none       no json output\n"
+	             "  on, q, query       use json on query outputs\n"
+	             "  db                 use json to store the db (NOT RECOMMENDED)\n"
+	             "  all                both\n"
+	             "  (optional + or - prefix to add or remove bits)\n"
 	             );
 	fprintf(out, "db management options:\n"
 	             "  -d, --db=FILE      set the database file to commit to\n"
@@ -193,6 +202,67 @@ static bool parse_rule(DB *db, const std::string& rule);
 
 bool db_store_json(DB *db, const std::string& filename);
 
+static void
+parse_json_bit(const char *bit)
+{
+	if (!*bit)
+		return;
+	int mode = 0;
+	if (bit[0] == '+') {
+		mode = '+';
+		++bit;
+	}
+	else if (bit[0] == '-') {
+		mode = '-';
+		++bit;
+	}
+
+	if (!strcmp(bit, "all")) {
+		if (mode == '-')
+			opt_json = 0;
+		else
+			opt_json = static_cast<decltype(opt_json)>(-1);
+		return;
+	}
+
+	if (!strcmp(bit, "off") ||
+	    !strcmp(bit, "n")   ||
+	    !strcmp(bit, "no")  ||
+	    !strcmp(bit, "none") )
+	{
+		if (mode == 0)
+			opt_json = 0;
+		return;
+	}
+
+	if (!strcmp(bit, "on") ||
+	    !strcmp(bit, "q")  ||
+	    !strcmp(bit, "query") )
+	{
+		if (mode == '+')
+			opt_json |= JSONBits::Query;
+		else if (mode == '-')
+			opt_json &= ~JSONBits::Query;
+		else
+			opt_json = JSONBits::Query;
+		return;
+	}
+
+	if (!strcmp(bit, "db"))
+	{
+		if (mode == '+')
+			opt_json |= JSONBits::DB;
+		else if (mode == '-')
+			opt_json &= ~JSONBits::DB;
+		else
+			opt_json = JSONBits::DB;
+		return;
+	}
+
+	log(Error, "unknown json bit: %s\n", bit);
+	help(1);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -231,7 +301,7 @@ main(int argc, char **argv)
 		return 1;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -301,7 +371,7 @@ main(int argc, char **argv)
 				break;
 			}
 
-			case -'J': opt_use_json = true; break;
+			case 'J': parse_json_bit(optarg); break;
 
 			case ':':
 			case '?':
@@ -478,7 +548,7 @@ main(int argc, char **argv)
 		db->show_found();
 
 	if (!dryrun && modified && has_db) {
-		if (opt_use_json)
+		if (opt_json & JSONBits::DB)
 			db_store_json(db.get(), dbfile);
 		else if (!db->store(dbfile))
 			log(Error, "failed to write to the database\n");
