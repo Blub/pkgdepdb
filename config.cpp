@@ -38,19 +38,41 @@ cfg_verbosity(std::string &line)
 	return true;
 }
 
+bool
+CfgStrToBool(const std::string& line)
+{
+	return (line == "true" ||
+	        line == "TRUE" ||
+	        line == "True" ||
+	        line == "on"   ||
+	        line == "On"   ||
+	        line == "ON"   ||
+	        line == "YES"  ||
+	        line == "Yes"  ||
+	        line == "yes"  ||
+	        line == "1");
+}
+
 static bool
-cfg_quiet(std::string &line)
+line_to_bool(std::string& line)
 {
 	size_t n = line.find_first_of(" \t\r\n");
 	if (n != std::string::npos)
 		line = std::move(line.substr(0, n));
-	opt_quiet = (line == "true" ||
-	             line == "TRUE" ||
-	             line == "True" ||
-	             line == "on"   ||
-	             line == "On"   ||
-	             line == "ON"   ||
-	             line == "1");
+	return CfgStrToBool(line);
+}
+
+static bool
+cfg_quiet(std::string &line)
+{
+	opt_quiet = line_to_bool(line);
+	return true;
+}
+
+static bool
+cfg_package_depends(std::string &line)
+{
+	opt_package_depends = line_to_bool(line);
 	return true;
 }
 
@@ -76,9 +98,10 @@ ReadConfig(std::istream &in, const char *path)
 
 		std::tuple<std::string, std::function<bool(std::string&)>>
 		rules[] = {
-			std::make_tuple("database",  cfg_database),
-			std::make_tuple("verbosity", cfg_verbosity),
-			std::make_tuple("quiet",     cfg_quiet)
+			std::make_tuple("database",         cfg_database),
+			std::make_tuple("verbosity",        cfg_verbosity),
+			std::make_tuple("quiet",            cfg_quiet),
+			std::make_tuple("package_depends",  cfg_package_depends)
 		};
 
 		for (auto &r : rules) {

@@ -18,6 +18,7 @@ std::string   opt_default_db = "";
 unsigned int  opt_verbosity = 0;
 bool          opt_use_json  = false;
 bool          opt_quiet     = false;
+bool          opt_package_depends = false;
 
 enum {
     RESET = 0,
@@ -85,6 +86,8 @@ static struct option long_opts[] = {
 
 	{ "fixpaths",   no_argument,       0, -'F' },
 
+	{ "depends",    required_argument, 0, -1024-'D' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -98,6 +101,7 @@ help(int x)
 	             "  --version          show version info\n"
 	             "  -v, --verbose      print more information\n"
 	             "  -q, --quiet        suppress progress messages\n"
+	             "  --depends=<YES|NO> enable or disable package dependencies\n"
 	             );
 	fprintf(out, "db management options:\n"
 	             "  -d, --db=FILE      set the database file to commit to\n"
@@ -264,6 +268,10 @@ main(int argc, char **argv)
 
 			case -'R': oldmode = false; do_relink   = true; break;
 			case -'F': oldmode = false; do_fixpaths = true; break;
+
+			case -1024-'D':
+				opt_package_depends = CfgStrToBool(optarg);
+				break;
 
 			case  'R': rulemod    = optarg; break;
 			case -'A': ld_append  = optarg; break;

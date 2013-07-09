@@ -52,8 +52,10 @@ extern std::string  opt_default_db;
 extern unsigned int opt_verbosity;
 extern bool         opt_quiet;
 extern bool         opt_use_json;
+extern bool         opt_package_depends;
 
 bool ReadConfig();
+bool CfgStrToBool(const std::string& line);
 
 class Package;
 
