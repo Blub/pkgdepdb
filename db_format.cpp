@@ -13,7 +13,7 @@
 
 // version
 uint16_t
-DB::version = 2;
+DB::CURRENT = 2;
 
 // magic header
 static const char
@@ -22,10 +22,18 @@ depdb_magic[] = { 'A', 'r', 'c', 'h',
                   'd', 'e', 'p', 's',
                   '~', 'D', 'B', '~' };
 
+namespace DBFlags {
+	enum {
+		IgnoreRules   = (1<<0),
+		PackageLDPath = (1<<1)
+	};
+}
+
 using Header = struct {
-	uint8_t  magic[sizeof(depdb_magic)];
-	uint16_t version;
-	uint8_t  reserved[24];
+	uint8_t   magic[sizeof(depdb_magic)];
+	uint16_t  version;
+	uint16_t  flags;
+	uint8_t   reserved[22];
 };
 
 // Simple straight forward data serialization by keeping track
@@ -476,9 +484,22 @@ db_store(DB *db, const std::string& filename)
 	}
 
 	Header hdr;
+	memset(&hdr, 0, sizeof(hdr));
+
 	memcpy(hdr.magic, depdb_magic, sizeof(hdr.magic));
-	hdr.version = DB::version;
-	memset(&hdr.reserved, 0, sizeof(hdr.reserved));
+	hdr.version = 1;
+
+	// Figure out which database format version this will be
+	if (db->ignore_file_rules.size())
+		hdr.flags |= DBFlags::IgnoreRules;
+	if (db->package_library_path.size())
+		hdr.flags |= DBFlags::PackageLDPath;
+
+	// if it contains rulesets it must be version 2
+	if (hdr.flags)
+		hdr.version = 2;
+
+	// okay
 
 	out <= hdr;
 	out <= db->name;
@@ -510,14 +531,18 @@ db_store(DB *db, const std::string& filename)
 			return false;
 	}
 
-	if (!write_stringset(out, db->ignore_file_rules))
-		return false;
-
-	out <= (uint32_t)db->package_library_path.size();
-	for (auto iter : db->package_library_path) {
-		out <= iter.first;
-		if (!write_stringlist(out, iter.second))
+	if (hdr.flags & DBFlags::IgnoreRules) {
+		if (!write_stringset(out, db->ignore_file_rules))
 			return false;
+	}
+
+	if (hdr.flags & DBFlags::PackageLDPath) {
+		out <= (uint32_t)db->package_library_path.size();
+		for (auto iter : db->package_library_path) {
+			out <= iter.first;
+			if (!write_stringlist(out, iter.second))
+				return false;
+		}
 	}
 
 	if (mkgzip) {
@@ -575,28 +600,35 @@ db_read(DB *db, const std::string& filename)
 
 	db->loaded_version = hdr.version;
 	// supported versions:
-	if (hdr.version != 1 &&
-	    hdr.version != DB::version)
+	if (hdr.version > DB::CURRENT)
 	{
-		log(Error, "cannot read depdb version %u files\n", (unsigned)hdr.version);
+		log(Error, "cannot read depdb version %u files, (known up to %u)\n",
+		    (unsigned)hdr.version,
+		    (unsigned)DB::CURRENT);
 		return false;
 	}
 
 	in >= db->name;
-	if (!read_stringlist(in, db->library_path))
+	if (!read_stringlist(in, db->library_path)) {
+		log(Error, "failed reading library paths\n");
 		return false;
+	}
 
 	uint32_t len;
 
 	in >= len;
 	db->packages.resize(len);
 	for (uint32_t i = 0; i != len; ++i) {
-		if (!read_pkg(in, db->packages[i]))
+		if (!read_pkg(in, db->packages[i])) {
+			log(Error, "failed reading packages\n");
 			return false;
+		}
 	}
 
-	if (!read_objlist(in, db->objects))
+	if (!read_objlist(in, db->objects)) {
+		log(Error, "failed reading object list\n");
 		return false;
+	}
 
 	in >= len;
 	for (uint32_t i = 0; i != len; ++i) {
@@ -605,6 +637,7 @@ db_read(DB *db, const std::string& filename)
 		if (!read_obj(in, obj) ||
 		    !read_objset(in, oset))
 		{
+			log(Error, "failed reading map of found depdendencies\n");
 			return false;
 		}
 		db->required_found[obj.get()] = std::move(oset);
@@ -617,6 +650,7 @@ db_read(DB *db, const std::string& filename)
 		if (!read_obj(in, obj) ||
 		    !read_stringset(in, sset))
 		{
+			log(Error, "failed reading map of missing depdendencies\n");
 			return false;
 		}
 		db->required_missing[obj.get()] = std::move(sset);
@@ -625,15 +659,19 @@ db_read(DB *db, const std::string& filename)
 	if (hdr.version < 2)
 		return true;
 
-	if (!read_stringset(in, db->ignore_file_rules))
-		return false;
-
-	in >= len;
-	for (uint32_t i = 0; i != len; ++i) {
-		std::string pkg;
-		in >= pkg;
-		if (!read_stringlist(in, db->package_library_path[pkg]))
+	if (hdr.flags & DBFlags::IgnoreRules) {
+		if (!read_stringset(in, db->ignore_file_rules))
 			return false;
+	}
+
+	if (hdr.flags & DBFlags::PackageLDPath) {
+		in >= len;
+		for (uint32_t i = 0; i != len; ++i) {
+			std::string pkg;
+			in >= pkg;
+			if (!read_stringlist(in, db->package_library_path[pkg]))
+				return false;
+		}
 	}
 
 	return true;

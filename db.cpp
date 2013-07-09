@@ -17,7 +17,7 @@ getObjClass(Elf *elf) {
 }
 
 DB::DB() {
-	loaded_version = DB::version;
+	loaded_version = DB::CURRENT;
 }
 
 DB::~DB() {

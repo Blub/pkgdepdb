@@ -190,7 +190,7 @@ void fixpathlist(std::string& pathlist);
 
 class DB {
 public:
-	static uint16_t version;
+	static uint16_t CURRENT;
 
 	using IgnoreMissingRule = struct {
 		std::string package;
