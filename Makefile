@@ -1,9 +1,10 @@
-DESTDIR =
-PREFIX  = /usr/local
-BINDIR  = $(PREFIX)/bin
-DATADIR = $(PREFIX)/share
-MANDIR  = $(DATADIR)/man
-MAN1DIR = $(MANDIR)/man1
+DESTDIR    =
+PREFIX     = /usr/local
+BINDIR     = $(PREFIX)/bin
+DATADIR    = $(PREFIX)/share
+SYSCONFDIR = $(PREFIX)/etc
+MANDIR     = $(DATADIR)/man
+MAN1DIR    = $(MANDIR)/man1
 
 PACKAGE_NAME := pkgdepdb
 
@@ -18,6 +19,8 @@ CPPFLAGS += -DPKGDEPDB_V_MAJ=$(VERSION_MAJOR)
 CPPFLAGS += -DPKGDEPDB_V_MIN=$(VERSION_MINOR)
 CPPFLAGS += -DPKGDEPDB_V_PAT=$(VERSION_PATCH)
 
+CPPFLAGS += -DPKGDEPDB_ETC="\"$(SYSCONFDIR)\""
+
 LIBARCHIVE_CFLAGS =
 LIBARCHIVE_LIBS   = -larchive
 ZLIB_CFLAGS =
@@ -28,7 +31,7 @@ LIBS     += $(LIBARCHIVE_LIBS)
 CPPFLAGS += $(ZLIB_CFLAGS)
 LIBS     += $(ZLIB_LIBS)
 
-OBJECTS = main.o package.o elf.o db.o db_format.o db_json.o
+OBJECTS = main.o config.o package.o elf.o db.o db_format.o db_json.o
 
 BINARY = pkgdepdb
 STATIC_BINARY = $(BINARY)-static
@@ -74,6 +77,7 @@ depend:
 # DO NOT DELETE
 
 main.o: main.h
+config.o: main.h
 package.o: main.h
 elf.o: main.h endian.h
 db.o: main.h

@@ -20,6 +20,10 @@
 # error "PKGDEPDB_V_PAT not defined"
 #endif
 
+#ifndef PKGDEPDB_ETC
+# error "No PKGDEPDB_ETC defined"
+#endif
+
 #define RPKG_IND_STRING2(x) #x
 #define RPKG_IND_STRING(x) RPKG_IND_STRING2(x)
 #define VERSION_STRING \
@@ -44,6 +48,7 @@ enum {
 
 void log(int level, const char *msg, ...);
 
+extern std::string  opt_default_db;
 extern unsigned int opt_verbosity;
 extern bool         opt_quiet;
 extern bool         opt_use_json;

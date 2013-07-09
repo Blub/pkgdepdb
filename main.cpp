@@ -14,8 +14,10 @@
 static int LogLevel = Message;
 static const char *arg0 = 0;
 
+std::string   opt_default_db = "";
 unsigned int  opt_verbosity = 0;
 bool          opt_use_json  = false;
+bool          opt_quiet     = false;
 
 enum {
     RESET = 0,
@@ -217,6 +219,7 @@ main(int argc, char **argv)
 	       rulemod   (&oldmode);
 	std::vector<std::tuple<std::string,size_t>> ld_insert;
 
+	LogLevel = Message;
 	for (;;) {
 		int opt_index = 0;
 		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:", long_opts, &opt_index);
@@ -230,7 +233,7 @@ main(int argc, char **argv)
 				version(0);
 				break;
 			case 'q':
-				LogLevel = Print;
+				opt_quiet = true;
 				break;
 			case 'd':
 				oldmode = false;
@@ -293,6 +296,10 @@ main(int argc, char **argv)
 				break;
 		}
 	}
+
+	if (opt_quiet)
+		LogLevel = Print;
+
 	if (do_fixpaths)
 		do_relink = true;
 
@@ -358,6 +365,12 @@ main(int argc, char **argv)
 	}
 
 	std::unique_ptr<DB> db(new DB);
+	if (!has_db) {
+		if (opt_default_db.length()) {
+			has_db = true;
+			dbfile = std::move(opt_default_db);
+		}
+	}
 	if (has_db) {
 		if (!db->read(dbfile)) {
 			log(Error, "failed to read database\n");
