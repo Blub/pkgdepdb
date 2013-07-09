@@ -109,7 +109,7 @@ help(int x)
 	             "  off, n, none       no json output\n"
 	             "  on, q, query       use json on query outputs\n"
 	             "  db                 use json to store the db (NOT RECOMMENDED)\n"
-	             "  all                both\n"
+	             "  all, a             both\n"
 	             "  (optional + or - prefix to add or remove bits)\n"
 	             );
 	fprintf(out, "db management options:\n"
