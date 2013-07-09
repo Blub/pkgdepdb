@@ -254,10 +254,34 @@ DB::relink_all()
 {
 	required_found.clear();
 	required_missing.clear();
+	if (!packages.size())
+		return;
+	unsigned long pkgcount = packages.size();
+	double        fac   = 100.0 / double(pkgcount);
+	unsigned long count = 0;
+	unsigned int  pc    = 0;
+	if (!opt_quiet) {
+		printf("relinking: 0%% (0 / %lu packages)", pkgcount);
+		fflush(stdout);
+	}
 	for (auto &pkg : packages) {
 		for (auto &obj : pkg->objects) {
 			link_object(obj, pkg);
 		}
+		if (!opt_quiet) {
+			++count;
+			unsigned int newpc = fac * double(count);
+			if (newpc != pc) {
+				pc = newpc;
+				printf("\rrelinking: %3u%% (%lu / %lu packages)",
+				       pc, count, pkgcount);
+				fflush(stdout);
+			}
+		}
+	}
+	if (!opt_quiet) {
+		printf("\rrelinking: 100%% (%lu / %lu packages)\n",
+		       count, pkgcount);
 	}
 }
 
