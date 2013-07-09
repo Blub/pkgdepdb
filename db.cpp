@@ -537,6 +537,12 @@ DB::show_info()
 				printf("    %u: %s\n", id++, path.c_str());
 		}
 	}
+	if (base_packages.size()) {
+		printf("The following packages are base packages:\n");
+		id = 0;
+		for (auto &p : base_packages)
+			printf("  %u: %s\n", id++, p.c_str());
+	}
 }
 
 bool

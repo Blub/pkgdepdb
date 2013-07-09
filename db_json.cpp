@@ -177,6 +177,17 @@ DB::show_info_json()
 		}
 		printf("\n\t}");
 	}
+	if (base_packages.size()) {
+		printf(",\n\t\"base_packages\": [");
+		sep = "\n\t\t";
+		id = 0;
+		for (auto &p : base_packages) {
+			printf("%s", sep); sep = ",\n\t\t";
+			json_quote(stdout, p);
+			printf(" // %u", id++);
+		}
+		printf("\n\t]");
+	}
 
 	printf("\n}\n");
 }
