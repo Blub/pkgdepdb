@@ -705,6 +705,11 @@ db_read(DB *db, const std::string& filename)
 		}
 	}
 
+	if (hdr.flags & DBFlags::BasePackages) {
+		if (!read_stringset(in, db->base_packages))
+			return false;
+	}
+
 	return true;
 }
 
