@@ -30,6 +30,19 @@ care_about(struct archive_entry *entry)
 	return true;
 }
 
+// because isspace(3) is locale dependent
+static bool
+c_isspace(const char c) {
+	return (c == ' '  || c == '\t' ||
+	        c == '\n' || c == '\r' ||
+	        c == '\v' || c == '\f');
+}
+
+static bool
+ends_word(const char c) {
+	return c_isspace(c) || c == '=';
+}
+
 static bool
 read_info(Package *pkg, struct archive *tar, size_t size)
 {
@@ -44,31 +57,73 @@ read_info(Package *pkg, struct archive *tar, size_t size)
 		return false;
 	}
 
-	size_t pos = str.find("pkgname = ");
-	if (pos == std::string::npos) {
-		log(Error, "missing pkgname entry in .PKGINFO");
-		return false;
-	}
+	size_t pos = 0;
+	auto skipwhite = [&]() {
+		while (pos < size && c_isspace(str[pos]))
+			++pos;
+	};
 
-	if (pos != 0 && str[pos-1] != '\n') {
-		log(Error, "corrupted .PKGINFO");
-		return false;
-	}
+	auto skipline = [&]() {
+		while (pos < size && str[pos] != '\n')
+			++pos;
+	};
 
-	pkg->name = str.substr(pos + 10, str.find_first_of(" \n\r\t", pos+10) - pos - 10);
-
-    pos = str.find("pkgver = ");
-	if (pos == std::string::npos) {
-		log(Warn, "missing pkgname entry in .PKGINFO");
+	auto getvalue = [&](const char *entryname, std::string &out) -> bool {
+		skipwhite();
+		if (str[pos] != '=') {
+			log(Error, "Error in .PKGINFO");
+			return false;
+		}
+		++pos;
+		skipwhite();
+		if (pos >= size) {
+			log(Error, "invalid %s entry in .PKGINFO", entryname);
+			return false;
+		}
+		size_t to = str.find_first_of(" \n\r\t", pos);
+		out = str.substr(pos, to-pos);
+		skipline();
 		return true;
-	}
+	};
 
-	if (pos != 0 && str[pos-1] != '\n') {
-		log(Warn, "corrupted .PKGINFO; skipping pkgver");
-		return true;
-	}
+	auto isentry = [&](const char *what, size_t len) -> bool {
+		if (size-pos > len &&
+		    str.compare(pos, len, what) == 0 &&
+		    ends_word(str[pos+len]))
+		{
+			pos += len;
+			return true;
+		}
+		return false;
+	};
 
-	pkg->version = str.substr(pos + 9, str.find_first_of(" \n\r\t", pos+9) - pos - 9);
+	std::string es;
+	while (pos < size) {
+		skipwhite();
+		if (isentry("pkgname", sizeof("pkgname")-1)) {
+			if (!getvalue("pkgname", pkg->name))
+				return false;
+		}
+		else if (isentry("pkgver", sizeof("pkgver")-1)) {
+			if (!getvalue("pkgver", pkg->version))
+				return false;
+		}
+		else if (isentry("depend", sizeof("depend")-1)) {
+			if (!getvalue("depend", es))
+				return false;
+			pkg->depends.push_back(es);
+		}
+		else if (isentry("optdepend", sizeof("optdepend")-1)) {
+			if (!getvalue("optdepend", es))
+				return false;
+			es.erase(es.find_first_of(':'));
+			if (es.length())
+				pkg->optdepends.push_back(es);
+		}
+
+		else
+			skipline();
+	}
 	return true;
 }
 

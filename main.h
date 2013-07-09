@@ -162,6 +162,13 @@ public:
 	}
 };
 
+using PackageList = std::vector<Package*>;
+using ObjectList  = std::vector<rptr<Elf>>;
+using StringList  = std::vector<std::string>;
+
+using ObjectSet   = std::set<rptr<Elf>>;
+using StringSet   = std::set<std::string>;
+
 /// Package class
 /// reads a package archive, extracts information
 class Package {
@@ -171,6 +178,10 @@ public:
 	std::string             name;
 	std::string             version;
 	std::vector<rptr<Elf> > objects;
+
+	// DB version 3:
+	StringList              depends;
+	StringList              optdepends;
 
 	void show_needed();
 	Elf* find(const std::string &dirname, const std::string &basename) const;
@@ -184,13 +195,6 @@ public: // NOT SERIALIZED:
 		std::map<std::string, std::string> symlinks;
 	} load;
 };
-
-using PackageList = std::vector<Package*>;
-using ObjectList  = std::vector<rptr<Elf>>;
-using StringList  = std::vector<std::string>;
-
-using ObjectSet   = std::set<rptr<Elf>>;
-using StringSet   = std::set<std::string>;
 
 void fixpath(std::string& path);
 void fixpathlist(std::string& pathlist);
