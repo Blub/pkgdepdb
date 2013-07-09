@@ -107,26 +107,35 @@ read_info(Package *pkg, struct archive *tar, size_t size)
 		if (isentry("pkgname", sizeof("pkgname")-1)) {
 			if (!getvalue("pkgname", pkg->name))
 				return false;
+			continue;
 		}
-		else if (isentry("pkgver", sizeof("pkgver")-1)) {
+		if (isentry("pkgver", sizeof("pkgver")-1)) {
 			if (!getvalue("pkgver", pkg->version))
 				return false;
+			continue;
 		}
-		else if (isentry("depend", sizeof("depend")-1)) {
+
+		if (!opt_package_depends) {
+			skipline();
+			continue;
+		}
+
+		if (isentry("depend", sizeof("depend")-1)) {
 			if (!getvalue("depend", es))
 				return false;
 			pkg->depends.push_back(es);
+			continue;
 		}
-		else if (isentry("optdepend", sizeof("optdepend")-1)) {
+		if (isentry("optdepend", sizeof("optdepend")-1)) {
 			if (!getvalue("optdepend", es))
 				return false;
 			es.erase(es.find_first_of(':'));
 			if (es.length())
 				pkg->optdepends.push_back(es);
+			continue;
 		}
 
-		else
-			skipline();
+		skipline();
 	}
 	return true;
 }
