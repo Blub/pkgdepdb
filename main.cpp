@@ -146,6 +146,9 @@ help(int x)
 	             "  pkg-ld-delete:PKG:PATH\n"
 	             "  pkg-ld-delete-id:PKG:ID\n"
 	             "                     delete a package's library path\n"
+	             "  base-add:PKG       add PKG to the base package list\n"
+	             "  base-remove:PKG    remove PKG form the base package list\n"
+	             "  base-remove-id:ID  remove form the base package list by id\n"
 	             );
 	exit(x);
 }
@@ -583,6 +586,18 @@ parse_rule(DB *db, const std::string& rule)
 				return false;
 			}
 			return db->pkg_ld_delete(cmd.substr(0, s), strtoul(cmd.substr(s+1).c_str(), nullptr, 0));
+		})
+		|| try_rule(rule, "base-add:", "PKG", &ret,
+		[db,&rule](const std::string &cmd) {
+			return db->add_base_package(cmd);
+		})
+		|| try_rule(rule, "base-remove:", "PKG", &ret,
+		[db,&rule](const std::string &cmd) {
+			return db->remove_base_package(cmd);
+		})
+		|| try_rule(rule, "base-remove-id:", "ID", &ret,
+		[db,&rule](const std::string &cmd) {
+			return db->remove_base_package(strtoul(cmd.c_str(), nullptr, 0));
 		})
 	) {
 		return ret;
