@@ -16,6 +16,10 @@ clearpath(std::string &path)
 	// whitespaces in their configs...
 }
 
+
+// NOTE:  I use std::regex because I want to test it out
+// FIXME: this could be as simple as sscanf :P
+
 bool
 ReadConfig(std::istream &in, const char *path)
 {
