@@ -78,7 +78,7 @@ Installation:
 
     Deinstallation:
 
-        There exists an `uninstall' make-target, however you  have	to
+        There exists an `uninstall' make-target, however you  have  to
         specifcy the same PREFIX and  DESTDIR  variables  as  you  did
         while installing the package in order to  remove  the  correct
         files.
