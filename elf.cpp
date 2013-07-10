@@ -285,6 +285,12 @@ fixpath(std::string& path)
 		}
 		path.erase(prev, at+3-prev);
 	} while(true);
+
+	while (path.length() > 1 && path[path.length()-1] == '/') {
+		at = path.find_last_not_of('/');
+		if (at > 0 && at != std::string::npos)
+			path.erase(at+1);
+	}
 }
 
 void
