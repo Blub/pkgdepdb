@@ -32,11 +32,13 @@ cfg_database(std::string &line)
 	return true;
 }
 
-static bool
-cfg_verbosity(std::string &line)
-{
-	opt_verbosity = strtoul(line.c_str(), nullptr, 0);
-	return true;
+template<typename T>
+static std::function<bool(std::string&)>
+cfg_numeric(T &ref) {
+	return [&ref](std::string &line) -> bool {
+		ref = strtoul(line.c_str(), nullptr, 0);
+		return true;
+	};
 }
 
 bool
@@ -63,18 +65,12 @@ line_to_bool(std::string& line)
 	return CfgStrToBool(line);
 }
 
-static bool
-cfg_quiet(std::string &line)
-{
-	opt_quiet = line_to_bool(line);
-	return true;
-}
-
-static bool
-cfg_package_depends(std::string &line)
-{
-	opt_package_depends = line_to_bool(line);
-	return true;
+static std::function<bool(std::string&)>
+cfg_bool(bool &ref) {
+	return [&ref](std::string &line) -> bool {
+		ref = line_to_bool(line);
+		return true;
+	};
 }
 
 bool
@@ -170,10 +166,11 @@ ReadConfig(std::istream &in, const char *path)
 		std::tuple<std::string, std::function<bool(std::string&)>>
 		rules[] = {
 			std::make_tuple("database",         cfg_database),
-			std::make_tuple("verbosity",        cfg_verbosity),
-			std::make_tuple("quiet",            cfg_quiet),
-			std::make_tuple("package_depends",  cfg_package_depends),
-			std::make_tuple("josn",             cfg_json)
+			std::make_tuple("verbosity",        cfg_numeric(opt_verbosity)),
+			std::make_tuple("quiet",            cfg_bool(opt_quiet)),
+			std::make_tuple("package_depends",  cfg_bool(opt_package_depends)),
+			std::make_tuple("josn",             cfg_json),
+			std::make_tuple("jobs",             cfg_numeric(opt_max_jobs))
 		};
 
 		for (auto &r : rules) {
