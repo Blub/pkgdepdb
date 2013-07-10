@@ -54,6 +54,11 @@ $(BINARY): $(OBJECTS)
 
 $(STATIC_BINARY): $(OBJECTS)
 	libtool --mode=link $(CXX) $(LDFLAGS) -o $@ $(OBJECTS) -all-static $(LIBS)
+	@echo "NOTE:"
+	@echo "NOTE:"
+	@echo "NOTE: The static version will NOT work with threads enabled!!!"
+	@echo "NOTE:"
+	@echo "NOTE:"
 
 pkgdepdb.1: pkgdepdb.1.in
 	sed -e "s,%%SYSCONFDIR%%,$(SYSCONFDIR),g" \

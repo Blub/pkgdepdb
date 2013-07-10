@@ -294,7 +294,7 @@ DB::relink_all_threaded()
 
 	using FoundMap   = std::map<Elf*, ObjectSet>;
 	using MissingMap = std::map<Elf*, StringSet>;
-	auto worker = [&count,&fac,&pc,pkgcount,this](size_t from, size_t to, FoundMap *f, MissingMap *m) {
+	auto worker = [&count,this](size_t from, size_t to, FoundMap *f, MissingMap *m) {
 		for (size_t i = from; i != to; ++i) {
 			Package *pkg = this->packages[i];
 
@@ -308,16 +308,8 @@ DB::relink_all_threaded()
 					(*m)[obj] = std::move(req_missing);
 			}
 
-			if (!opt_quiet) {
-				auto prev = count++;
-				unsigned int newpc = fac * double(prev);
-				if (newpc != pc) {
-					pc = newpc;
-					printf("\rrelinking: %3u%% (%lu / %lu packages)",
-					       pc, prev, pkgcount);
-					fflush(stdout);
-				}
-			}
+			if (!opt_quiet)
+				count++;
 		}
 	};
 
@@ -344,6 +336,21 @@ DB::relink_all_threaded()
 		                pkgcount,
 		                &found_all[i],
 		                &missing_all[i]));
+
+	if (!opt_quiet) {
+		unsigned long c = 0;
+		while (c != pkgcount) {
+			c = count.load();
+			unsigned int newpc = fac * double(c);
+			if (newpc != pc) {
+				pc = newpc;
+				printf("\rrelinking: %3u%% (%lu / %lu packages)",
+				       pc, c, pkgcount);
+				fflush(stdout);
+			}
+			usleep(100000);
+		}
+	}
 
 	for (i = 0; i != threadcount; ++i) {
 		threads[i]->join();
