@@ -2,6 +2,13 @@
 #include <algorithm>
 #include <utility>
 
+#ifdef ENABLE_THREADS
+#  include <atomic>
+#  include <thread>
+#  include <future>
+#  include <unistd.h>
+#endif
+
 #include "main.h"
 
 using ObjClass = uint32_t;
@@ -189,7 +196,7 @@ DB::install_package(Package* &&pkg)
 		}
 
 		// search for whatever THIS object requires
-		link_object(obj, pkg);
+		link_object_do(obj, pkg);
 	}
 
 	return true;
@@ -220,7 +227,19 @@ DB::find_for(Elf *obj, const std::string& needed, const StringList *extrapath) c
 }
 
 void
-DB::link_object(Elf *obj, Package *owner)
+DB::link_object_do(Elf *obj, Package *owner)
+{
+	ObjectSet req_found;
+	StringSet req_missing;
+	link_object(obj, owner, req_found, req_missing);
+	if (req_found.size())
+		required_found[obj] = std::move(req_found);
+	if (req_missing.size())
+		required_missing[obj] = std::move(req_missing);
+}
+
+void
+DB::link_object(Elf *obj, Package *owner, ObjectSet &req_found, StringSet &req_missing)
 {
 	if (ignore_file_rules.size()) {
 		std::string full = obj->dirname + "/" + obj->basename;
@@ -234,8 +253,6 @@ DB::link_object(Elf *obj, Package *owner)
 			libpaths = &iter->second;
 	}
 
-	ObjectSet req_found;
-	StringSet req_missing;
 	for (auto &needed : obj->needed) {
 		Elf *found = find_for(obj, needed, libpaths);
 		if (found)
@@ -243,11 +260,104 @@ DB::link_object(Elf *obj, Package *owner)
 		else
 			req_missing.insert(needed);
 	}
-	if (req_found.size())
-		required_found[obj]   = std::move(req_found);
-	if (req_missing.size())
-		required_missing[obj] = std::move(req_missing);
 }
+
+#ifdef ENABLE_THREADS
+namespace thread {
+	static unsigned int ncpus_init() {
+		long v = sysconf(_SC_NPROCESSORS_CONF);
+		return (v <= 0 ? 1 : v);
+	}
+
+	static unsigned int ncpus = ncpus_init();
+}
+
+void
+DB::relink_all_threaded()
+{
+	std::atomic_ulong count(0);
+
+	unsigned long threadcount = thread::ncpus;
+	if (opt_max_jobs > 1 && opt_max_jobs < threadcount)
+		threadcount = opt_max_jobs;
+
+	unsigned long pkgcount = packages.size();
+	double        fac   = 100.0 / double(pkgcount);
+	unsigned int  pc    = 0;
+	if (!opt_quiet) {
+		printf("spawning %u threads\n", (unsigned)threadcount);
+		printf("relinking: 0%% (0 / %lu packages)", pkgcount);
+		fflush(stdout);
+	}
+
+	unsigned long pkg_per_thread = pkgcount / threadcount;
+
+	using FoundMap   = std::map<Elf*, ObjectSet>;
+	using MissingMap = std::map<Elf*, StringSet>;
+	auto worker = [&count,&fac,&pc,pkgcount,this](size_t from, size_t to, FoundMap *f, MissingMap *m) {
+		for (size_t i = from; i != to; ++i) {
+			Package *pkg = this->packages[i];
+
+			for (auto &obj : pkg->objects) {
+				ObjectSet req_found;
+				StringSet req_missing;
+				this->link_object(obj, pkg, req_found, req_missing);
+				if (req_found.size())
+					(*f)[obj] = std::move(req_found);
+				if (req_missing.size())
+					(*m)[obj] = std::move(req_missing);
+			}
+
+			if (!opt_quiet) {
+				auto prev = count++;
+				unsigned int newpc = fac * double(prev);
+				if (newpc != pc) {
+					pc = newpc;
+					printf("\rrelinking: %3u%% (%lu / %lu packages)",
+					       pc, prev, pkgcount);
+					fflush(stdout);
+				}
+			}
+		}
+	};
+
+
+	std::vector<std::thread*> threads;
+	std::vector<FoundMap>     found_all;
+	std::vector<MissingMap>   missing_all;
+
+	found_all.resize(threadcount);
+	missing_all.resize(threadcount);
+
+	unsigned long i;
+	for (i = 0; i != threadcount-1; ++i) {
+		threads.emplace_back(
+			new std::thread(worker,
+			                i*pkg_per_thread,
+			                i*pkg_per_thread + pkg_per_thread,
+			                &found_all[i],
+			                &missing_all[i]));
+	}
+	threads.emplace_back(
+		new std::thread(worker,
+		                i*pkg_per_thread,
+		                pkgcount,
+		                &found_all[i],
+		                &missing_all[i]));
+
+	for (i = 0; i != threadcount; ++i) {
+		threads[i]->join();
+		delete threads[i];
+		// merge
+		for (auto &f : found_all[i])
+			required_found[f.first] = std::move(f.second);
+		for (auto &m : missing_all[i])
+			required_missing[m.first] = std::move(m.second);
+	}
+	if (!opt_quiet)
+		printf("\rrelinking: 100%% (%lu / %lu packages)\n", count.load(), pkgcount);
+}
+#endif
 
 void
 DB::relink_all()
@@ -256,6 +366,17 @@ DB::relink_all()
 	required_missing.clear();
 	if (!packages.size())
 		return;
+
+#ifdef ENABLE_THREADS
+	if (opt_max_jobs    != 1   &&
+	    thread::ncpus   >  1   &&
+	    packages.size() >  100 &&
+	    objects.size()  >= 300)
+	{
+		return relink_all_threaded();
+	}
+#endif
+
 	unsigned long pkgcount = packages.size();
 	double        fac   = 100.0 / double(pkgcount);
 	unsigned long count = 0;
@@ -266,7 +387,7 @@ DB::relink_all()
 	}
 	for (auto &pkg : packages) {
 		for (auto &obj : pkg->objects) {
-			link_object(obj, pkg);
+			link_object_do(obj, pkg);
 		}
 		if (!opt_quiet) {
 			++count;

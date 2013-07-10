@@ -17,6 +17,7 @@ static const char *arg0 = 0;
 std::string   opt_default_db = "";
 unsigned int  opt_verbosity = 0;
 unsigned int  opt_json      = 0;
+unsigned int  opt_max_jobs  = 0;
 bool          opt_quiet     = false;
 bool          opt_package_depends = true;
 
@@ -239,7 +240,7 @@ main(int argc, char **argv)
 		return 1;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:j:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -312,6 +313,13 @@ main(int argc, char **argv)
 			case 'J':
 				if (!CfgParseJSONBit(optarg))
 					help(1);
+				break;
+
+			case 'j':
+				opt_max_jobs = strtoul(optarg, nullptr, 0);
+				// some sanity:
+				if (opt_max_jobs > 32)
+					opt_max_jobs = 32;
 				break;
 
 			case ':':

@@ -52,6 +52,7 @@ extern std::string  opt_default_db;
 extern unsigned int opt_verbosity;
 extern bool         opt_quiet;
 extern bool         opt_package_depends;
+extern unsigned int opt_max_jobs;
 extern unsigned int opt_json;
 
 namespace JSONBits {
@@ -241,9 +242,14 @@ public:
 	bool install_package(Package* &&pkg);
 	bool delete_package (const std::string& name);
 	Elf *find_for       (Elf*, const std::string& lib, const StringList *extrapath) const;
-	void link_object    (Elf*, Package *owner);
+	void link_object    (Elf*, Package *owner, ObjectSet &req_found, StringSet &req_missing);
+	void link_object_do (Elf*, Package *owner);
 	void relink_all     ();
 	void fix_paths      ();
+
+#ifdef ENABLE_THREADS
+	void relink_all_threaded();
+#endif
 
 	Package* find_pkg   (const std::string& name) const;
 	PackageList::const_iterator
