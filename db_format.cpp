@@ -506,21 +506,19 @@ db_store(DB *db, const std::string& filename)
 	memcpy(hdr.magic, depdb_magic, sizeof(hdr.magic));
 	hdr.version = 1;
 
+	// flags:
+	if (db->ignore_file_rules.size())
+		hdr.flags |= DBFlags::IgnoreRules;
+	if (db->package_library_path.size())
+		hdr.flags |= DBFlags::PackageLDPath;
+	if (db->base_packages.size())
+		hdr.flags |= DBFlags::BasePackages;
+
 	// Figure out which database format version this will be
 	if (db->contains_package_depends)
 		hdr.version = 3;
-	else {
-		if (db->ignore_file_rules.size())
-			hdr.flags |= DBFlags::IgnoreRules;
-		if (db->package_library_path.size())
-			hdr.flags |= DBFlags::PackageLDPath;
-		if (db->base_packages.size())
-			hdr.flags |= DBFlags::BasePackages;
-
-		// if it contains rulesets it must be version 2
-		if (hdr.flags)
+	else if (hdr.flags)
 			hdr.version = 2;
-	}
 
 	// okay
 
