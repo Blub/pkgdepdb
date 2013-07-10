@@ -93,6 +93,10 @@ There is no support to read json formatted databases yet.
 Modify the databases ruleset. See the
 .Sx RULES
 section.
+.It Fl j Ar COUNT
+When thread support is enabled, this limits the number of jobs
+running simultaneously to at most
+.Ar COUNT Ns .
 .El
 .Pp
 The following query options are available:
@@ -292,6 +296,8 @@ package_depends = true
 # or false
 # The json option works just like --json
 json = off
+# When thread support is enabled, limit the maximum number of jobs:
+jobs = 4
 .Ed
 .Pp
 .Em NOTE Ns :

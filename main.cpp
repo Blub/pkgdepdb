@@ -104,6 +104,9 @@ help(int x)
 	             "  -q, --quiet        suppress progress messages\n"
 	             "  --depends=<YES|NO> enable or disable package dependencies\n"
 	             "  -J, --json=PART    activate json mode for parts of the program\n"
+#ifdef ENABLE_THREADS
+	             "  -j N               limit to at most N threads\n"
+#endif
 	             );
 	fprintf(out, "json options:\n"
 	             "  off, n, none       no json output\n"
