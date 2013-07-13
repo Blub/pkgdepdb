@@ -270,31 +270,104 @@ namespace thread {
 	}
 
 	static unsigned int ncpus = ncpus_init();
+
+	template<typename PerThread>
+	void
+	work(const char    *Job,
+	     const char    *Thing,
+	     unsigned long  Count,
+	     std::function<void(std::atomic_ulong*,
+	                        size_t from,
+	                        size_t to,
+	                        PerThread&)>
+	                                                    Worker,
+	     std::function<void(std::vector<PerThread>&&)>  Merger)
+	{
+		unsigned long threadcount = thread::ncpus;
+		if (opt_max_jobs > 1 && opt_max_jobs < threadcount)
+			threadcount = opt_max_jobs;
+
+		double         fac = 100.0 / double(Count);
+		unsigned int   pc  = 0;
+		unsigned long  obj_per_thread = Count / threadcount;
+		if (!opt_quiet) {
+			printf("spawning %lu threads\n", threadcount);
+			printf("%s: 0%% (0 / %lu%s)", Job, Count, Thing);
+			fflush(stdout);
+		}
+
+		if (threadcount == 1) {
+			for (unsigned long i = 0; i != Count; ++i) {
+				PerThread Data;
+				Worker(nullptr, i, i+1, Data);
+				if (!opt_quiet) {
+					unsigned int newpc = fac * double(i);
+					if (newpc != pc) {
+						pc = newpc;
+						printf("\r%s: %3u%% (%lu / %lu%s)",
+						       Job, pc, i, Count, Thing);
+						fflush(stdout);
+					}
+				}
+			}
+			return;
+		}
+
+		// data created by threads, to be merged in the merger
+		std::vector<PerThread> Data;
+		Data.resize(threadcount);
+
+		std::atomic_ulong         counter(0);
+		std::vector<std::thread*> threads;
+
+		unsigned long i;
+		for (i = 0; i != threadcount-1; ++i) {
+			threads.emplace_back(
+				new std::thread(Worker,
+				                &counter,
+				                i*obj_per_thread,
+				                i*obj_per_thread + obj_per_thread,
+				                std::ref(Data[i])));
+		}
+		threads.emplace_back(
+			new std::thread(Worker,
+			                &counter,
+			                i*obj_per_thread, Count,
+			                std::ref(Data[i])));
+		if (!opt_quiet) {
+			unsigned long c = 0;
+			while (c != Count) {
+				c = counter.load();
+				unsigned int newpc = fac * double(c);
+				if (newpc != pc) {
+					pc = newpc;
+					printf("\r%s: %3u%% (%lu / %lu%s)",
+					       Job, pc, c, Count, Thing);
+					fflush(stdout);
+				}
+				usleep(100000);
+			}
+		}
+
+		for (i = 0; i != threadcount; ++i) {
+			threads[i]->join();
+			delete threads[i];
+		}
+		Merger(std::move(Data));
+		if (!opt_quiet)
+			printf("\r%s: 100%% (%lu / %lu%s)\n", Job, counter.load(), Count, Thing);
+	}
 }
 
 void
 DB::relink_all_threaded()
 {
-	std::atomic_ulong count(0);
-
-	unsigned long threadcount = thread::ncpus;
-	if (opt_max_jobs > 1 && opt_max_jobs < threadcount)
-		threadcount = opt_max_jobs;
-
-	unsigned long pkgcount = packages.size();
-	double        fac   = 100.0 / double(pkgcount);
-	unsigned int  pc    = 0;
-	if (!opt_quiet) {
-		printf("spawning %u threads\n", (unsigned)threadcount);
-		printf("relinking: 0%% (0 / %lu packages)", pkgcount);
-		fflush(stdout);
-	}
-
-	unsigned long pkg_per_thread = pkgcount / threadcount;
-
 	using FoundMap   = std::map<Elf*, ObjectSet>;
 	using MissingMap = std::map<Elf*, StringSet>;
-	auto worker = [&count,this](size_t from, size_t to, FoundMap *f, MissingMap *m) {
+	using Tuple      = std::tuple<FoundMap, MissingMap>;
+	auto worker = [this](std::atomic_ulong *count, size_t from, size_t to, Tuple &tup) {
+		FoundMap   *f = &std::get<0>(tup);
+		MissingMap *m = &std::get<1>(tup);
 		for (size_t i = from; i != to; ++i) {
 			Package *pkg = this->packages[i];
 
@@ -308,61 +381,26 @@ DB::relink_all_threaded()
 					(*m)[obj] = std::move(req_missing);
 			}
 
-			if (!opt_quiet)
-				count++;
+			if (count && !opt_quiet)
+				(*count)++;
 		}
 	};
-
-
-	std::vector<std::thread*> threads;
-	std::vector<FoundMap>     found_all;
-	std::vector<MissingMap>   missing_all;
-
-	found_all.resize(threadcount);
-	missing_all.resize(threadcount);
-
-	unsigned long i;
-	for (i = 0; i != threadcount-1; ++i) {
-		threads.emplace_back(
-			new std::thread(worker,
-			                i*pkg_per_thread,
-			                i*pkg_per_thread + pkg_per_thread,
-			                &found_all[i],
-			                &missing_all[i]));
-	}
-	threads.emplace_back(
-		new std::thread(worker,
-		                i*pkg_per_thread,
-		                pkgcount,
-		                &found_all[i],
-		                &missing_all[i]));
-
-	if (!opt_quiet) {
-		unsigned long c = 0;
-		while (c != pkgcount) {
-			c = count.load();
-			unsigned int newpc = fac * double(c);
-			if (newpc != pc) {
-				pc = newpc;
-				printf("\rrelinking: %3u%% (%lu / %lu packages)",
-				       pc, c, pkgcount);
-				fflush(stdout);
-			}
-			usleep(100000);
+	auto merger = [this](std::vector<Tuple> &&tup) {
+		for (auto &t : tup) {
+			FoundMap   &found = std::get<0>(t);
+			MissingMap &missing = std::get<1>(t);
+			for (auto &f : found)
+				required_found[f.first] = std::move(f.second);
+			for (auto &m : missing)
+				required_missing[m.first] = std::move(m.second);
 		}
-	}
-
-	for (i = 0; i != threadcount; ++i) {
-		threads[i]->join();
-		delete threads[i];
-		// merge
-		for (auto &f : found_all[i])
-			required_found[f.first] = std::move(f.second);
-		for (auto &m : missing_all[i])
-			required_missing[m.first] = std::move(m.second);
-	}
-	if (!opt_quiet)
-		printf("\rrelinking: 100%% (%lu / %lu packages)\n", count.load(), pkgcount);
+	};
+	thread::work<Tuple>(
+		"relinking",
+		" packages",
+		packages.size(),
+		worker,
+		merger);
 }
 #endif
 
@@ -800,4 +838,21 @@ DB::show_found()
 		for (auto &s : set)
 			printf("    finds: %s\n", s->basename.c_str());
 	}
+}
+
+void
+DB::check_integrity() const
+{
+	log(Message, "Looking for stale object files...\n");
+	for (auto &o : objects) {
+		if (!o->owner) {
+			log(Message, "  object `%s/%s' has no owning package!\n",
+			    o->dirname.c_str(), o->basename.c_str());
+		}
+	}
+
+	log(Message, "Checking package dependencies...\n");
+	//for (auto &p : packages) {
+	//	(void)p;
+	//}
 }

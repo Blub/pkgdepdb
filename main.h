@@ -265,6 +265,7 @@ public:
 	void show_missing_json();
 	void show_found();
 	void show_found_json();
+	void check_integrity() const;
 
 	bool store(const std::string& filename);
 	bool read (const std::string& filename);
