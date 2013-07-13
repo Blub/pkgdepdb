@@ -273,42 +273,31 @@ namespace thread {
 
 	template<typename PerThread>
 	void
-	work(const char    *Job,
-	     const char    *Thing,
-	     unsigned long  Count,
+	work(unsigned long  Count,
+	     std::function<void(unsigned long at, unsigned long cnt, unsigned long threads)>
+	                    StatusPrinter,
 	     std::function<void(std::atomic_ulong*,
 	                        size_t from,
 	                        size_t to,
 	                        PerThread&)>
-	                                                    Worker,
-	     std::function<void(std::vector<PerThread>&&)>  Merger)
+	                    Worker,
+	     std::function<void(std::vector<PerThread>&&)>
+	                    Merger)
 	{
 		unsigned long threadcount = thread::ncpus;
 		if (opt_max_jobs > 1 && opt_max_jobs < threadcount)
 			threadcount = opt_max_jobs;
 
-		double         fac = 100.0 / double(Count);
-		unsigned int   pc  = 0;
 		unsigned long  obj_per_thread = Count / threadcount;
-		if (!opt_quiet) {
-			printf("spawning %lu threads\n", threadcount);
-			printf("%s: 0%% (0 / %lu%s)", Job, Count, Thing);
-			fflush(stdout);
-		}
+		if (!opt_quiet)
+			StatusPrinter(0, Count, threadcount);
 
 		if (threadcount == 1) {
 			for (unsigned long i = 0; i != Count; ++i) {
 				PerThread Data;
 				Worker(nullptr, i, i+1, Data);
-				if (!opt_quiet) {
-					unsigned int newpc = fac * double(i);
-					if (newpc != pc) {
-						pc = newpc;
-						printf("\r%s: %3u%% (%lu / %lu%s)",
-						       Job, pc, i, Count, Thing);
-						fflush(stdout);
-					}
-				}
+				if (!opt_quiet)
+					StatusPrinter(i, Count, 1);
 			}
 			return;
 		}
@@ -338,13 +327,7 @@ namespace thread {
 			unsigned long c = 0;
 			while (c != Count) {
 				c = counter.load();
-				unsigned int newpc = fac * double(c);
-				if (newpc != pc) {
-					pc = newpc;
-					printf("\r%s: %3u%% (%lu / %lu%s)",
-					       Job, pc, c, Count, Thing);
-					fflush(stdout);
-				}
+				StatusPrinter(c, Count, threadcount);
 				usleep(100000);
 			}
 		}
@@ -355,7 +338,7 @@ namespace thread {
 		}
 		Merger(std::move(Data));
 		if (!opt_quiet)
-			printf("\r%s: 100%% (%lu / %lu%s)\n", Job, counter.load(), Count, Thing);
+			StatusPrinter(Count, Count, threadcount);
 	}
 }
 
@@ -395,12 +378,20 @@ DB::relink_all_threaded()
 				required_missing[m.first] = std::move(m.second);
 		}
 	};
-	thread::work<Tuple>(
-		"relinking",
-		" packages",
-		packages.size(),
-		worker,
-		merger);
+	double fac = 100.0 / double(packages.size());
+	unsigned int pc = 1000;
+	auto status = [fac, &pc](unsigned long at, unsigned long cnt, unsigned long threadcount) {
+		unsigned int newpc = fac * double(at);
+		if (newpc == pc)
+			return;
+		pc = newpc;
+		printf("\rrelinking: %3u%% (%lu / %lu) [%lu]",
+		       pc, at, cnt, threadcount);
+		fflush(stdout);
+		if (at == cnt)
+			printf("\n");
+	};
+	thread::work<Tuple>(packages.size(), status, worker, merger);
 }
 #endif
 
