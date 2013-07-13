@@ -832,6 +832,12 @@ DB::show_found()
 }
 
 void
+DB::check_integrity(const Package *pkg) const
+{
+	(void)pkg;
+}
+
+void
 DB::check_integrity() const
 {
 	log(Message, "Looking for stale object files...\n");
@@ -843,7 +849,31 @@ DB::check_integrity() const
 	}
 
 	log(Message, "Checking package dependencies...\n");
-	//for (auto &p : packages) {
-	//	(void)p;
-	//}
+	auto status = [](unsigned int at, unsigned int cnt, unsigned int threads) {
+		(void)at;
+		(void)cnt;
+		(void)threads;
+	};
+#ifndef ENABLE_THREADS
+	status(0, packages.size(), 1);
+	for (size_t i = 0; i != packages.size(); ++i) {
+		check_integrity(packages[i]);
+		status(i, packages.size(), 1);
+	}
+#else
+	auto merger = [](std::vector<int> &&n) {
+		(void)n;
+	};
+	auto worker = [this](std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
+		(void)dummy;
+
+		for (size_t i = from; i != to; ++i) {
+			const Package *pkg = packages[i];
+			check_integrity(pkg);
+			if (count)
+				++*count;
+		}
+	};
+	thread::work<int>(packages.size(), status, worker, merger);
+#endif
 }

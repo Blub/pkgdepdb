@@ -266,6 +266,7 @@ public:
 	void show_found();
 	void show_found_json();
 	void check_integrity() const;
+	void check_integrity(const Package *pkg) const;
 
 	bool store(const std::string& filename);
 	bool read (const std::string& filename);
