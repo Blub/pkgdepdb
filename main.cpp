@@ -73,6 +73,8 @@ static struct option long_opts[] = {
 
 	{ "broken",  no_argument,       0, 'b' },
 
+	{ "integrity",  no_argument,    0, -'G' },
+
 	{ "ld-append",  required_argument, 0, -'A' },
 	{ "ld-prepend", required_argument, 0, -'P' },
 	{ "ld-delete",  required_argument, 0, -'D' },
@@ -228,6 +230,7 @@ main(int argc, char **argv)
 	bool         do_fixpaths   = false;
 	bool         dryrun        = false;
 	bool         filter_broken = false;
+	bool         do_integrity  = false;
 	bool oldmode = true;
 
 	// library path options
@@ -283,6 +286,8 @@ main(int argc, char **argv)
 
 			case -'R': oldmode = false; do_relink   = true; break;
 			case -'F': oldmode = false; do_fixpaths = true; break;
+
+			case -'G': oldmode = false; do_integrity = true; break;
 
 			case -1024-'D':
 				opt_package_depends = CfgStrToBool(optarg);
@@ -488,6 +493,9 @@ main(int argc, char **argv)
 
 	if (show_found)
 		db->show_found();
+
+	if (do_integrity)
+		db->check_integrity();
 
 	if (!dryrun && modified && has_db) {
 		if (opt_json & JSONBits::DB)

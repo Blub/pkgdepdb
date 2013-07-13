@@ -385,7 +385,7 @@ DB::relink_all_threaded()
 		if (newpc == pc)
 			return;
 		pc = newpc;
-		printf("\rrelinking: %3u%% (%lu / %lu) [%lu]",
+		printf("\rrelinking: %3u%% (%lu / %lu packages) [%lu]",
 		       pc, at, cnt, threadcount);
 		fflush(stdout);
 		if (at == cnt)
@@ -831,10 +831,60 @@ DB::show_found()
 	}
 }
 
-void
-DB::check_integrity(const Package *pkg) const
+static const Package*
+find_depend(std::string dep, const std::map<std::string, const Package*> &pkgmap)
 {
-	(void)pkg;
+	if (!dep.length())
+		return 0;
+
+	size_t len = dep.length();
+	for (size_t i = 0; i != len; ++i) {
+		if (dep[i] == '=' ||
+		    dep[i] == '<' ||
+		    dep[i] == '>' ||
+		    dep[i] == '!')
+		{
+			dep.erase(i);
+			break;
+		}
+	}
+
+	auto find = pkgmap.find(dep);
+	if (find == pkgmap.end())
+		return 0;
+	return find->second;
+}
+
+static void
+install_recursive(std::vector<const Package*> &packages,
+                  StringSet                   &names,
+                  const Package              *pkg,
+                  const std::map<std::string, const Package*> &pkgmap)
+{
+	if (names.find(pkg->name) != names.end())
+		return;
+	names.insert(pkg->name);
+	packages.push_back(pkg);
+	for (auto &dep : pkg->depends) {
+		auto found = find_depend(dep, pkgmap);
+		if (!found) {
+			//printf("\rmissing package: %s     \n", dep.c_str());
+			continue;
+		}
+		install_recursive(packages, names, found, pkgmap);
+	}
+}
+
+void
+DB::check_integrity(const Package *pkg,
+                    const std::map<std::string, const Package*> &pkgmap,
+                    const std::map<std::string, std::vector<const Elf*>> &objmap,
+                    const std::vector<const Package*> &package_base) const
+{
+	std::vector<const Package*> pulled(package_base);
+	StringSet                   pulled_names(base_packages);
+	install_recursive(pulled, pulled_names, pkg, pkgmap);
+	(void)objmap;
 }
 
 void
@@ -848,28 +898,58 @@ DB::check_integrity() const
 		}
 	}
 
-	log(Message, "Checking package dependencies...\n");
-	auto status = [](unsigned int at, unsigned int cnt, unsigned int threads) {
-		(void)at;
-		(void)cnt;
-		(void)threads;
+	log(Message, "Preparing data to check package dependencies...\n");
+	// we assume here that std::map has better search performance than O(n)
+	std::map<std::string, const Package*>          pkgmap;
+	std::map<std::string, std::vector<const Elf*>> objmap;
+
+	for (auto &p: packages)
+		pkgmap[p->name] = p;
+	for (auto &o: objects) {
+		if (o->owner)
+			objmap[o->basename].push_back(o);
+	}
+
+	// install base system:
+	std::vector<const Package*> base;
+
+	for (auto &basepkg : base_packages) {
+		auto p = pkgmap.find(basepkg);
+		if (p != pkgmap.end())
+			base.push_back(p->second);
+	}
+
+	double fac = 100.0 / double(packages.size());
+	unsigned int pc = 1000;
+	auto status = [fac,&pc](unsigned long at, unsigned long cnt, unsigned long threads) {
+		unsigned int newpc = fac * double(at);
+		if (newpc == pc)
+			return;
+		pc = newpc;
+		printf("\rpackages: %3u%% (%lu / %lu) [%lu]",
+		       pc, at, cnt, threads);
+		fflush(stdout);
+		if (at == cnt)
+			printf("\n");
 	};
+
+	log(Message, "Checking package dependencies...\n");
 #ifndef ENABLE_THREADS
 	status(0, packages.size(), 1);
 	for (size_t i = 0; i != packages.size(); ++i) {
-		check_integrity(packages[i]);
+		check_integrity(packages[i], pkgmap, objmap, base);
 		status(i, packages.size(), 1);
 	}
 #else
 	auto merger = [](std::vector<int> &&n) {
 		(void)n;
 	};
-	auto worker = [this](std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
+	auto worker = [this,&pkgmap,&objmap,&base](std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
 		(void)dummy;
 
 		for (size_t i = from; i != to; ++i) {
 			const Package *pkg = packages[i];
-			check_integrity(pkg);
+			check_integrity(pkg, pkgmap, objmap, base);
 			if (count)
 				++*count;
 		}

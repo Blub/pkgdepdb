@@ -266,7 +266,10 @@ public:
 	void show_found();
 	void show_found_json();
 	void check_integrity() const;
-	void check_integrity(const Package *pkg) const;
+	void check_integrity(const Package *pkg,
+                         const std::map<std::string, const Package*> &pkgmap,
+                         const std::map<std::string, std::vector<const Elf*>> &objmap,
+                         const std::vector<const Package*> &base) const;
 
 	bool store(const std::string& filename);
 	bool read (const std::string& filename);
