@@ -481,7 +481,7 @@ fixcpath(const std::string& dir)
 bool
 DB::ld_append(const std::string& dir)
 {
-	return ld_insert(fixcpath(dir), library_path.size()-1);
+	return ld_insert(fixcpath(dir), library_path.size());
 }
 
 bool
@@ -525,7 +525,7 @@ DB::ld_insert(const std::string& dir_, size_t i)
 	if (!library_path.size())
 		i = 0;
 	else if (i >= library_path.size())
-		i = library_path.size()-1;
+		i = library_path.size();
 
 	auto old = std::find(library_path.begin(), library_path.end(), dir);
 	if (old == library_path.end()) {
