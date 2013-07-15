@@ -551,7 +551,7 @@ DB::pkg_ld_insert(const std::string& package, const std::string& dir_, size_t i)
 	if (!path.size())
 		i = 0;
 	else if (i >= path.size())
-		i = path.size()-1;
+		i = path.size();
 
 	auto old = std::find(path.begin(), path.end(), dir);
 	if (old == path.end()) {
