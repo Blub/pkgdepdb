@@ -522,9 +522,7 @@ DB::ld_insert(const std::string& dir_, size_t i)
 {
 	std::string dir(dir_);
 	fixpath(dir);
-	if (!library_path.size())
-		i = 0;
-	else if (i >= library_path.size())
+	if (i > library_path.size())
 		i = library_path.size();
 
 	auto old = std::find(library_path.begin(), library_path.end(), dir);
@@ -548,9 +546,7 @@ DB::pkg_ld_insert(const std::string& package, const std::string& dir_, size_t i)
 	fixpath(dir);
 	StringList &path(package_library_path[package]);
 
-	if (!path.size())
-		i = 0;
-	else if (i >= path.size())
+	if (i > path.size())
 		i = path.size();
 
 	auto old = std::find(path.begin(), path.end(), dir);
