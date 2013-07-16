@@ -1,3 +1,8 @@
+2013-07-15 Blub
+
+	* -Rpkg-ld-append, --ld-append:
+		Fixed bug: append inserted before the last element...   *sigh*
+
 2013-07-09 Blub (0.1.2)
 
 	* Released
