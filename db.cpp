@@ -720,11 +720,15 @@ DB::show_packages(bool filter_broken)
 	if (opt_json & JSONBits::Query)
 		return show_packages_json(filter_broken);
 
-	printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
+	if (!opt_quiet)
+		printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
 	for (auto &pkg : packages) {
 		if (filter_broken && !is_broken(pkg))
 			continue;
-		printf("  -> %s - %s\n", pkg->name.c_str(), pkg->version.c_str());
+		if (opt_quiet)
+			printf("%s\n", pkg->name.c_str());
+		else
+			printf("  -> %s - %s\n", pkg->name.c_str(), pkg->version.c_str());
 		if (opt_verbosity >= 1) {
 			for (auto &dep : pkg->depends)
 				printf("    depends on: %s\n", dep.c_str());
@@ -757,12 +761,17 @@ DB::show_objects()
 		return show_objects_json();
 
 	if (!objects.size()) {
-		printf("Objects: none\n");
+		if (!opt_quiet)
+			printf("Objects: none\n");
 		return;
 	}
-	printf("Objects:\n");
+	if (!opt_quiet)
+		printf("Objects:\n");
 	for (auto &obj : objects) {
-		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		if (opt_quiet)
+			printf("%s/%s\n", obj->dirname.c_str(), obj->basename.c_str());
+		else
+			printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
 		if (opt_verbosity < 1)
 			continue;
 		printf("     class: %u (%s)\n", (unsigned)obj->ei_class, obj->classString());
@@ -798,14 +807,19 @@ DB::show_missing()
 		return show_missing_json();
 
 	if (!required_missing.size()) {
-		printf("Missing: nothing\n");
+		if (!opt_quiet)
+			printf("Missing: nothing\n");
 		return;
 	}
-	printf("Missing:\n");
+	if (!opt_quiet)
+		printf("Missing:\n");
 	for (auto &mis : required_missing) {
 		Elf       *obj = mis.first;
 		StringSet &set = mis.second;
-		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		if (opt_quiet)
+			printf("%s/%s\n", obj->dirname.c_str(), obj->basename.c_str());
+		else
+			printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
 		for (auto &s : set)
 			printf("    misses: %s\n", s.c_str());
 	}
@@ -817,11 +831,15 @@ DB::show_found()
 	if (opt_json & JSONBits::Query)
 		return show_found_json();
 
-	printf("Found:\n");
+	if (!opt_quiet)
+		printf("Found:\n");
 	for (auto &fnd : required_found) {
 		Elf       *obj = fnd.first;
 		ObjectSet &set = fnd.second;
-		printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+		if (opt_quiet)
+			printf("%s/%s\n", obj->dirname.c_str(), obj->basename.c_str());
+		else
+			printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
 		for (auto &s : set)
 			printf("    finds: %s\n", s->basename.c_str());
 	}
