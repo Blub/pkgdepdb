@@ -190,9 +190,11 @@ public:
 	inline bool operator!() const { return !on; }
 	inline void operator=(bool on) {
 		this->on = on;
+		*mode = false;
 	}
 	inline void operator=(const char *arg) {
 		on = true;
+		*mode = false;
 		this->arg.push_back(arg);
 	}
 	/*
@@ -362,6 +364,8 @@ main(int argc, char **argv)
 
 	if (oldmode) {
 		// non-database mode!
+		if (optind >= argc)
+			help(1);
 		while (optind < argc) {
 			Package *package = Package::open(argv[optind++]);
 			package->show_needed();
