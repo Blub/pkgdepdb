@@ -197,12 +197,6 @@ public:
 		*mode = false;
 		this->arg.push_back(arg);
 	}
-	/*
-	inline void operator=(std::string &&arg) {
-		on = true;
-		this->arg.push_back(std::move(arg));
-	}
-	*/
 };
 
 static bool parse_rule(DB *db, const std::string& rule);
