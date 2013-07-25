@@ -193,6 +193,9 @@ public:
 	// DB version 3:
 	StringList              depends;
 	StringList              optdepends;
+	StringList              provides;
+	StringList              conflicts;
+	StringList              replaces;
 
 	void show_needed();
 	Elf* find(const std::string &dirname, const std::string &basename) const;

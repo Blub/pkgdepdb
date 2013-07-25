@@ -159,7 +159,11 @@ DB::install_package(Package* &&pkg)
 		return false;
 
 	packages.push_back(pkg);
-	if (pkg->depends.size() || pkg->optdepends.size())
+	if (pkg->depends.size()    ||
+	    pkg->optdepends.size() ||
+	    pkg->replaces.size()   ||
+	    pkg->conflicts.size()  ||
+	    pkg->provides.size())
 		contains_package_depends = true;
 
 	const StringList *libpaths = 0;

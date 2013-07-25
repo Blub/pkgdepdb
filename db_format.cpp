@@ -13,7 +13,7 @@
 
 // version
 uint16_t
-DB::CURRENT = 3;
+DB::CURRENT = 4;
 
 // magic header
 static const char
@@ -399,7 +399,7 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 }
 
 static bool
-write_pkg(SerialOut &out, Package *pkg, bool depdata)
+write_pkg(SerialOut &out, Package *pkg, unsigned hdrver)
 {
 	// check if the package has already been serialized
 	auto prev = out.pkgs.find(pkg);
@@ -418,9 +418,17 @@ write_pkg(SerialOut &out, Package *pkg, bool depdata)
 	if (!write_objlist(out, pkg->objects))
 		return false;
 
-	if (depdata) {
+	if (hdrver >= 3) {
 		if (!write_stringlist(out, pkg->depends) ||
 		    !write_stringlist(out, pkg->optdepends))
+		{
+			return false;
+		}
+	}
+	if (hdrver >= 4) {
+		if (!write_stringlist(out, pkg->provides) ||
+		    !write_stringlist(out, pkg->conflicts) ||
+		    !write_stringlist(out, pkg->replaces))
 		{
 			return false;
 		}
@@ -429,7 +437,7 @@ write_pkg(SerialOut &out, Package *pkg, bool depdata)
 }
 
 static bool
-read_pkg(SerialIn &in, Package *&pkg, bool depdata)
+read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver)
 {
 	ObjRef r;
 	in >= r;
@@ -462,9 +470,17 @@ read_pkg(SerialIn &in, Package *&pkg, bool depdata)
 	for (auto &o : pkg->objects)
 		o->owner = pkg;
 
-	if (depdata) {
+	if (hdrver >= 3) {
 		if (!read_stringlist(in, pkg->depends) ||
 		    !read_stringlist(in, pkg->optdepends))
+		{
+			return false;
+		}
+	}
+	if (hdrver >= 4) {
+		if (!read_stringlist(in, pkg->provides) ||
+		    !read_stringlist(in, pkg->conflicts) ||
+		    !read_stringlist(in, pkg->replaces))
 		{
 			return false;
 		}
@@ -516,7 +532,7 @@ db_store(DB *db, const std::string& filename)
 
 	// Figure out which database format version this will be
 	if (db->contains_package_depends)
-		hdr.version = 3;
+		hdr.version = 4;
 	else if (hdr.flags)
 			hdr.version = 2;
 
@@ -529,7 +545,7 @@ db_store(DB *db, const std::string& filename)
 
 	out <= (uint32_t)db->packages.size();
 	for (auto &pkg : db->packages) {
-		if (!write_pkg(out, pkg, hdr.version >= 3))
+		if (!write_pkg(out, pkg, hdr.version))
 			return false;
 	}
 
@@ -648,7 +664,7 @@ db_read(DB *db, const std::string& filename)
 	in >= len;
 	db->packages.resize(len);
 	for (uint32_t i = 0; i != len; ++i) {
-		if (!read_pkg(in, db->packages[i], hdr.version >= 3)) {
+		if (!read_pkg(in, db->packages[i], hdr.version)) {
 			log(Error, "failed reading packages\n");
 			return false;
 		}

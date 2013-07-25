@@ -138,6 +138,24 @@ read_info(Package *pkg, struct archive *tar, const size_t size)
 				pkg->optdepends.push_back(es);
 			continue;
 		}
+		if (isentry("replace", sizeof("replaces")-1)) {
+			if (!getvalue("replaces", es))
+				return false;
+			pkg->replaces.push_back(es);
+			continue;
+		}
+		if (isentry("conflict", sizeof("conflict")-1)) {
+			if (!getvalue("conflict", es))
+				return false;
+			pkg->conflicts.push_back(es);
+			continue;
+		}
+		if (isentry("provides", sizeof("provides")-1)) {
+			if (!getvalue("provides", es))
+				return false;
+			pkg->provides.push_back(es);
+			continue;
+		}
 
 		skipline();
 	}
