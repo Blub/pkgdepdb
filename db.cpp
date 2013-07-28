@@ -26,6 +26,7 @@ getObjClass(Elf *elf) {
 DB::DB() {
 	loaded_version = DB::CURRENT;
 	contains_package_depends = false;
+	strict_linking           = false;
 }
 
 DB::~DB() {
@@ -674,6 +675,8 @@ DB::show_info()
 
 	printf("DB version: %u\n", loaded_version);
 	printf("DB name:    [%s]\n", name.c_str());
+	printf("DB flags:   { %s }\n",
+	       (strict_linking ? "strict" : "non_strict"));
 	printf("Additional Library Paths:\n");
 	unsigned id = 0;
 	for (auto &p : library_path)

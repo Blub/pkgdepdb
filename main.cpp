@@ -150,6 +150,7 @@ help(int x)
 	             );
 	fprintf(out, "rules for --rule:\n"
 	             "  ignore:FILENAME    add a file-ignore rule\n"
+	             "  strict:BOOL        set strict mode (default=off)\n"
 	             "  unignore:FILENAME  remove a file-ignore rule\n"
 	             "  unignore-id:ID     remove a file-ignore rule by its id\n"
 	             "  pkg-ld-clear:PKG   clear a pacakge's library path\n"
@@ -533,6 +534,12 @@ parse_rule(DB *db, const std::string& rule)
 	if (try_rule(rule, "ignore:", "FILENAME", &ret,
 		[db](const std::string &cmd) {
 			return db->ignore_file(cmd);
+		})
+		|| try_rule(rule, "strict:", "BOOL", &ret,
+		[db](const std::string &cmd) {
+			bool old = db->strict_linking;
+			db->strict_linking = CfgStrToBool(cmd);
+			return old == db->strict_linking;
 		})
 		|| try_rule(rule, "unignore:", "FILENAME", &ret, 
 		[db](const std::string &cmd) {

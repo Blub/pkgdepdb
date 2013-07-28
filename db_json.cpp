@@ -136,6 +136,7 @@ DB::show_info_json()
 	printf("{");
 	printf( "\n\t\"db_version\": %u", (unsigned)loaded_version);
 	printf(",\n\t\"db_name\": "); json_quote(stdout, name);
+	printf(",\n\t\"strict\": %s", (strict_linking ? "true" : "false"));
 	printf(",\n\t\"library_path\": [");
 	if (!library_path.size()) {
 		printf("]\n}\n");

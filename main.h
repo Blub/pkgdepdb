@@ -227,6 +227,7 @@ public:
 	~DB();
 
 	uint16_t    loaded_version;
+	bool        strict_linking; // stored as flag bit
 
 	std::string name;
 	StringList  library_path;

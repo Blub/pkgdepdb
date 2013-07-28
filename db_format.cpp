@@ -26,7 +26,8 @@ namespace DBFlags {
 	enum {
 		IgnoreRules   = (1<<0),
 		PackageLDPath = (1<<1),
-		BasePackages  = (1<<2)
+		BasePackages  = (1<<2),
+		StrictLinking = (1<<3)
 	};
 }
 
@@ -529,6 +530,8 @@ db_store(DB *db, const std::string& filename)
 		hdr.flags |= DBFlags::PackageLDPath;
 	if (db->base_packages.size())
 		hdr.flags |= DBFlags::BasePackages;
+	if (db->strict_linking)
+		hdr.flags |= DBFlags::StrictLinking;
 
 	// Figure out which database format version this will be
 	if (db->contains_package_depends)
