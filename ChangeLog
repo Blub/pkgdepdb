@@ -1,3 +1,13 @@
+2013-07-28 Blub
+
+	* -Rstrict:
+		Database has a strict flag now.  Will later be used to  change
+		how to treat osabi values set to 0.A
+	* 'josn' config typo fixed:
+		In the config file, 'json' was not recognized, as there was  a
+		typo making it 'josn', for now both will  be  recognized,  but
+		the typo is deprecated (for obvious reasons...)
+
 2013-07-15 Blub
 
 	* -Rpkg-ld-append, --ld-append:
