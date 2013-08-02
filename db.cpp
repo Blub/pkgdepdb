@@ -178,11 +178,10 @@ DB::install_package(Package* &&pkg)
 		objects.push_back(obj);
 
 	for (auto &obj : pkg->objects) {
-		ObjClass objclass = getObjClass(obj);
 		// check if the object is required
 		for (auto missing = required_missing.begin(); missing != required_missing.end();) {
 			Elf *seeker = missing->first;
-			if (getObjClass(seeker) != objclass ||
+			if (!seeker->can_use(*obj, strict_linking) ||
 			    !elf_finds(seeker, obj->dirname, libpaths))
 			{
 				++missing;
@@ -211,9 +210,8 @@ Elf*
 DB::find_for(Elf *obj, const std::string& needed, const StringList *extrapath) const
 {
 	log(Debug, "dependency of %s/%s   :  %s\n", obj->dirname.c_str(), obj->basename.c_str(), needed.c_str());
-	ObjClass objclass = getObjClass(obj);
 	for (auto &lib : objects) {
-		if (getObjClass(lib) != objclass) {
+		if (!obj->can_use(*lib, strict_linking)) {
 			log(Debug, "  skipping %s/%s (objclass)\n", lib->dirname.c_str(), lib->basename.c_str());
 			continue;
 		}

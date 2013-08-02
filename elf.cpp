@@ -384,3 +384,15 @@ Elf::osabiString() const
 		default: return "UNKNOWN";
 	}
 }
+
+bool
+Elf::can_use(const Elf &other, bool strict) const
+{
+	if (ei_data  != other.ei_data ||
+	    ei_class != other.ei_class)
+	{
+		return false;
+	}
+	return (ei_osabi == other.ei_osabi) ||
+	       (!strict && (!ei_osabi || !other.ei_osabi));
+}

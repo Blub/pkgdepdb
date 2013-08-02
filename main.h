@@ -95,6 +95,7 @@ public:
 
 public: // utility functions while loading
 	void solve_paths(const std::string& origin);
+	bool can_use(const Elf &other, bool strict) const;
 
 public: // utility functions for printing stuff
 	const char *classString() const;
