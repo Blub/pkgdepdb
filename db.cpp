@@ -1131,6 +1131,17 @@ install_recursive(std::vector<const Package*> &packages,
 		}
 		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap);
 	}
+	for (auto &dep : pkg->optdepends) {
+		auto found = find_depend(dep, pkgmap, providemap, replacemap);
+		if (!found) {
+			printf("%smissing package: %s depends on %s\n",
+			       (opt_quiet ? "" : "\r"),
+			       pkg->name.c_str(),
+			       dep.c_str());
+			continue;
+		}
+		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap);
+	}
 }
 
 void
