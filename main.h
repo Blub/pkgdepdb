@@ -230,6 +230,7 @@ public:
 
 	DB();
 	~DB();
+	DB(bool wiped, const DB& copy);
 
 	uint16_t    loaded_version;
 	bool        strict_linking; // stored as flag bit

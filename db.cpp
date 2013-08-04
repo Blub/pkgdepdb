@@ -38,6 +38,30 @@ DB::~DB() {
 		delete pkg;
 }
 
+template<typename T>
+static void stdreplace(T &what, const T &with)
+{
+	what.~T();
+	new (&what) T(with);
+}
+
+DB::DB(bool wiped, const DB &copy)
+: name                (copy.name),
+  library_path        (copy.library_path),
+  ignore_file_rules   (copy.ignore_file_rules),
+  package_library_path(copy.package_library_path),
+  base_packages       (copy.base_packages)
+{
+	loaded_version = copy.loaded_version;
+	strict_linking = copy.strict_linking;
+	if (!wiped) {
+		stdreplace(packages,         copy.packages);
+		stdreplace(objects,          copy.objects);
+		stdreplace(required_found,   copy.required_found);
+		stdreplace(required_missing, copy.required_missing);
+	}
+}
+
 PackageList::const_iterator
 DB::find_pkg_i(const std::string& name) const
 {
@@ -1118,6 +1142,28 @@ DB::check_integrity(const Package    *pkg,
 	PkgMap                      installmap(basemap);
 	install_recursive(pulled, installmap, pkg, pkgmap, providemap, replacemap);
 	(void)objmap;
+
+	// now the tough part:
+	DB cdb(true, *this);
+	// create a tiny copy... could cast the const away as it's not read,
+	// but we don't wanna be THAT unsafe...
+	auto pcopy = new Package;
+	pcopy->name    = pkg->name;
+	pcopy->version = pkg->version;
+	stdreplace(pcopy->objects, pkg->objects);
+	cdb.install_package(std::move(pcopy));
+	for (auto &missing : cdb.required_missing) {
+		Elf *broken = missing.first;
+		if (broken->owner != pkg)
+			continue;
+		for (auto &pull : missing.second) {
+			printf("%s: %s/%s doesn't pull %s\n",
+			       pcopy->name.c_str(),
+			       broken->dirname.c_str(),
+			       broken->basename.c_str(),
+			       pull.c_str());
+		}
+	}
 }
 
 void
