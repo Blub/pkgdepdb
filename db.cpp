@@ -9,6 +9,10 @@
 #  include <unistd.h>
 #endif
 
+#ifdef WITH_ALPM
+#  include <alpm.h>
+#endif
+
 #include "main.h"
 
 using ObjClass = uint32_t;

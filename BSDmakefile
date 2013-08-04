@@ -13,6 +13,10 @@ GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null ||
 .  include ".cflags"
 .endif
 
+.if $(ALPM) == yes
+CPPFLAGS += -DALPM
+.endif
+
 .include "Makefile"
 
 .if !defined(ALLFLAGS) || !defined(OLDCXX) \

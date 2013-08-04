@@ -10,6 +10,11 @@ endif
 
 -include .cflags
 -include Makefile
+
+ifeq ($(ALPM),yes)
+	CPPFLAGS += -DALPM
+endif
+
 #ifneq ($(strip $(ALLFLAGS)),$(strip $(?COMPAREFLAGS)))
 ifneq ($(strip $(ALLFLAGS)),$(strip $(shell echo $(COMPAREFLAGS))))
 .PHONY: .cflags
