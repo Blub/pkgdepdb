@@ -214,6 +214,10 @@ public: // NOT SERIALIZED:
 void fixpath(std::string& path);
 void fixpathlist(std::string& pathlist);
 
+using PkgMap     = std::map<std::string, const Package*>;
+using PkgListMap = std::map<std::string, std::vector<const Package*>>;
+using ObjListMap = std::map<std::string, std::vector<const Elf*>>;
+
 class DB {
 public:
 	static uint16_t CURRENT;
@@ -271,9 +275,11 @@ public:
 	void show_found();
 	void show_found_json();
 	void check_integrity() const;
-	void check_integrity(const Package *pkg,
-                         const std::map<std::string, const Package*> &pkgmap,
-                         const std::map<std::string, std::vector<const Elf*>> &objmap,
+	void check_integrity(const Package    *pkg,
+                         const PkgMap     &pkgmap,
+                         const PkgListMap &providemap,
+                         const PkgListMap &replacemap,
+                         const ObjListMap &objmap,
                          const std::vector<const Package*> &base) const;
 
 	bool store(const std::string& filename);

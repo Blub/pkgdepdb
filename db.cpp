@@ -850,59 +850,68 @@ DB::show_found()
 	}
 }
 
+static void
+strip_version(std::string &s)
+{
+	size_t from = s.find_first_of("=<>!");
+	if (from != std::string::npos)
+		s.erase(from);
+}
+
 static const Package*
-find_depend(std::string dep, const std::map<std::string, const Package*> &pkgmap)
+find_depend(std::string dep, const PkgMap &pkgmap, const PkgListMap &providemap, const PkgListMap &replacemap)
 {
 	if (!dep.length())
 		return 0;
 
-	size_t len = dep.length();
-	for (size_t i = 0; i != len; ++i) {
-		if (dep[i] == '=' ||
-		    dep[i] == '<' ||
-		    dep[i] == '>' ||
-		    dep[i] == '!')
-		{
-			dep.erase(i);
-			break;
-		}
-	}
+	strip_version(dep);
 
 	auto find = pkgmap.find(dep);
-	if (find == pkgmap.end())
-		return 0;
-	return find->second;
+	if (find != pkgmap.end())
+		return find->second;
+	// check for a providing package
+	auto rep = replacemap.find(dep);
+	if (rep == replacemap.end()) {
+		rep = providemap.find(dep);
+		if (rep == replacemap.end())
+			return 0;
+	}
+	return rep->second[0];
 }
 
 static void
 install_recursive(std::vector<const Package*> &packages,
                   StringSet                   &names,
                   const Package              *pkg,
-                  const std::map<std::string, const Package*> &pkgmap)
+                  const PkgMap               &pkgmap,
+                  const PkgListMap           &providemap,
+                  const PkgListMap           &replacemap)
 {
 	if (names.find(pkg->name) != names.end())
 		return;
 	names.insert(pkg->name);
 	packages.push_back(pkg);
 	for (auto &dep : pkg->depends) {
-		auto found = find_depend(dep, pkgmap);
+		auto found = find_depend(dep, pkgmap, providemap, replacemap);
 		if (!found) {
 			//printf("\rmissing package: %s     \n", dep.c_str());
 			continue;
 		}
-		install_recursive(packages, names, found, pkgmap);
+		install_recursive(packages, names, found, pkgmap, providemap, replacemap);
 	}
 }
 
 void
-DB::check_integrity(const Package *pkg,
-                    const std::map<std::string, const Package*> &pkgmap,
-                    const std::map<std::string, std::vector<const Elf*>> &objmap,
+DB::check_integrity(const Package    *pkg,
+                    const PkgMap     &pkgmap,
+                    const PkgListMap &providemap,
+                    const PkgListMap &replacemap,
+                    const ObjListMap &objmap,
                     const std::vector<const Package*> &package_base) const
 {
 	std::vector<const Package*> pulled(package_base);
 	StringSet                   pulled_names(base_packages);
-	install_recursive(pulled, pulled_names, pkg, pkgmap);
+	install_recursive(pulled, pulled_names, pkg, pkgmap, providemap, replacemap);
 	(void)objmap;
 }
 
@@ -919,11 +928,22 @@ DB::check_integrity() const
 
 	log(Message, "Preparing data to check package dependencies...\n");
 	// we assume here that std::map has better search performance than O(n)
-	std::map<std::string, const Package*>          pkgmap;
-	std::map<std::string, std::vector<const Elf*>> objmap;
+	PkgMap     pkgmap;
+	PkgListMap providemap, replacemap;
+	ObjListMap objmap;
 
-	for (auto &p: packages)
+	for (auto &p: packages) {
 		pkgmap[p->name] = p;
+		for (auto prov : p->provides) {
+			strip_version(prov);
+			providemap[prov].push_back(p);
+		}
+		for (auto repl : p->replaces) {
+			strip_version(repl);
+			replacemap[repl].push_back(p);
+		}
+	}
+
 	for (auto &o: objects) {
 		if (o->owner)
 			objmap[o->basename].push_back(o);
@@ -963,12 +983,13 @@ DB::check_integrity() const
 	auto merger = [](std::vector<int> &&n) {
 		(void)n;
 	};
-	auto worker = [this,&pkgmap,&objmap,&base](std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
+	auto worker = [this,&pkgmap,&providemap,&replacemap,&objmap,&base]
+	(std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
 		(void)dummy;
 
 		for (size_t i = from; i != to; ++i) {
 			const Package *pkg = packages[i];
-			check_integrity(pkg, pkgmap, objmap, base);
+			check_integrity(pkg, pkgmap, providemap, replacemap, objmap, base);
 			if (count)
 				++*count;
 		}
