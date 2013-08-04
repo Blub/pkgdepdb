@@ -755,6 +755,12 @@ DB::show_packages(bool filter_broken)
 				printf("    depends on: %s\n", dep.c_str());
 			for (auto &dep : pkg->optdepends)
 				printf("    depends optionally on: %s\n", dep.c_str());
+			for (auto &ent : pkg->provides)
+				printf("    provides: %s\n", ent.c_str());
+			for (auto &ent : pkg->replaces)
+				printf("    replaces: %s\n", ent.c_str());
+			for (auto &ent : pkg->conflicts)
+				printf("    conflicts with: %s\n", ent.c_str());
 			if (filter_broken) {
 				for (auto &obj : pkg->objects) {
 					if (is_broken(obj)) {
@@ -914,6 +920,80 @@ version_op(const std::string &op, const char *v1, const char *v2)
 	}
 	return false;
 }
+
+static bool
+version_satisfies(const std::string &dop, const std::string &dver, const std::string &pop, const std::string &pver)
+{
+	// does the provided version pver satisfy the required version hver?
+	int ret = alpm_pkg_vercmp(dver.c_str(), pver.c_str());
+	if (dop == pop) {
+		// want exact version, provided exact version
+		if (dop == "=")  return ret == 0;
+		// don't want some exact version (very odd case)
+		if (dop == "!=") return ret != 0;
+		// depending on >= A, so the provided must be >= A
+		if (dop == ">=") return ret <  0;
+		// and so on
+		if (dop == ">")  return ret <= 0;
+		if (dop == "<=") return ret >  0;
+		if (dop == "<")  return ret >= 0;
+		return false;
+	}
+	// depending on a specific version
+	if (dop == "=")
+		return false;
+	// depending on something not being a specific version:
+	if (dop == "!=") {
+		if (pop == "=")  return ret != 0;
+		if (pop == ">")  return ret >  0;
+		if (pop == ">=") return ret >= 0;
+		if (pop == "<")  return ret <  0;
+		if (pop == "<=") return ret <= 0;
+		return false;
+	}
+	// rest
+	if (dop == ">=") {
+		if (pop == "=")  return ret < 0;
+		if (pop == ">")  return ret < 0;
+		if (pop == ">=") return ret < 0;
+		return false;
+	}
+	if (dop == ">") {
+		if (pop == "=")  return ret <= 0;
+		if (pop == ">")  return ret <= 0;
+		if (pop == ">=") return ret <= 0;
+		return false;
+	}
+	if (dop == "<=") {
+		if (pop == "=")  return ret >  0;
+		if (pop == "<")  return ret >  0;
+		if (pop == "<=") return ret >  0;
+		return false;
+	}
+	if (dop == "<") {
+		if (pop == "=")  return ret >= 0;
+		if (pop == "<")  return ret >= 0;
+		if (pop == "<=") return ret >= 0;
+		return false;
+	}
+	return false;
+}
+
+static bool
+package_satisfies(const Package *other, const std::string &dep, const std::string &op, const std::string &ver)
+{
+	if (version_op(op, other->version.c_str(), ver.c_str()))
+		return true;
+	for (auto &p : other->provides) {
+		std::string prov, pop, pver;
+		split_depstring(p, prov, pop, pver);
+		if (prov != dep)
+			continue;
+		if (version_satisfies(op, ver, pop, pver))
+			return true;
+	}
+	return false;
+}
 #endif
 
 static const Package*
@@ -934,7 +1014,7 @@ find_depend(const std::string &dep_, const PkgMap &pkgmap, const PkgListMap &pro
 	if (find != pkgmap.end()) {
 #ifdef WITH_ALPM
 		const Package *other = find->second;
-		if (!ver.length() || version_op(op, other->version.c_str(), ver.c_str()))
+		if (!ver.length() || package_satisfies(other, dep, op, ver))
 #endif
 			return find->second;
 	}
@@ -945,7 +1025,7 @@ find_depend(const std::string &dep_, const PkgMap &pkgmap, const PkgListMap &pro
 		if (!ver.length())
 			return rep->second[0];
 		for (auto other : rep->second) {
-			if (version_op(op, other->version.c_str(), ver.c_str()))
+			if (package_satisfies(other, dep, op, ver))
 				return other;
 		}
 #else
@@ -958,8 +1038,9 @@ find_depend(const std::string &dep_, const PkgMap &pkgmap, const PkgListMap &pro
 #ifdef WITH_ALPM
 		if (!ver.length())
 			return rep->second[0];
+
 		for (auto other : rep->second) {
-			if (version_op(op, other->version.c_str(), ver.c_str()))
+			if (package_satisfies(other, dep, op, ver))
 				return other;
 		}
 #else
