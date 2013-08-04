@@ -873,7 +873,7 @@ find_depend(std::string /*copy*/ dep, const PkgMap &pkgmap, const PkgListMap &pr
 	auto rep = replacemap.find(dep);
 	if (rep == replacemap.end()) {
 		rep = providemap.find(dep);
-		if (rep == replacemap.end())
+		if (rep == providemap.end())
 			return 0;
 	}
 	return rep->second[0];
@@ -890,6 +890,15 @@ install_recursive(std::vector<const Package*> &packages,
 	if (names.find(pkg->name) != names.end())
 		return;
 	names.insert(pkg->name);
+	for (auto prov : pkg->provides) {
+		strip_version(prov);
+		names.insert(prov);
+	}
+	for (auto repl : pkg->replaces) {
+		strip_version(repl);
+		names.insert(repl);
+	}
+	// FIXME:: check for conflicts here
 	packages.push_back(pkg);
 	for (auto &dep : pkg->depends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
@@ -934,14 +943,18 @@ DB::check_integrity() const
 
 	for (auto &p: packages) {
 		pkgmap[p->name] = p;
-		for (auto prov : p->provides) {
-			strip_version(prov);
-			providemap[prov].push_back(p);
-		}
-		for (auto repl : p->replaces) {
-			strip_version(repl);
-			replacemap[repl].push_back(p);
-		}
+		auto addit = [](const Package *pkg, std::string /*copy*/ name, PkgListMap &map) {
+			strip_version(name);
+			auto fnd = map.find(name);
+			if (fnd == map.end())
+				map.emplace(name, std::move(std::vector<const Package*>({pkg})));
+			else
+				map[name].push_back(pkg);
+		};
+		for (auto prov : p->provides)
+			addit(p, prov, providemap);
+		for (auto repl : p->replaces)
+			addit(p, repl, replacemap);
 	}
 
 	for (auto &o: objects) {
@@ -958,8 +971,15 @@ DB::check_integrity() const
 			base.push_back(p->second);
 	}
 
+	// print some stats
+	log(Message, "packages: %lu, provides: %lu, replacements: %lu, objects: %lu\n",
+	             (unsigned long)pkgmap.size(),
+	             (unsigned long)providemap.size(),
+	             (unsigned long)replacemap.size(),
+	             (unsigned long)objmap.size());
+
 	double fac = 100.0 / double(packages.size());
-	unsigned int pc = 1000;
+	unsigned int pc = 100;
 	auto status = [fac,&pc](unsigned long at, unsigned long cnt, unsigned long threads) {
 		unsigned int newpc = fac * double(at);
 		if (newpc == pc)
