@@ -71,6 +71,8 @@ static struct option long_opts[] = {
 	{ "verbose", no_argument,       0, 'v' },
 	{ "rename",  required_argument, 0, 'n' },
 
+	{ "wipe",    no_argument,       0, -'W' },
+
 	{ "broken",  no_argument,       0, 'b' },
 
 	{ "integrity",  no_argument,    0, -'G' },
@@ -125,6 +127,7 @@ help(int x)
 	             "  --fixpaths         fix up path entries as older versions didn't\n"
 	             "                     handle ../ in paths (includes --relink)\n"
 	             "  -R, --rule=CMD     modify rules\n"
+	             "  --wipe             remove all packages, keep rules/settings\n"
 	             );
 	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
@@ -215,6 +218,7 @@ main(int argc, char **argv)
 	std::string  dbfile, newname;
 	bool         do_install    = false;
 	bool         do_delete     = false;
+	bool         do_wipe       = false;
 	bool         has_db        = false;
 	bool         modified      = false;
 	bool         show_info     = false;
@@ -274,6 +278,7 @@ main(int argc, char **argv)
 
 			case 'i':  oldmode = false; do_install    = true; break;
 			case 'r':  oldmode = false; do_delete     = true; break;
+			case -'W': oldmode = false; do_wipe       = true; break;
 			case 'I':  oldmode = false; show_info     = true; break;
 			case 'L':  oldmode = false; show_list     = true; break;
 			case 'M':  oldmode = false; show_missing  = true; break;
@@ -340,8 +345,8 @@ main(int argc, char **argv)
 	if (do_fixpaths)
 		do_relink = true;
 
-	if (do_install && do_delete) {
-		log(Error, "--install and --remove are mutually exclusive\n");
+	if (do_install && (do_delete || do_wipe)) {
+		log(Error, "--install and --remove/--wipe are mutually exclusive\n");
 		help(1);
 	}
 
@@ -441,7 +446,10 @@ main(int argc, char **argv)
 		         || modified;
 	}
 	if (ld_clear)
-		modified = db->ld_clear()             || modified;
+		modified = db->ld_clear() || modified;
+
+	if (do_wipe)
+		modified = db->wipe_packages() || modified;
 
 	if (do_fixpaths) {
 		modified = true;

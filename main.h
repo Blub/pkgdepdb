@@ -255,6 +255,7 @@ public:
 	void link_object_do (Elf*, Package *owner);
 	void relink_all     ();
 	void fix_paths      ();
+	bool wipe_packages  ();
 
 #ifdef ENABLE_THREADS
 	void relink_all_threaded();

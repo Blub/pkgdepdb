@@ -49,6 +49,18 @@ DB::find_pkg(const std::string& name) const
 }
 
 bool
+DB::wipe_packages()
+{
+	if (empty())
+		return false;
+	objects.clear();
+	packages.clear();
+	required_found.clear();
+	required_missing.clear();
+	return true;
+}
+
+bool
 DB::delete_package(const std::string& name)
 {
 	Package *old; {
