@@ -1,3 +1,22 @@
+2013-08-04 Release 0.1.3
+
+	- New action: --wipe to remove all packages but leave settings and
+		rules in tact.
+	- New query: --integrity
+		Check for missing packages, conflicts, and missing dependency
+		entries.
+		Uses libalpm to compare versions.
+	- Database version bumped to 4:
+		Contains the following fields from .PKGINFO files:
+			* dependencies
+			* optional dependencies
+			* provides list
+			* replaces list
+			* conflicts list
+		Adds a "strict" flag described below.
+	- strict flag (stored in databases):
+		Decide how to treat objects with an OSABI value of 0.
+
 2013-07-09 Release 0.1.2
 
 	- A rebuild of databases will be required (format changes)

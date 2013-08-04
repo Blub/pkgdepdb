@@ -1,3 +1,7 @@
+2013-08-04 Blub (0.1.3)
+
+	* Released
+
 2013-08-04 Blub
 
 	* --wipe: added option to remove all packages
@@ -8,7 +12,7 @@
 
 	* -Rstrict:
 		Database has a strict flag now.  Will later be used to  change
-		how to treat osabi values set to 0.A
+		how to treat osabi values set to 0.
 	* 'josn' config typo fixed:
 		In the config file, 'json' was not recognized, as there was  a
 		typo making it 'josn', for now both will  be  recognized,  but
