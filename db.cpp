@@ -981,10 +981,11 @@ install_recursive(std::vector<const Package*> &packages,
 			if (!version_op(op, other->version.c_str(), ver.c_str()))
 				continue;
 		}
-		printf("\rpackage %s conflicts with installed package %s (%s): { %s }\n",
+		printf("\r%s conflicts with %s (%s-%s): { %s }\n",
 		       pkg->name.c_str(),
 		       conf.c_str(),
-		       found->second->name.c_str(),
+		       other->name.c_str(),
+		       other->version.c_str(),
 		       full.c_str());
 	}
 #endif
