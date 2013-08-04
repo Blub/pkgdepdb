@@ -914,7 +914,7 @@ install_recursive(std::vector<const Package*> &packages,
 		strip_version(repl);
 		installmap[repl] = pkg;
 	}
-	// FIXME:: check for conflicts here
+#ifdef ALPM
 	for (auto conf : pkg->conflicts) {
 		strip_version(conf);
 		auto found = installmap.find(conf);
@@ -925,6 +925,7 @@ install_recursive(std::vector<const Package*> &packages,
 		       conf.c_str(),
 		       found->second->name.c_str());
 	}
+#endif
 	packages.push_back(pkg);
 	for (auto &dep : pkg->depends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
