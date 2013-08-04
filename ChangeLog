@@ -1,3 +1,9 @@
+2013-08-04 Blub
+
+	* --wipe: added option to remove all packages
+	* libalpm support: integrity checks will use libalpm's vercmp
+	* --integrity: dependency and conflict integrity checks added
+
 2013-07-28 Blub
 
 	* -Rstrict:
