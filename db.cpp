@@ -1134,7 +1134,7 @@ install_recursive(std::vector<const Package*> &packages,
 	for (auto &dep : pkg->optdepends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
 		if (!found) {
-			printf("%smissing package: %s depends on %s\n",
+			printf("%smissing package: %s depends optionally on %s\n",
 			       (opt_quiet ? "" : "\r"),
 			       pkg->name.c_str(),
 			       dep.c_str());
