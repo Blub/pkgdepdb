@@ -280,6 +280,7 @@ public:
                          const PkgMap     &pkgmap,
                          const PkgListMap &providemap,
                          const PkgListMap &replacemap,
+                         const PkgMap     &basemap,
                          const ObjListMap &objmap,
                          const std::vector<const Package*> &base) const;
 

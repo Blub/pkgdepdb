@@ -893,24 +893,34 @@ find_depend(std::string /*copy*/ dep, const PkgMap &pkgmap, const PkgListMap &pr
 
 static void
 install_recursive(std::vector<const Package*> &packages,
-                  StringSet                   &names,
+                  PkgMap                      &installmap,
                   const Package              *pkg,
                   const PkgMap               &pkgmap,
                   const PkgListMap           &providemap,
                   const PkgListMap           &replacemap)
 {
-	if (names.find(pkg->name) != names.end())
+	if (installmap.find(pkg->name) != installmap.end())
 		return;
-	names.insert(pkg->name);
+	installmap[pkg->name] = pkg;
 	for (auto prov : pkg->provides) {
 		strip_version(prov);
-		names.insert(prov);
+		installmap[prov] = pkg;
 	}
 	for (auto repl : pkg->replaces) {
 		strip_version(repl);
-		names.insert(repl);
+		installmap[repl] = pkg;
 	}
 	// FIXME:: check for conflicts here
+	for (auto conf : pkg->conflicts) {
+		strip_version(conf);
+		auto found = installmap.find(conf);
+		if (found == installmap.end() || found->second == pkg)
+			continue;
+		printf("\rpackage %s conflicts with installed package %s (%s)\n",
+		       pkg->name.c_str(),
+		       conf.c_str(),
+		       found->second->name.c_str());
+	}
 	packages.push_back(pkg);
 	for (auto &dep : pkg->depends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
@@ -918,7 +928,7 @@ install_recursive(std::vector<const Package*> &packages,
 			printf("\rmissing package: %-30s\n", dep.c_str());
 			continue;
 		}
-		install_recursive(packages, names, found, pkgmap, providemap, replacemap);
+		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap);
 	}
 }
 
@@ -927,12 +937,13 @@ DB::check_integrity(const Package    *pkg,
                     const PkgMap     &pkgmap,
                     const PkgListMap &providemap,
                     const PkgListMap &replacemap,
+                    const PkgMap     &basemap,
                     const ObjListMap &objmap,
                     const std::vector<const Package*> &package_base) const
 {
 	std::vector<const Package*> pulled(package_base);
-	StringSet                   pulled_names(base_packages);
-	install_recursive(pulled, pulled_names, pkg, pkgmap, providemap, replacemap);
+	PkgMap                      installmap(basemap);
+	install_recursive(pulled, installmap, pkg, pkgmap, providemap, replacemap);
 	(void)objmap;
 }
 
@@ -976,11 +987,14 @@ DB::check_integrity() const
 
 	// install base system:
 	std::vector<const Package*> base;
+	PkgMap                      basemap;
 
 	for (auto &basepkg : base_packages) {
 		auto p = pkgmap.find(basepkg);
-		if (p != pkgmap.end())
+		if (p != pkgmap.end()) {
 			base.push_back(p->second);
+			basemap[basepkg] = p->second;
+		}
 	}
 
 	// print some stats
@@ -1010,7 +1024,7 @@ DB::check_integrity() const
 #endif
 		status(0, packages.size(), 1);
 		for (size_t i = 0; i != packages.size(); ++i) {
-			check_integrity(packages[i], pkgmap, providemap, replacemap, objmap, base);
+			check_integrity(packages[i], pkgmap, providemap, replacemap, basemap, objmap, base);
 			status(i, packages.size(), 1);
 		}
 #ifdef ENABLE_THREADS
@@ -1018,13 +1032,13 @@ DB::check_integrity() const
 		auto merger = [](std::vector<int> &&n) {
 			(void)n;
 		};
-		auto worker = [this,&pkgmap,&providemap,&replacemap,&objmap,&base]
+		auto worker = [this,&pkgmap,&providemap,&replacemap,&objmap,&base,&basemap]
 		(std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
 			(void)dummy;
 
 			for (size_t i = from; i != to; ++i) {
 				const Package *pkg = packages[i];
-				check_integrity(pkg, pkgmap, providemap, replacemap, objmap, base);
+				check_integrity(pkg, pkgmap, providemap, replacemap, basemap, objmap, base);
 				if (count)
 					++*count;
 			}
