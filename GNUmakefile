@@ -1,15 +1,15 @@
 OBJECTS_SRC = $(subst .o,.cpp,$(OBJECTS))
 
-ifneq ($(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null),)
-    CPPFLAGS += -DGITINFO="\"$(shell git describe --always)\""
-endif
-
 # For the local development environment
 # define your most precious flags in .localflags
 -include .localflags
 
 -include .cflags
 -include Makefile
+
+ifneq ($(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null),)
+    CPPFLAGS += -DGITINFO="\"$(shell git describe --always)\""
+endif
 
 ifeq ($(ALPM),yes)
 	CPPFLAGS += -DWITH_ALPM

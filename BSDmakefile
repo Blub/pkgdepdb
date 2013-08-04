@@ -1,9 +1,6 @@
 OBJECTS_SRC = ${OBJECTS:C/\.o/.cpp/g}
 
 GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null || true
-.if $(GITINFO) != ""
-    CPPFLAGS += -DGITINFO="\"$(GITINFO)\""
-.endif
 
 .if exists(.localflags)
 .  include ".localflags"
@@ -11,6 +8,10 @@ GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null ||
 
 .if exists(.cflags)
 .  include ".cflags"
+.endif
+
+.if $(GITINFO) != ""
+    CPPFLAGS += -DGITINFO="\"$(GITINFO)\""
 .endif
 
 .if $(ALPM) == yes
