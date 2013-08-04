@@ -1174,8 +1174,15 @@ DB::check_integrity(const Package    *pkg,
 					break;
 				}
 			}
-			if (!found)
+			if (!found) {
+				if (opt_verbosity > 0)
+					printf("%s%s: %s not pulled in for %s/%s\n",
+					       (opt_quiet ? "" : "\r"),
+					       pkg->name.c_str(),
+					       need.c_str(),
+					       obj->dirname.c_str(), obj->basename.c_str());
 				needed.insert(need);
+			}
 		}
 	}
 	for (auto &n : needed) {
