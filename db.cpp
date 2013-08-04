@@ -288,7 +288,7 @@ namespace thread {
 	                    Merger)
 	{
 		unsigned long threadcount = thread::ncpus;
-		if (opt_max_jobs > 1 && opt_max_jobs < threadcount)
+		if (opt_max_jobs >= 1 && opt_max_jobs < threadcount)
 			threadcount = opt_max_jobs;
 
 		unsigned long  obj_per_thread = Count / threadcount;
@@ -973,27 +973,31 @@ DB::check_integrity() const
 	};
 
 	log(Message, "Checking package dependencies...\n");
-#ifndef ENABLE_THREADS
-	status(0, packages.size(), 1);
-	for (size_t i = 0; i != packages.size(); ++i) {
-		check_integrity(packages[i], pkgmap, objmap, base);
-		status(i, packages.size(), 1);
-	}
-#else
-	auto merger = [](std::vector<int> &&n) {
-		(void)n;
-	};
-	auto worker = [this,&pkgmap,&providemap,&replacemap,&objmap,&base]
-	(std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
-		(void)dummy;
-
-		for (size_t i = from; i != to; ++i) {
-			const Package *pkg = packages[i];
-			check_integrity(pkg, pkgmap, providemap, replacemap, objmap, base);
-			if (count)
-				++*count;
+#ifdef ENABLE_THREADS
+	if (opt_max_jobs == 1) {
+#endif
+		status(0, packages.size(), 1);
+		for (size_t i = 0; i != packages.size(); ++i) {
+			check_integrity(packages[i], pkgmap, providemap, replacemap, objmap, base);
+			status(i, packages.size(), 1);
 		}
-	};
-	thread::work<int>(packages.size(), status, worker, merger);
+#ifdef ENABLE_THREADS
+	} else {
+		auto merger = [](std::vector<int> &&n) {
+			(void)n;
+		};
+		auto worker = [this,&pkgmap,&providemap,&replacemap,&objmap,&base]
+		(std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
+			(void)dummy;
+
+			for (size_t i = from; i != to; ++i) {
+				const Package *pkg = packages[i];
+				check_integrity(pkg, pkgmap, providemap, replacemap, objmap, base);
+				if (count)
+					++*count;
+			}
+		};
+		thread::work<int>(packages.size(), status, worker, merger);
+	}
 #endif
 }
