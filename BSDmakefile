@@ -15,6 +15,7 @@ GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null ||
 
 .if $(ALPM) == yes
 CPPFLAGS += -DALPM
+LIBS += -lalpm
 .endif
 
 .include "Makefile"

@@ -13,6 +13,7 @@ endif
 
 ifeq ($(ALPM),yes)
 	CPPFLAGS += -DALPM
+	LIBS += -lalpm
 endif
 
 #ifneq ($(strip $(ALLFLAGS)),$(strip $(?COMPAREFLAGS)))
