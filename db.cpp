@@ -874,7 +874,7 @@ strip_version(std::string &s)
 		s.erase(from);
 }
 
-#ifdef ALPM
+#ifdef WITH_ALPM
 static bool
 split_depstring(const std::string &full, std::string &name, std::string &op, std::string &ver)
 {
@@ -940,23 +940,36 @@ install_recursive(std::vector<const Package*> &packages,
 		strip_version(repl);
 		installmap[repl] = pkg;
 	}
-#ifdef ALPM
+#ifdef WITH_ALPM
 	for (auto &full : pkg->conflicts) {
 		std::string conf, op, ver;
 		if (!split_depstring(full, conf, op, ver))
 			break;
 
 		auto found = installmap.find(conf);
-		if (found == installmap.end() || found->second == pkg)
+		const Package *other = found->second;
+		if (found == installmap.end() || other == pkg)
 			continue;
 		// found a conflict
 		if (op.length() && ver.length()) {
 			// version related conflict
+			// pkg conflicts with {other} <op> {ver}
+			int res = alpm_pkg_vercmp(other->version.c_str(), ver.c_str());
+			if ( (op == "="  && res != 0) ||
+			     (op == "!=" && res == 0) ||
+			     (op == ">"  && res <= 0) ||
+			     (op == ">=" && res <  0) ||
+			     (op == "<"  && res >= 0) ||
+			     (op == "<=" && res >  0) )
+			{
+				continue;
+			}
 		}
-		printf("\rpackage %s conflicts with installed package %s (%s)\n",
+		printf("\rpackage %s conflicts with installed package %s (%s): { %s }\n",
 		       pkg->name.c_str(),
 		       conf.c_str(),
-		       found->second->name.c_str());
+		       found->second->name.c_str(),
+		       full.c_str());
 	}
 #endif
 	packages.push_back(pkg);

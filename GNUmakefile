@@ -12,7 +12,7 @@ endif
 -include Makefile
 
 ifeq ($(ALPM),yes)
-	CPPFLAGS += -DALPM
+	CPPFLAGS += -DWITH_ALPM
 	LIBS += -lalpm
 endif
 
