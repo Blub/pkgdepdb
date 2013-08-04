@@ -136,6 +136,7 @@ help(int x)
 	             "  -F, --found        show the 'found' table\n"
 	             "  -P, --pkgs         show the installed packages (and -v their files)\n"
 	             "  -n, --rename=NAME  rename the database\n"
+	             "  --integrity        perform a dependency integrity check\n"
 	             );
 	fprintf(out, "db query filters:\n"
 	             "  -b, --broken       only packages with broken libs (use with -P)\n"
