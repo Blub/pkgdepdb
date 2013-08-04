@@ -57,7 +57,7 @@ Perform a dependency integrity check: Look for orphaned object files
 in the database. Look for missing dependencies of packages, and go
 through all packages and see if it misses dependencies (considering
 it, its dependencies, optional dependencies, and the base packages to
-be installed).
+be installed). Also check for conflicts in dependency chains.
 .It Fl -dry
 Dry run: do not commit the changes to the database file.
 .It Fl v , Fl -verbose
