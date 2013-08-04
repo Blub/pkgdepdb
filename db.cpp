@@ -1110,7 +1110,8 @@ install_recursive(std::vector<const Package*> &packages,
 			if (!version_op(op, other->version.c_str(), ver.c_str()))
 				continue;
 		}
-		printf("\r%s conflicts with %s (%s-%s): { %s }\n",
+		printf("%s%s conflicts with %s (%s-%s): { %s }\n",
+		       (opt_quiet ? "" : "\r"),
 		       pkg->name.c_str(),
 		       conf.c_str(),
 		       other->name.c_str(),
@@ -1122,7 +1123,10 @@ install_recursive(std::vector<const Package*> &packages,
 	for (auto &dep : pkg->depends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
 		if (!found) {
-			printf("\rmissing package: %s depends on %s\n", pkg->name.c_str(), dep.c_str());
+			printf("%smissing package: %s depends on %s\n",
+			       (opt_quiet ? "" : "\r"),
+			       pkg->name.c_str(),
+			       dep.c_str());
 			continue;
 		}
 		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap);
@@ -1142,6 +1146,33 @@ DB::check_integrity(const Package    *pkg,
 	PkgMap                      installmap(basemap);
 	install_recursive(pulled, installmap, pkg, pkgmap, providemap, replacemap);
 	(void)objmap;
+
+	StringSet needed;
+	for (auto &obj : pkg->objects) {
+		for (auto &need : obj->needed) {
+			auto fnd = objmap.find(need);
+			if (fnd == objmap.end()) {
+				needed.insert(need);
+				continue;
+			}
+			bool found = false;
+			for (auto &o : fnd->second) {
+				if (std::find(pulled.begin(), pulled.end(), o->owner) != pulled.end())
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				needed.insert(need);
+		}
+	}
+	for (auto &n : needed) {
+		printf("%s%s: doesn't pull in %s\n",
+		       (opt_quiet ? "" : "\r"),
+		       pkg->name.c_str(),
+		       n.c_str());
+	}
 }
 
 void
@@ -1208,8 +1239,9 @@ DB::check_integrity() const
 		if (newpc == pc)
 			return;
 		pc = newpc;
-		printf("\rpackages: %3u%% (%lu / %lu) [%lu]",
-		       pc, at, cnt, threads);
+		if (!opt_quiet)
+			printf("\rpackages: %3u%% (%lu / %lu) [%lu]",
+			       pc, at, cnt, threads);
 		fflush(stdout);
 		if (at == cnt)
 			printf("\n");
@@ -1222,7 +1254,8 @@ DB::check_integrity() const
 		status(0, packages.size(), 1);
 		for (size_t i = 0; i != packages.size(); ++i) {
 			check_integrity(packages[i], pkgmap, providemap, replacemap, basemap, objmap, base);
-			status(i, packages.size(), 1);
+			if (!opt_quiet)
+				status(i, packages.size(), 1);
 		}
 #ifdef ENABLE_THREADS
 	} else {
