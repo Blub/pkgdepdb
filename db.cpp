@@ -874,6 +874,32 @@ strip_version(std::string &s)
 		s.erase(from);
 }
 
+#ifdef ALPM
+static bool
+split_depstring(const std::string &full, std::string &name, std::string &op, std::string &ver)
+{
+	size_t opidx = full.find_first_of("=<>!");
+	if (opidx != std::string::npos) {
+		name = full.substr(0, opidx);
+
+		op.append(1, full[opidx++]);
+		if (opidx >= full.length())
+			return false;
+
+		if (full[opidx] == '=') {
+			op.append(1, '=');
+			++opidx;
+		}
+		if (opidx >= full.length())
+			return false;
+		ver = full.substr(opidx);
+	}
+	else
+		name = full;
+	return true;
+}
+#endif
+
 static const Package*
 find_depend(std::string /*copy*/ dep, const PkgMap &pkgmap, const PkgListMap &providemap, const PkgListMap &replacemap)
 {
@@ -915,11 +941,18 @@ install_recursive(std::vector<const Package*> &packages,
 		installmap[repl] = pkg;
 	}
 #ifdef ALPM
-	for (auto conf : pkg->conflicts) {
-		strip_version(conf);
+	for (auto &full : pkg->conflicts) {
+		std::string conf, op, ver;
+		if (!split_depstring(full, conf, op, ver))
+			break;
+
 		auto found = installmap.find(conf);
 		if (found == installmap.end() || found->second == pkg)
 			continue;
+		// found a conflict
+		if (op.length() && ver.length()) {
+			// version related conflict
+		}
 		printf("\rpackage %s conflicts with installed package %s (%s)\n",
 		       pkg->name.c_str(),
 		       conf.c_str(),
