@@ -859,7 +859,7 @@ strip_version(std::string &s)
 }
 
 static const Package*
-find_depend(std::string dep, const PkgMap &pkgmap, const PkgListMap &providemap, const PkgListMap &replacemap)
+find_depend(std::string /*copy*/ dep, const PkgMap &pkgmap, const PkgListMap &providemap, const PkgListMap &replacemap)
 {
 	if (!dep.length())
 		return 0;
@@ -894,7 +894,7 @@ install_recursive(std::vector<const Package*> &packages,
 	for (auto &dep : pkg->depends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
 		if (!found) {
-			//printf("\rmissing package: %s     \n", dep.c_str());
+			printf("\rmissing package: %s     \n", dep.c_str());
 			continue;
 		}
 		install_recursive(packages, names, found, pkgmap, providemap, replacemap);
