@@ -898,19 +898,43 @@ split_depstring(const std::string &full, std::string &name, std::string &op, std
 		name = full;
 	return true;
 }
+
+static bool
+version_op(const std::string &op, const char *v1, const char *v2)
+{
+	int res = alpm_pkg_vercmp(v1, v2);
+	if ( (op == "="  && res == 0) ||
+	     (op == "!=" && res != 0) ||
+	     (op == ">"  && res >  0) ||
+	     (op == ">=" && res >= 0) ||
+	     (op == "<"  && res <  0) ||
+	     (op == "<=" && res <= 0) )
+	{
+		return true;
+	}
+	return false;
+}
 #endif
 
 static const Package*
-find_depend(std::string /*copy*/ dep, const PkgMap &pkgmap, const PkgListMap &providemap, const PkgListMap &replacemap)
+find_depend(const std::string &dep_, const PkgMap &pkgmap, const PkgListMap &providemap, const PkgListMap &replacemap)
 {
-	if (!dep.length())
+	if (!dep_.length())
 		return 0;
 
+#ifdef WITH_ALPM
+	std::string dep, op, ver;
+	split_depstring(dep_, dep, op, ver);
+#else
+	std::string dep(dep_);
 	strip_version(dep);
+#endif
 
 	auto find = pkgmap.find(dep);
-	if (find != pkgmap.end())
+	if (find != pkgmap.end()) {
+
 		return find->second;
+	}
 	// check for a providing package
 	auto rep = replacemap.find(dep);
 	if (rep == replacemap.end()) {
@@ -954,16 +978,8 @@ install_recursive(std::vector<const Package*> &packages,
 		if (op.length() && ver.length()) {
 			// version related conflict
 			// pkg conflicts with {other} <op> {ver}
-			int res = alpm_pkg_vercmp(other->version.c_str(), ver.c_str());
-			if ( (op == "="  && res != 0) ||
-			     (op == "!=" && res == 0) ||
-			     (op == ">"  && res <= 0) ||
-			     (op == ">=" && res <  0) ||
-			     (op == "<"  && res >= 0) ||
-			     (op == "<=" && res >  0) )
-			{
+			if (!version_op(op, other->version.c_str(), ver.c_str()))
 				continue;
-			}
 		}
 		printf("\rpackage %s conflicts with installed package %s (%s): { %s }\n",
 		       pkg->name.c_str(),
