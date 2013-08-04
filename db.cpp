@@ -932,17 +932,41 @@ find_depend(const std::string &dep_, const PkgMap &pkgmap, const PkgListMap &pro
 
 	auto find = pkgmap.find(dep);
 	if (find != pkgmap.end()) {
-
-		return find->second;
+#ifdef WITH_ALPM
+		const Package *other = find->second;
+		if (!ver.length() || version_op(op, other->version.c_str(), ver.c_str()))
+#endif
+			return find->second;
 	}
 	// check for a providing package
 	auto rep = replacemap.find(dep);
-	if (rep == replacemap.end()) {
-		rep = providemap.find(dep);
-		if (rep == providemap.end())
-			return 0;
+	if (rep != replacemap.end()) {
+#ifdef WITH_ALPM
+		if (!ver.length())
+			return rep->second[0];
+		for (auto other : rep->second) {
+			if (version_op(op, other->version.c_str(), ver.c_str()))
+				return other;
+		}
+#else
+		return rep->second[0];
+#endif
 	}
-	return rep->second[0];
+
+	rep = providemap.find(dep);
+	if (rep != providemap.end()) {
+#ifdef WITH_ALPM
+		if (!ver.length())
+			return rep->second[0];
+		for (auto other : rep->second) {
+			if (version_op(op, other->version.c_str(), ver.c_str()))
+				return other;
+		}
+#else
+		return rep->second[0];
+#endif
+	}
+	return nullptr;
 }
 
 static void
