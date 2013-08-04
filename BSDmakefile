@@ -14,6 +14,7 @@ GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null ||
     CPPFLAGS += -DGITINFO="\"$(GITINFO)\""
 .endif
 
+ALPM ?= no
 .if $(ALPM) == yes
 CPPFLAGS += -DWITH_ALPM
 LIBS += -lalpm

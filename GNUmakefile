@@ -11,6 +11,7 @@ ifneq ($(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/nul
     CPPFLAGS += -DGITINFO="\"$(shell git describe --always)\""
 endif
 
+ALPM ?= no
 ifeq ($(ALPM),yes)
 	CPPFLAGS += -DWITH_ALPM
 	LIBS += -lalpm
