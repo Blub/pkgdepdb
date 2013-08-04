@@ -903,7 +903,7 @@ install_recursive(std::vector<const Package*> &packages,
 	for (auto &dep : pkg->depends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
 		if (!found) {
-			printf("\rmissing package: %s     \n", dep.c_str());
+			printf("\rmissing package: %-30s\n", dep.c_str());
 			continue;
 		}
 		install_recursive(packages, names, found, pkgmap, providemap, replacemap);
