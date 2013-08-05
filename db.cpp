@@ -1080,11 +1080,13 @@ install_recursive(std::vector<const Package*> &packages,
                   const Package              *pkg,
                   const PkgMap               &pkgmap,
                   const PkgListMap           &providemap,
-                  const PkgListMap           &replacemap)
+                  const PkgListMap           &replacemap,
+                  const bool                  showmsg)
 {
 	if (installmap.find(pkg->name) != installmap.end())
 		return;
 	installmap[pkg->name] = pkg;
+
 	for (auto prov : pkg->provides) {
 		strip_version(prov);
 		installmap[prov] = pkg;
@@ -1110,37 +1112,43 @@ install_recursive(std::vector<const Package*> &packages,
 			if (!version_op(op, other->version.c_str(), ver.c_str()))
 				continue;
 		}
-		printf("%s%s conflicts with %s (%s-%s): { %s }\n",
-		       (opt_quiet ? "" : "\r"),
-		       pkg->name.c_str(),
-		       conf.c_str(),
-		       other->name.c_str(),
-		       other->version.c_str(),
-		       full.c_str());
+		if (showmsg) {
+			printf("%s%s conflicts with %s (%s-%s): { %s }\n",
+			       (opt_quiet ? "" : "\r"),
+			       pkg->name.c_str(),
+			       conf.c_str(),
+			       other->name.c_str(),
+			       other->version.c_str(),
+			       full.c_str());
+		}
 	}
 #endif
 	packages.push_back(pkg);
 	for (auto &dep : pkg->depends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
 		if (!found) {
-			printf("%smissing package: %s depends on %s\n",
-			       (opt_quiet ? "" : "\r"),
-			       pkg->name.c_str(),
-			       dep.c_str());
+			if (showmsg) {
+				printf("%smissing package: %s depends on %s\n",
+				       (opt_quiet ? "" : "\r"),
+				       pkg->name.c_str(),
+				       dep.c_str());
+			}
 			continue;
 		}
-		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap);
+		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap, false);
 	}
 	for (auto &dep : pkg->optdepends) {
 		auto found = find_depend(dep, pkgmap, providemap, replacemap);
 		if (!found) {
-			printf("%smissing package: %s depends optionally on %s\n",
-			       (opt_quiet ? "" : "\r"),
-			       pkg->name.c_str(),
-			       dep.c_str());
+			if (showmsg) {
+				printf("%smissing package: %s depends optionally on %s\n",
+				       (opt_quiet ? "" : "\r"),
+				       pkg->name.c_str(),
+				       dep.c_str());
+			}
 			continue;
 		}
-		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap);
+		install_recursive(packages, installmap, found, pkgmap, providemap, replacemap, false);
 	}
 }
 
@@ -1155,7 +1163,7 @@ DB::check_integrity(const Package    *pkg,
 {
 	std::vector<const Package*> pulled(package_base);
 	PkgMap                      installmap(basemap);
-	install_recursive(pulled, installmap, pkg, pkgmap, providemap, replacemap);
+	install_recursive(pulled, installmap, pkg, pkgmap, providemap, replacemap, true);
 	(void)objmap;
 
 	StringSet needed;
