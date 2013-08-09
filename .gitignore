@@ -6,4 +6,8 @@
 *.diff
 *.exe
 
-readpkgelf
+pkgdepdb
+
+.localflags
+send.sh
+*.gz
