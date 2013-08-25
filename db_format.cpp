@@ -133,7 +133,7 @@ public:
 		if (err) {
 			out = 0;
 		} else {
-			out = gzdopen(fd, "wb");
+			out = gzdopen(fd, (dir == SerialStream::out ? "wb" : "rb"));
 			if (!out)
 				err = true;
 		}
