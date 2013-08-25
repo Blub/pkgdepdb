@@ -1,13 +1,12 @@
 #include <string.h>
 
 #include <zlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <memory>
 #include <algorithm>
 #include <utility>
-
-#include <fstream>
-#include <sstream>
 
 #include "main.h"
 
@@ -54,137 +53,179 @@ using ObjOutMap = std::map<Elf*,     size_t>;
 using PkgInMap  = std::map<size_t,   Package*>;
 using ObjInMap  = std::map<size_t,   Elf*>;
 
-class SerialOut {
+class SerialStream {
 public:
-	DB           *db;
-	std::ostream  out;
-	PkgOutMap     pkgs;
-	ObjOutMap     objs;
+	virtual ~SerialStream() {}
+	virtual ssize_t write(const void *buf, size_t bytes) = 0;
+	virtual ssize_t read (void *buf,       size_t bytes) = 0;
+	virtual size_t  tellp() const = 0;
+	virtual size_t  tellg() const = 0;
 
-	SerialOut(DB *db_, const std::string& filename)
-	: db(db_), out(new std::filebuf)
+	virtual operator bool() const = 0;
+
+	enum InOut {
+		in, out
+	};
+};
+
+class SerialFile : public SerialStream {
+public:
+	int  fd;
+	bool err;
+	size_t ppos, gpos;
+
+	SerialFile(const std::string& file, InOut dir)
+	: ppos(0), gpos(0)
 	{
-		std::filebuf &buf = *reinterpret_cast<std::filebuf*>(out.rdbuf());
-		if (!buf.open(filename, std::ios::out | std::ios::binary))
-			out.clear(std::ios::failbit | std::ios::badbit);
+		fd = ::open(file.c_str(),
+		            (dir == SerialStream::out
+		                 ? (O_WRONLY | O_CREAT | O_EXLOCK)
+		                 : (O_RDONLY | O_SHLOCK)));
+		err = (fd < 0);
 	}
 
-	SerialOut(DB *db_)
-	: db(db_), out(new std::stringbuf)
+	~SerialFile()
 	{
+		if (fd >= 0)
+			::close(fd);
 	}
 
-	~SerialOut()
+	virtual operator bool() const {
+		return fd >= 0 && !err;
+	}
+
+	virtual ssize_t
+	write(const void *buf, size_t bytes)
 	{
-		auto b = out.rdbuf();
-		out.rdbuf(nullptr);
-		delete b;
+		auto r = ::write(fd, buf, bytes);
+		ppos += r;
+		return r;
+	}
+
+	virtual ssize_t
+	read(void *buf, size_t bytes)
+	{
+		auto r = ::read(fd, buf, bytes);
+		gpos += r;
+		return r;
+	}
+
+	virtual size_t tellp() const {
+		return ppos;
+	}
+	virtual size_t tellg() const {
+		return gpos;
 	}
 };
 
-class gz_in_buf : public std::streambuf {
+class SerialGZ : public SerialStream {
+public:
+	gzFile out;
+	bool   err;
+
+	SerialGZ(const std::string& file, InOut dir)
+	{
+		int fd = ::open(file.c_str(),
+		                (dir == SerialStream::out
+		                     ? (O_WRONLY | O_CREAT | O_EXLOCK)
+		                     : (O_RDONLY | O_SHLOCK)));
+		err = (fd < 0);
+		if (err) {
+			out = 0;
+		} else {
+			out = gzdopen(fd, "wb");
+			if (!out)
+				err = true;
+		}
+	}
+
+	~SerialGZ()
+	{
+		if (out)
+			gzclose(out);
+	}
+
+	virtual operator bool() const {
+		return out && !err;
+	}
+
+	virtual ssize_t
+	write(const void *buf, size_t bytes)
+	{
+		return gzwrite(out, buf, bytes);
+	}
+
+	virtual ssize_t
+	read(void *buf, size_t bytes)
+	{
+		return gzread(out, buf, bytes);
+	}
+
+	virtual size_t tellp() const {
+		return gztell(out);
+	}
+	virtual size_t tellg() const {
+		return gztell(out);
+	}
+};
+
+class SerialOut {
+public:
+	DB                           *db;
+	SerialStream                 &out;
+	std::unique_ptr<SerialStream> out_;
+	PkgOutMap                     pkgs;
+	ObjOutMap                     objs;
+
 private:
-	bool   eof;
-	gzFile file;
+	SerialOut(DB *db_, SerialStream *out__)
+	: db(db_), out(*out__), out_(out__)
+	{ }
 
 public:
-	operator bool() const { return file; }
-
-	explicit gz_in_buf(const std::string& filename)
-	: eof(false), file(nullptr)
+	static SerialOut* open(DB *db, const std::string& file, bool gz)
 	{
-		file = gzopen(filename.c_str(), "rb");
-	}
-
-	~gz_in_buf()
-	{
-		if (file)
-			gzclose(file);
-	}
-
-protected:
-	virtual int_type
-	uflow() {
-		if (eof) return traits_type::eof();
-		int b = gzgetc(file);
-		if (b == -1) {
-			eof = true;
-			return traits_type::eof();
-		}
-		return b;
-	}
-
-	virtual int_type underflow() { abort(); }
-	virtual int_type pbackfail(int_type c = traits_type::eof()) { (void)c; abort(); }
-
-	virtual pos_type
-	seekpos(pos_type off, std::ios_base::openmode mode)
-	{
-		if (!(mode & std::ios::in))
+		SerialStream *out = gz ? (SerialStream*)new SerialGZ(file, SerialStream::out)
+		                       : (SerialStream*)new SerialFile(file, SerialStream::out);
+		if (!out) return 0;
+		if (!*out) {
+			delete out;
 			return 0;
-		if (mode & std::ios::in)
-			return gzseek(file, off, SEEK_SET);
-		return gztell(file);
-	}
-
-	virtual pos_type seekoff(off_type off, std::ios_base::seekdir way,
-	                         std::ios_base::openmode mode)
-	{
-		if (!(mode & std::ios::in))
-			return 0;
-		if (way == std::ios::end)
-			return -1;
-		if (way == std::ios::beg)
-			return gzseek(file, off, SEEK_SET);
-		if (way == std::ios::cur)
-			return gzseek(file, off, SEEK_CUR);
-		return gztell(file);
-	}
-
-	virtual std::streamsize
-	xsgetn(char *d, std::streamsize n)
-	{
-		if (!n)  return 0;
-		if (eof) return traits_type::eof();
-		int b = gzread(file, d, n);
-		if (b == -1 || b == 0) {
-			eof = true;
-			return traits_type::eof();
 		}
-		return b;
+
+		SerialOut *s = new SerialOut(db, out);
+		return s;
 	}
 };
 
 class SerialIn {
 public:
-	DB           *db;
-	std::istream  in;
-	PkgInMap      pkgs;
-	ObjInMap      objs;
+	DB                           *db;
+	SerialStream                 &in;
+	std::unique_ptr<SerialStream> in_;
+	PkgInMap                      pkgs;
+	ObjInMap                      objs;
 
-	SerialIn(DB *db_, const std::string& filename)
-	: db(db_), in(new std::filebuf)
-	{
-		std::filebuf &buf = *reinterpret_cast<std::filebuf*>(in.rdbuf());
-		if (!buf.open(filename, std::ios::in | std::ios::binary))
-			in.clear(std::ios::failbit | std::ios::badbit);
-	}
+private:
+	SerialIn(DB *db_, SerialStream *in__)
+	: db(db_), in(*in__), in_(in__)
+	{ }
 
-	SerialIn(DB *db_, std::streambuf *buf)
-	: db(db_), in(buf)
+public:
+	static SerialIn* open(DB *db, const std::string& file, bool gz)
 	{
-	}
+		SerialStream *in = gz ? (SerialStream*)new SerialGZ(file, SerialStream::in)
+		                      : (SerialStream*)new SerialFile(file, SerialStream::in);
+		if (!in) return 0;
+		if (!*in) {
+			delete in;
+			return 0;
+		}
 
-	~SerialIn()
-	{
-		auto b = in.rdbuf();
-		in.rdbuf(nullptr);
-		delete b;
+		SerialIn *s = new SerialIn(db, in);
+		return s;
 	}
 };
-
-// Using the <= operator - we're "streaming" here, so whatever
-// C++ stream << is forbidden due to its extreme stupidity
 
 template<typename T>
 static inline SerialOut&
@@ -500,15 +541,13 @@ ends_with_gz(const std::string& str)
 static bool
 db_store(DB *db, const std::string& filename)
 {
-	std::unique_ptr<SerialOut> sout;
 	bool mkgzip = ends_with_gz(filename);
+	std::unique_ptr<SerialOut> sout(SerialOut::open(db, filename, mkgzip));
 
 	if (mkgzip)
-		sout.reset(new SerialOut(db));
-	else {
+		log(Message, "writing compressed database\n");
+	else
 		log(Message, "writing database\n");
-		sout.reset(new SerialOut(db, filename));
-	}
 
 	SerialOut &out(*sout);
 
@@ -590,45 +629,19 @@ db_store(DB *db, const std::string& filename)
 			return false;
 	}
 
-	if (mkgzip) {
-		log(Message, "writing compressed database\n");
-		gzFile gz = gzopen(filename.c_str(), "wb");
-		if (!gz) {
-			log(Error, "failed to open gzip output stream\n");
-			return false;
-		}
-		std::stringbuf *buf = reinterpret_cast<std::stringbuf*>(out.out.rdbuf());
-		std::string data = buf->str();
-		if ((size_t)gzwrite(gz, &data[0], data.length()) != data.length()) {
-			log(Error, "failed to write database to gzip stream\n");
-			gzclose(gz);
-			return false;
-		}
-		gzclose(gz);
-	}
-
 	return out.out;
 }
 
 static bool
 db_read(DB *db, const std::string& filename)
 {
-	std::unique_ptr<SerialIn> sin;
 	bool gzip = ends_with_gz(filename);
+	std::unique_ptr<SerialIn> sin(SerialIn::open(db, filename, gzip));
 
-	if (gzip) {
+	if (gzip)
 		log(Message, "reading compressed database\n");
-		auto buf = new gz_in_buf(filename);
-		if (!*buf) {
-			delete buf;
-			return true;
-		}
-		sin.reset(new SerialIn(db, buf));
-	}
-	else {
+	else
 		log(Message, "reading database\n");
-		sin.reset(new SerialIn(db, filename));
-	}
 
 	SerialIn &in(*sin);
 	if (!in.in) {
