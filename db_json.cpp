@@ -93,7 +93,7 @@ DB::show_packages_json(bool filter_broken)
 						printf("%s{", sep); sep = ",\n\t\t\t\t";
 						printf("\n\t\t\t\t\t\"object\": ");
 						print_objname(obj);
-						printf("\n\t\t\t\t\t\"misses\": [");
+						printf(",\n\t\t\t\t\t\"misses\": [");
 						auto list = required_missing.find(obj);
 						const char *missep = "\n\t\t\t\t\t\t";
 						for (auto &missing : list->second) {
