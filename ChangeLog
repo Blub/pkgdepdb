@@ -1,3 +1,7 @@
+2013-10-22 Blub
+
+	* file locking: Replaced O_EXLOCK with calls to flock(2)
+
 2013-08-05 Blub
 
 	* --integrity: don't show missing / conflicting  package  messages
