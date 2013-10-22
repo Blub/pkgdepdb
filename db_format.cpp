@@ -3,6 +3,7 @@
 #include <zlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/file.h>
 
 #include <memory>
 #include <algorithm>
@@ -77,11 +78,22 @@ public:
 	SerialFile(const std::string& file, InOut dir)
 	: ppos(0), gpos(0)
 	{
-		fd = ::open(file.c_str(),
-		            (dir == SerialStream::out
-		                 ? (O_WRONLY | O_CREAT | O_EXLOCK)
-		                 : (O_RDONLY | O_SHLOCK)));
-		err = (fd < 0);
+		int locktype;
+		if (dir == SerialStream::out) {
+			fd = ::open(file.c_str(), O_WRONLY | O_CREAT);
+			locktype = LOCK_EX;
+		}
+		else {
+			fd = ::open(file.c_str(), O_RDONLY);
+			locktype = LOCK_SH;
+		}
+		if (fd < 0) {
+			err = true;
+			return;
+		}
+		err = (::flock(fd, locktype) != 0);
+		if (err)
+			::close(fd);
 	}
 
 	~SerialFile()
@@ -125,17 +137,31 @@ public:
 
 	SerialGZ(const std::string& file, InOut dir)
 	{
-		int fd = ::open(file.c_str(),
-		                (dir == SerialStream::out
-		                     ? (O_WRONLY | O_CREAT | O_EXLOCK)
-		                     : (O_RDONLY | O_SHLOCK)));
-		err = (fd < 0);
+		int fd;
+		int locktype;
+		out = 0;
+		if (dir == SerialStream::out) {
+			fd = ::open(file.c_str(), O_WRONLY | O_CREAT);
+			locktype = LOCK_EX;
+		}
+		else {
+			fd = ::open(file.c_str(), O_RDONLY);
+			locktype = LOCK_SH;
+		}
+		if (fd < 0) {
+			err = true;
+			return;
+		}
+		err = (::flock(fd, locktype) != 0);
 		if (err) {
-			out = 0;
-		} else {
-			out = gzdopen(fd, (dir == SerialStream::out ? "wb" : "rb"));
-			if (!out)
-				err = true;
+			::close(fd);
+			err = true;
+			return;
+		}
+		out = gzdopen(fd, (dir == SerialStream::out ? "wb" : "rb"));
+		if (!out) {
+			err = true;
+			::close(fd);
 		}
 	}
 
