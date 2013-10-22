@@ -13,7 +13,7 @@
 
 // version
 uint16_t
-DB::CURRENT = 4;
+DB::CURRENT = 5;
 
 // magic header
 static const char
@@ -501,6 +501,8 @@ write_pkg(SerialOut &out, Package *pkg, unsigned hdrver)
 			return false;
 		}
 	}
+	if (hdrver >= 5 && !write_stringlist(out, pkg->groups))
+		return false;
 	return true;
 }
 
@@ -553,6 +555,8 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver)
 			return false;
 		}
 	}
+	if (hdrver >= 5 && !read_stringlist(in, pkg->groups))
+		return false;
 	return true;
 }
 
@@ -599,7 +603,9 @@ db_store(DB *db, const std::string& filename)
 		hdr.flags |= DBFlags::StrictLinking;
 
 	// Figure out which database format version this will be
-	if (db->contains_package_depends)
+	if (db->contains_groups)
+		hdr.version = 5;
+	else if (db->contains_package_depends)
 		hdr.version = 4;
 	else if (hdr.flags)
 			hdr.version = 2;
@@ -694,6 +700,8 @@ db_read(DB *db, const std::string& filename)
 
 	if (hdr.version >= 3)
 		db->contains_package_depends = true;
+	if (hdr.version >= 5)
+		db->contains_groups = true;
 
 	in >= db->name;
 	if (!read_stringlist(in, db->library_path)) {

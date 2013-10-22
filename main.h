@@ -197,6 +197,8 @@ public:
 	StringList              provides;
 	StringList              conflicts;
 	StringList              replaces;
+	// DB version 5:
+	StringList              groups;
 
 	void show_needed();
 	Elf* find(const std::string &dirname, const std::string &basename) const;
@@ -317,6 +319,7 @@ private:
 
 public: // NOT SERIALIZED:
 	bool contains_package_depends;
+	bool contains_groups;
 };
 
 // Utility functions:

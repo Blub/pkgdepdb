@@ -156,6 +156,12 @@ read_info(Package *pkg, struct archive *tar, const size_t size)
 			pkg->provides.push_back(es);
 			continue;
 		}
+		if (isentry("group", sizeof("group")-1)) {
+			if (!getvalue("group", es))
+				return false;
+			pkg->groups.push_back(es);
+			continue;
+		}
 
 		skipline();
 	}

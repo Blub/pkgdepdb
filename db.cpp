@@ -30,6 +30,7 @@ getObjClass(Elf *elf) {
 DB::DB() {
 	loaded_version = DB::CURRENT;
 	contains_package_depends = false;
+	contains_groups          = false;
 	strict_linking           = false;
 }
 
@@ -206,6 +207,8 @@ DB::install_package(Package* &&pkg)
 	    pkg->conflicts.size()  ||
 	    pkg->provides.size())
 		contains_package_depends = true;
+	if (pkg->groups.size())
+		contains_groups = true;
 
 	const StringList *libpaths = 0;
 	if (package_library_path.size()) {
@@ -775,6 +778,8 @@ DB::show_packages(bool filter_broken)
 		else
 			printf("  -> %s - %s\n", pkg->name.c_str(), pkg->version.c_str());
 		if (opt_verbosity >= 1) {
+			for (auto &grp : pkg->groups)
+				printf("    is in group: %s\n", grp.c_str());
 			for (auto &dep : pkg->depends)
 				printf("    depends on: %s\n", dep.c_str());
 			for (auto &dep : pkg->optdepends)
