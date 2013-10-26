@@ -139,9 +139,10 @@ public:
 unique_ptr<PackageFilter>
 PackageFilter::nameregex(const std::string &pattern, bool ext, bool icase) {
 	unique_ptr<regex_t> regex(new regex_t);
-	int cflags = REG_NOSUB | (ext ? REG_EXTENDED : REG_BASIC);
-	if (icase)
-		cflags |= REG_ICASE;
+	int cflags = REG_NOSUB;
+	if (ext)   cflags |= REG_EXTENDED;
+	if (icase) cflags |= REG_ICASE;
+
 	int err;
 	if ( (err = ::regcomp(regex.get(), pattern.c_str(), cflags)) != 0) {
 		char buf[4096];
