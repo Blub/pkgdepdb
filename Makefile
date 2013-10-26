@@ -31,7 +31,7 @@ LIBS     += $(LIBARCHIVE_LIBS)
 CPPFLAGS += $(ZLIB_CFLAGS)
 LIBS     += $(ZLIB_LIBS)
 
-OBJECTS = main.o config.o package.o elf.o db.o db_format.o db_json.o
+OBJECTS = main.o config.o package.o elf.o db.o db_format.o db_json.o filter.o
 
 BINARY        = pkgdepdb
 STATIC_BINARY = $(BINARY)-static
@@ -96,3 +96,4 @@ elf.o: main.h endian.h
 db.o: main.h
 db_format.o: main.h
 db_json.o: main.h
+filter.o: main.h

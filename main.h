@@ -10,6 +10,9 @@
 #include <set>
 #include <functional>
 
+using std::unique_ptr;
+using std::move;
+
 #ifndef PKGDEPDB_V_MAJ
 # error "PKGDEPDB_V_MAJ not defined"
 #endif
@@ -334,5 +337,22 @@ public:
 	}
 	void release() { on = false; }
 };
+
+template<typename T>
+unique_ptr<T> mkunique(T *ptr) {
+	return unique_ptr<T>(ptr);
+}
+
+namespace filter {
+class PackageFilter {
+public:
+	virtual bool visible(const Package &pkg) const = 0;
+	bool operator()(const Package &pkg) const;
+
+	static unique_ptr<PackageFilter> name(const std::string&);
+	static unique_ptr<PackageFilter> nameglob(const std::string&);
+};
+
+}
 
 #endif
