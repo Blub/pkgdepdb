@@ -346,11 +346,15 @@ unique_ptr<T> mkunique(T *ptr) {
 namespace filter {
 class PackageFilter {
 public:
+	virtual ~PackageFilter();
 	virtual bool visible(const Package &pkg) const = 0;
 	bool operator()(const Package &pkg) const;
 
 	static unique_ptr<PackageFilter> name(const std::string&);
 	static unique_ptr<PackageFilter> nameglob(const std::string&);
+#ifdef WITH_REGEX
+	static unique_ptr<PackageFilter> nameregex(const std::string&, bool ext, bool icase);
+#endif
 };
 
 }

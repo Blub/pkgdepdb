@@ -20,6 +20,16 @@ CPPFLAGS += -DWITH_ALPM
 LIBS += -lalpm
 .endif
 
+REGEX ?= no
+.if $(REGEX) == yes
+CPPFLAGS += -DWITH_REGEX
+.endif
+
+THREADS ?= no
+.if $(THREADS) == yes
+CPPFLAGS += -DENABLE_THREADS
+.endif
+
 .include "Makefile"
 
 .if !defined(ALLFLAGS) || !defined(OLDCXX) \

@@ -1,11 +1,20 @@
+#ifdef WITH_REGEX
+# include <sys/types.h>
+# include <regex.h>
+#endif
+
 #include "main.h"
 
 namespace filter {
 
+PackageFilter::~PackageFilter()
+{}
+
 class PackageName : public PackageFilter {
 public:
 	std::string name;
-	PackageName(const std::string&);
+	PackageName(const std::string &name_)
+	: name(name_) {}
 	virtual bool visible(const Package &pkg) const;
 };
 
@@ -17,7 +26,8 @@ PackageFilter::name(const std::string &s) {
 class PackageNameGlob : public PackageFilter {
 public:
 	std::string name;
-	PackageNameGlob(const std::string&);
+	PackageNameGlob(const std::string &name_)
+	: name(name_) {}
 	virtual bool visible(const Package &pkg) const;
 };
 
@@ -25,12 +35,6 @@ unique_ptr<PackageFilter>
 PackageFilter::nameglob(const std::string &s) {
 	return unique_ptr<PackageFilter>(new PackageNameGlob(s));
 }
-
-PackageName::PackageName(const std::string &name_)
-: name(name_) {}
-
-PackageNameGlob::PackageNameGlob(const std::string &name_)
-: name(name_) {}
 
 bool
 PackageName::visible(const Package &pkg) const
@@ -117,6 +121,49 @@ PackageNameGlob::visible(const Package &pkg) const
 {
 	return match_glob(name, 0, pkg.name, 0);
 }
+
+#ifdef WITH_REGEX
+class PackageNameRegex : public PackageFilter {
+public:
+	std::string         pattern;
+	unique_ptr<regex_t> regex;
+	PackageNameRegex(const std::string &pattern_, unique_ptr<regex_t> &&regex_)
+	: pattern(pattern_), regex(move(regex_)) {}
+	virtual bool visible(const Package &pkg) const;
+
+	~PackageNameRegex() {
+		regfree(regex.get());
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::nameregex(const std::string &pattern, bool ext, bool icase) {
+	unique_ptr<regex_t> regex(new regex_t);
+	int cflags = REG_NOSUB | (ext ? REG_EXTENDED : REG_BASIC);
+	if (icase)
+		cflags |= REG_ICASE;
+	int err;
+	if ( (err = ::regcomp(regex.get(), pattern.c_str(), cflags)) != 0) {
+		char buf[4096];
+		regerror(err, regex.get(), buf, sizeof(buf));
+		log(Error, "failed to compile regex (flags: %s, %s): %s\n",
+		    (ext ? "extended" : "basic"),
+		    (icase ? "case insensitive" : "case sensitive"),
+		    pattern.c_str());
+		log(Error, "regex error: %s\n", buf);
+		return nullptr;
+	}
+
+	return unique_ptr<PackageFilter>(new PackageNameRegex(pattern, move(regex)));
+}
+
+bool
+PackageNameRegex::visible(const Package &pkg) const
+{
+	regmatch_t rm;
+	return 0 == regexec(regex.get(), pkg.name.c_str(), 0, &rm, 0);
+}
+#endif
 
 } // namespace filter
 

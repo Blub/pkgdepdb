@@ -17,6 +17,16 @@ ifeq ($(ALPM),yes)
 	LIBS += -lalpm
 endif
 
+REGEX ?= no
+ifeq ($(REGEX),yes)
+CPPFLAGS += -DWITH_REGEX
+endif
+
+THREADS ?= no
+ifeq ($(THREADS),yes)
+CPPFLAGS += -DENABLE_THREADS
+endif
+
 #ifneq ($(strip $(ALLFLAGS)),$(strip $(?COMPAREFLAGS)))
 ifneq ($(strip $(ALLFLAGS)),$(strip $(shell echo $(COMPAREFLAGS))))
 .PHONY: .cflags
