@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "main.h"
+#include "db_format.h"
 
 // version
 uint16_t
@@ -47,26 +48,6 @@ enum class ObjRef : unsigned uint8_t {
 	PKGREF,
 	OBJ,
 	OBJREF
-};
-
-using PkgOutMap = std::map<Package*, size_t>;
-using ObjOutMap = std::map<Elf*,     size_t>;
-using PkgInMap  = std::map<size_t,   Package*>;
-using ObjInMap  = std::map<size_t,   Elf*>;
-
-class SerialStream {
-public:
-	virtual ~SerialStream() {}
-	virtual ssize_t write(const void *buf, size_t bytes) = 0;
-	virtual ssize_t read (void *buf,       size_t bytes) = 0;
-	virtual size_t  tellp() const = 0;
-	virtual size_t  tellg() const = 0;
-
-	virtual operator bool() const = 0;
-
-	enum InOut {
-		in, out
-	};
 };
 
 class SerialFile : public SerialStream {
@@ -195,104 +176,48 @@ public:
 	}
 };
 
-class SerialOut {
-public:
-	DB                           *db;
-	SerialStream                 &out;
-	std::unique_ptr<SerialStream> out_;
-	PkgOutMap                     pkgs;
-	ObjOutMap                     objs;
+SerialIn::SerialIn(DB *db_, SerialStream *in__)
+: db(db_), in(*in__), in_(in__)
+{ }
 
-private:
-	SerialOut(DB *db_, SerialStream *out__)
-	: db(db_), out(*out__), out_(out__)
-	{ }
-
-public:
-	static SerialOut* open(DB *db, const std::string& file, bool gz)
-	{
-		SerialStream *out = gz ? (SerialStream*)new SerialGZ(file, SerialStream::out)
-		                       : (SerialStream*)new SerialFile(file, SerialStream::out);
-		if (!out) return 0;
-		if (!*out) {
-			delete out;
-			return 0;
-		}
-
-		SerialOut *s = new SerialOut(db, out);
-		return s;
+SerialIn*
+SerialIn::open(DB *db, const std::string& file, bool gz)
+{
+	SerialStream *in = gz ? (SerialStream*)new SerialGZ(file, SerialStream::in)
+	                      : (SerialStream*)new SerialFile(file, SerialStream::in);
+	if (!in) return 0;
+	if (!*in) {
+		delete in;
+		return 0;
 	}
-};
 
-class SerialIn {
-public:
-	DB                           *db;
-	SerialStream                 &in;
-	std::unique_ptr<SerialStream> in_;
-	PkgInMap                      pkgs;
-	ObjInMap                      objs;
+	SerialIn *s = new SerialIn(db, in);
+	return s;
+}
 
-private:
-	SerialIn(DB *db_, SerialStream *in__)
-	: db(db_), in(*in__), in_(in__)
-	{ }
+SerialOut::SerialOut(DB *db_, SerialStream *out__)
+: db(db_), out(*out__), out_(out__)
+{ }
 
-public:
-	static SerialIn* open(DB *db, const std::string& file, bool gz)
-	{
-		SerialStream *in = gz ? (SerialStream*)new SerialGZ(file, SerialStream::in)
-		                      : (SerialStream*)new SerialFile(file, SerialStream::in);
-		if (!in) return 0;
-		if (!*in) {
-			delete in;
-			return 0;
-		}
-
-		SerialIn *s = new SerialIn(db, in);
-		return s;
+SerialOut*
+SerialOut::open(DB *db, const std::string& file, bool gz)
+{
+	SerialStream *out = gz ? (SerialStream*)new SerialGZ(file, SerialStream::out)
+	                       : (SerialStream*)new SerialFile(file, SerialStream::out);
+	if (!out) return 0;
+	if (!*out) {
+		delete out;
+		return 0;
 	}
-};
 
-template<typename T>
-static inline SerialOut&
-operator<=(SerialOut &out, const T& r)
-{
-	out.out.write((const char*)&r, sizeof(r));
-	return out;
-}
-
-template<typename T>
-static inline SerialIn&
-operator>=(SerialIn &in, T& r)
-{
-	in.in.read((char*)&r, sizeof(r));
-	return in;
-}
-
-// special for strings:
-static inline SerialOut&
-operator<=(SerialOut &out, const std::string& r)
-{
-	uint32_t len = r.length();
-	out.out.write((const char*)&len, sizeof(len));
-	out.out.write(r.c_str(), len);
-	return out;
-}
-
-static inline SerialIn&
-operator>=(SerialIn &in, std::string& r)
-{
-	uint32_t len;
-	in >= len;
-	r.resize(len);
-	in.in.read(&r[0], len);
-	return in;
+	SerialOut *s = new SerialOut(db, out);
+	return s;
 }
 
 static bool write_obj(SerialOut &out, Elf       *obj);
 static bool read_obj (SerialIn  &in,  rptr<Elf> &obj);
 
-static bool
+bool
 write_objlist(SerialOut &out, const ObjectList& list)
 {
 	uint32_t len = list.size();
@@ -304,7 +229,7 @@ write_objlist(SerialOut &out, const ObjectList& list)
 	return out.out;
 }
 
-static bool
+bool
 read_objlist(SerialIn &in, ObjectList& list)
 {
 	uint32_t len;
@@ -317,7 +242,7 @@ read_objlist(SerialIn &in, ObjectList& list)
 	return in.in;
 }
 
-static bool
+bool
 write_objset(SerialOut &out, const ObjectSet& list)
 {
 	uint32_t len = list.size();
@@ -329,7 +254,7 @@ write_objset(SerialOut &out, const ObjectSet& list)
 	return out.out;
 }
 
-static bool
+bool
 read_objset(SerialIn &in, ObjectSet& list)
 {
 	uint32_t len;
@@ -343,7 +268,7 @@ read_objset(SerialIn &in, ObjectSet& list)
 	return in.in;
 }
 
-static bool
+bool
 write_stringlist(SerialOut &out, const std::vector<std::string> &list)
 {
 	uint32_t len = list.size();
@@ -353,7 +278,7 @@ write_stringlist(SerialOut &out, const std::vector<std::string> &list)
 	return out.out;
 }
 
-static bool
+bool
 read_stringlist(SerialIn &in, std::vector<std::string> &list)
 {
 	uint32_t len;
@@ -364,7 +289,7 @@ read_stringlist(SerialIn &in, std::vector<std::string> &list)
 	return in.in;
 }
 
-static bool
+bool
 write_stringset(SerialOut &out, const StringSet &list)
 {
 	uint32_t len = list.size();
@@ -374,7 +299,7 @@ write_stringset(SerialOut &out, const StringSet &list)
 	return out.out;
 }
 
-static bool
+bool
 read_stringset(SerialIn &in, StringSet &list)
 {
 	uint32_t len;
