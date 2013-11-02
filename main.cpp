@@ -208,8 +208,7 @@ public:
 };
 
 static bool parse_rule(DB *db, const std::string& rule);
-static bool parse_filter(const std::string &filter,
-                         std::vector<unique_ptr<filter::PackageFilter>>&);
+static bool parse_filter(const std::string &filter, FilterList&);
 
 bool db_store_json(DB *db, const std::string& filename);
 
@@ -248,7 +247,7 @@ main(int argc, char **argv)
 	       rulemod   (&oldmode);
 	std::vector<std::tuple<std::string,size_t>> ld_insert;
 
-	std::vector<unique_ptr<filter::PackageFilter>> pkg_filters;
+	FilterList pkg_filters;
 
 	LogLevel = Message;
 	if (!ReadConfig())
@@ -655,8 +654,7 @@ parse_rule(DB *db, const std::string& rule)
 }
 
 static bool
-parse_filter(const std::string &filter,
-             std::vector<unique_ptr<filter::PackageFilter>> &pkg_filters)
+parse_filter(const std::string &filter, FilterList &pkg_filters)
 {
 	// -fname=foo exact
 	// -fname:foo glob
