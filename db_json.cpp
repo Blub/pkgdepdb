@@ -57,7 +57,7 @@ DB::show_packages_json(bool filter_broken, const FilterList &pkg_filters)
 
 	const char *mainsep = "\n\t\t";
 	for (auto &pkg : packages) {
-		if (!pkg_filters.size() || !util::all(pkg_filters, *this, *pkg))
+		if (!util::all(pkg_filters, *this, *pkg))
 			continue;
 		if (filter_broken && !is_broken(pkg))
 			continue;
