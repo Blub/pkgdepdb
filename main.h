@@ -395,6 +395,8 @@ namespace util {
 	template<typename CONT, typename... Args>
 	inline bool
 	all(const CONT &lst, const Args&... args) {
+		if (!lst.size())
+			return true;
 		for (auto &i : lst) {
 			if (!(*i)(args...))
 				return false;
