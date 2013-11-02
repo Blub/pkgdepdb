@@ -17,6 +17,13 @@ PackageFilter::PackageFilter(bool neg_)
 PackageFilter::~PackageFilter()
 {}
 
+ObjectFilter::ObjectFilter(bool neg_)
+: negate(neg_)
+{}
+
+ObjectFilter::~ObjectFilter()
+{}
+
 // Package Name
 class PackageName : public PackageFilter {
 public:
@@ -45,6 +52,22 @@ public:
 unique_ptr<PackageFilter>
 PackageFilter::group(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageGroup(neg, s));
+}
+
+// Object Name
+class ObjectName : public ObjectFilter {
+public:
+	std::string name;
+	ObjectName(bool neg, const std::string &name_)
+	: ObjectFilter(neg), name(name_) {}
+	virtual bool visible(const Elf &elf) const {
+		return (elf.basename == this->name);
+	}
+};
+
+unique_ptr<ObjectFilter>
+ObjectFilter::name(const std::string &s, bool neg) {
+	return unique_ptr<ObjectFilter>(new ObjectName(neg, s));
 }
 
 // Package Name (Glob)
@@ -79,6 +102,21 @@ public:
 unique_ptr<PackageFilter>
 PackageFilter::groupglob(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageGroupGlob(neg, s));
+}
+
+// Object Name (Glob)
+class ObjectNameGlob : public ObjectName {
+public:
+	ObjectNameGlob(bool neg, const std::string &name_)
+	: ObjectName(neg, name_) {}
+	virtual bool visible(const Elf &elf) const {
+		return match_glob(name, 0, elf.basename, 0);
+	}
+};
+
+unique_ptr<ObjectFilter>
+ObjectFilter::nameglob(const std::string &s, bool neg) {
+	return unique_ptr<ObjectFilter>(new ObjectNameGlob(neg, s));
 }
 
 class PackageBroken : public PackageFilter {
@@ -204,6 +242,7 @@ make_regex(const std::string &pattern, bool ext, bool icase) {
 	return move(regex);
 }
 
+// Package Name (Regex)
 class PackageNameRegex : public PackageFilter {
 public:
 	std::string         pattern;
@@ -265,6 +304,42 @@ PackageFilter::groupregex(const std::string &pattern,
 
 	return unique_ptr<PackageFilter>(
 		new PackageGroupRegex(neg, pattern, ext, icase, move(regex)));
+}
+
+// Object Name (Regex)
+class ObjectNameRegex : public ObjectFilter {
+public:
+	std::string         pattern;
+	unique_ptr<regex_t> regex;
+	bool                ext, icase;
+
+	ObjectNameRegex(bool neg, const std::string &pattern_,
+	                bool ext_, bool icase_,
+	                unique_ptr<regex_t> &&regex_)
+	: ObjectFilter(neg), pattern(pattern_)
+	, regex(move(regex_))
+	, ext(ext_), icase(icase_)
+	{}
+	virtual bool visible(const Elf &elf) const {
+		regmatch_t rm;
+		return 0 == regexec(regex.get(), elf.basename.c_str(), 0, &rm, 0);
+	}
+
+	~ObjectNameRegex() {
+		regfree(regex.get());
+	}
+};
+
+unique_ptr<ObjectFilter>
+ObjectFilter::nameregex(const std::string &pattern,
+                        bool ext, bool icase, bool neg)
+{
+	unique_ptr<regex_t> regex(make_regex(pattern, ext, icase));
+	if (!regex)
+		return nullptr;
+
+	return unique_ptr<ObjectFilter>(
+		new ObjectNameRegex(neg, pattern, ext, icase, move(regex)));
 }
 
 #endif
