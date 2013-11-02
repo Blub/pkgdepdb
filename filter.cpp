@@ -3,7 +3,17 @@
 # include <regex.h>
 #endif
 
+#include <algorithm>
+
 #include "main.h"
+
+namespace util {
+	template<typename C, typename K>
+	inline bool
+	contains(const C &lst, const K &k) {
+		return std::find(lst.begin(), lst.end(), k) != lst.end();
+	}
+}
 
 namespace filter {
 
@@ -70,6 +80,22 @@ ObjectFilter::name(const std::string &s, bool neg) {
 	return unique_ptr<ObjectFilter>(new ObjectName(neg, s));
 }
 
+// Object Depends
+class ObjectDepends : public ObjectFilter {
+public:
+	std::string name;
+	ObjectDepends(bool neg, const std::string &name_)
+	: ObjectFilter(neg), name(name_) {}
+	virtual bool visible(const Elf &elf) const {
+		return util::contains(elf.needed, this->name);
+	}
+};
+
+unique_ptr<ObjectFilter>
+ObjectFilter::depends(const std::string &s, bool neg) {
+	return unique_ptr<ObjectFilter>(new ObjectDepends(neg, s));
+}
+
 // Package Name (Glob)
 class PackageNameGlob : public PackageFilter {
 public:
@@ -128,6 +154,26 @@ public:
 	}
 };
 
+// Object Depends (Glob)
+class ObjectDependsGlob : public ObjectDepends {
+public:
+	ObjectDependsGlob(bool neg, const std::string &name_)
+	: ObjectDepends(neg, name_) {}
+	virtual bool visible(const Elf &elf) const {
+		for (auto &lib : elf.needed) {
+			if (match_glob(name, 0, lib, 0))
+				return true;
+		}
+		return false;
+	}
+};
+
+unique_ptr<ObjectFilter>
+ObjectFilter::dependsglob(const std::string &s, bool neg) {
+	return unique_ptr<ObjectFilter>(new ObjectDependsGlob(neg, s));
+}
+
+// Broken Package
 unique_ptr<PackageFilter>
 PackageFilter::broken(bool neg) {
 	return unique_ptr<PackageFilter>(new PackageBroken(neg));
@@ -341,6 +387,47 @@ ObjectFilter::nameregex(const std::string &pattern,
 	return unique_ptr<ObjectFilter>(
 		new ObjectNameRegex(neg, pattern, ext, icase, move(regex)));
 }
+
+// Object Depends (Regex)
+class ObjectDependsRegex : public ObjectFilter {
+public:
+	std::string         pattern;
+	unique_ptr<regex_t> regex;
+	bool                ext, icase;
+
+	ObjectDependsRegex(bool neg, const std::string &pattern_,
+	                   bool ext_, bool icase_,
+	                   unique_ptr<regex_t> &&regex_)
+	: ObjectFilter(neg), pattern(pattern_)
+	, regex(move(regex_))
+	, ext(ext_), icase(icase_)
+	{}
+	virtual bool visible(const Elf &elf) const {
+		regmatch_t rm;
+		for (auto &lib : elf.needed) {
+			if (0 == regexec(regex.get(), lib.c_str(), 0, &rm, 0))
+				return true;
+		}
+		return false;
+	}
+
+	~ObjectDependsRegex() {
+		regfree(regex.get());
+	}
+};
+
+unique_ptr<ObjectFilter>
+ObjectFilter::dependsregex(const std::string &pattern,
+                           bool ext, bool icase, bool neg)
+{
+	unique_ptr<regex_t> regex(make_regex(pattern, ext, icase));
+	if (!regex)
+		return nullptr;
+
+	return unique_ptr<ObjectFilter>(
+		new ObjectDependsRegex(neg, pattern, ext, icase, move(regex)));
+}
+
 
 #endif
 
