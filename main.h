@@ -380,6 +380,34 @@ public:
 	static unique_ptr<PackageFilter> broken(bool neg);
 };
 
+class ObjectFilter {
+protected:
+	ObjectFilter(bool);
+public:
+	ObjectFilter() = delete;
+
+	bool negate;
+	virtual ~ObjectFilter();
+	virtual bool visible(const Elf &elf) const {
+		(void)elf; return true;
+	}
+	virtual bool visible(const DB& db, const Elf &elf) const {
+		(void)db; return visible(elf);
+	}
+	inline bool operator()(const DB& db, const Elf &elf) const {
+		return visible(db, elf) != negate;
+	}
+
+	static unique_ptr<ObjectFilter> name(const std::string&, bool neg);
+	static unique_ptr<ObjectFilter> nameglob(const std::string&, bool neg);
+	static unique_ptr<ObjectFilter> depends(bool neg);
+	static unique_ptr<ObjectFilter> dependsglob(bool neg);
+#ifdef WITH_REGEX
+	static unique_ptr<ObjectFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
+	static unique_ptr<ObjectFilter> dependsregex(bool neg);
+#endif
+};
+
 }
 
 namespace util {
