@@ -1,3 +1,9 @@
+2013-11-02 Blub
+
+	* filter support:
+		-f filters -fname= -fname: -fname/regex/
+		And negation by prefixing with a !
+
 2013-10-22 Blub
 
 	* file locking: Replaced O_EXLOCK with calls to flock(2)
