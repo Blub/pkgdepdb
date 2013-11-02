@@ -426,7 +426,7 @@ write_pkg(SerialOut &out, Package *pkg, unsigned hdrver)
 			return false;
 		}
 	}
-	if (hdrver >= 5 && !write_stringlist(out, pkg->groups))
+	if (hdrver >= 5 && !write_stringset(out, pkg->groups))
 		return false;
 	return true;
 }
@@ -480,7 +480,7 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver)
 			return false;
 		}
 	}
-	if (hdrver >= 5 && !read_stringlist(in, pkg->groups))
+	if (hdrver >= 5 && !read_stringset(in, pkg->groups))
 		return false;
 	return true;
 }

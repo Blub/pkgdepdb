@@ -159,7 +159,7 @@ read_info(Package *pkg, struct archive *tar, const size_t size)
 		if (isentry("group", sizeof("group")-1)) {
 			if (!getvalue("group", es))
 				return false;
-			pkg->groups.push_back(es);
+			pkg->groups.insert(es);
 			continue;
 		}
 

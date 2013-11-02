@@ -202,7 +202,7 @@ public:
 	StringList              conflicts;
 	StringList              replaces;
 	// DB version 5:
-	StringList              groups;
+	StringSet               groups;
 
 	void show_needed();
 	Elf* find(const std::string &dirname, const std::string &basename) const;
@@ -364,8 +364,11 @@ public:
 
 	static unique_ptr<PackageFilter> name(const std::string&, bool neg);
 	static unique_ptr<PackageFilter> nameglob(const std::string&, bool neg);
+	static unique_ptr<PackageFilter> group(const std::string&, bool neg);
+	static unique_ptr<PackageFilter> groupglob(const std::string&, bool neg);
 #ifdef WITH_REGEX
 	static unique_ptr<PackageFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
+	static unique_ptr<PackageFilter> groupregex(const std::string&, bool ext, bool icase, bool neg);
 #endif
 };
 

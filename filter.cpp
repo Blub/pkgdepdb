@@ -7,6 +7,9 @@
 
 namespace filter {
 
+static bool
+match_glob(const std::string &glob, size_t, const std::string &str, size_t);
+
 PackageFilter::PackageFilter(bool neg_)
 : negate(neg_)
 {}
@@ -14,12 +17,15 @@ PackageFilter::PackageFilter(bool neg_)
 PackageFilter::~PackageFilter()
 {}
 
+// Package Name
 class PackageName : public PackageFilter {
 public:
 	std::string name;
 	PackageName(bool neg, const std::string &name_)
 	: PackageFilter(neg), name(name_) {}
-	virtual bool visible(const Package &pkg) const;
+	virtual bool visible(const Package &pkg) const {
+		return (pkg.name == this->name);
+	}
 };
 
 unique_ptr<PackageFilter>
@@ -27,12 +33,29 @@ PackageFilter::name(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageName(neg, s));
 }
 
+class PackageGroup : public PackageName {
+public:
+	PackageGroup(bool neg, const std::string &name_)
+	: PackageName(neg, name_) {}
+	virtual bool visible(const Package &pkg) const {
+		return pkg.groups.find(this->name) != pkg.groups.cend();
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::group(const std::string &s, bool neg) {
+	return unique_ptr<PackageFilter>(new PackageGroup(neg, s));
+}
+
+// Package Name (Glob)
 class PackageNameGlob : public PackageFilter {
 public:
 	std::string name;
 	PackageNameGlob(bool neg, const std::string &name_)
 	: PackageFilter(neg), name(name_) {}
-	virtual bool visible(const Package &pkg) const;
+	virtual bool visible(const Package &pkg) const {
+		return match_glob(name, 0, pkg.name, 0);
+	}
 };
 
 unique_ptr<PackageFilter>
@@ -40,11 +63,25 @@ PackageFilter::nameglob(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageNameGlob(neg, s));
 }
 
-bool
-PackageName::visible(const Package &pkg) const
-{
-	return (pkg.name == this->name);
+class PackageGroupGlob : public PackageNameGlob {
+public:
+	PackageGroupGlob(bool neg, const std::string &name_)
+	: PackageNameGlob(neg, name_) {}
+	virtual bool visible(const Package &pkg) const {
+		for (auto &i : pkg.groups) {
+			if (match_glob(name, 0, i, 0))
+				return true;
+		}
+		return false;
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::groupglob(const std::string &s, bool neg) {
+	return unique_ptr<PackageFilter>(new PackageGroupGlob(neg, s));
 }
+
+// Utility functions:
 
 static bool /* tail recursive */
 match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
@@ -130,28 +167,9 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
 	}
 }
 
-bool
-PackageNameGlob::visible(const Package &pkg) const
-{
-	return match_glob(name, 0, pkg.name, 0);
-}
-
 #ifdef WITH_REGEX
-class PackageNameRegex : public PackageFilter {
-public:
-	std::string         pattern;
-	unique_ptr<regex_t> regex;
-	PackageNameRegex(bool neg, const std::string &pattern_, unique_ptr<regex_t> &&regex_)
-	: PackageFilter(neg), pattern(pattern_), regex(move(regex_)) {}
-	virtual bool visible(const Package &pkg) const;
-
-	~PackageNameRegex() {
-		regfree(regex.get());
-	}
-};
-
-unique_ptr<PackageFilter>
-PackageFilter::nameregex(const std::string &pattern, bool ext, bool icase, bool neg) {
+static unique_ptr<regex_t>
+make_regex(const std::string &pattern, bool ext, bool icase) {
 	unique_ptr<regex_t> regex(new regex_t);
 	int cflags = REG_NOSUB;
 	if (ext)   cflags |= REG_EXTENDED;
@@ -169,15 +187,72 @@ PackageFilter::nameregex(const std::string &pattern, bool ext, bool icase, bool 
 		return nullptr;
 	}
 
-	return unique_ptr<PackageFilter>(new PackageNameRegex(neg, pattern, move(regex)));
+	return move(regex);
 }
 
-bool
-PackageNameRegex::visible(const Package &pkg) const
+class PackageNameRegex : public PackageFilter {
+public:
+	std::string         pattern;
+	unique_ptr<regex_t> regex;
+	bool                ext, icase;
+
+	PackageNameRegex(bool neg, const std::string &pattern_,
+	                 bool ext_, bool icase_,
+	                 unique_ptr<regex_t> &&regex_)
+	: PackageFilter(neg), pattern(pattern_)
+	, regex(move(regex_))
+	, ext(ext_), icase(icase_)
+	{}
+	virtual bool visible(const Package &pkg) const {
+		regmatch_t rm;
+		return 0 == regexec(regex.get(), pkg.name.c_str(), 0, &rm, 0);
+	}
+
+	~PackageNameRegex() {
+		regfree(regex.get());
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::nameregex(const std::string &pattern,
+                         bool ext, bool icase, bool neg)
 {
-	regmatch_t rm;
-	return 0 == regexec(regex.get(), pkg.name.c_str(), 0, &rm, 0);
+	unique_ptr<regex_t> regex(make_regex(pattern, ext, icase));
+	if (!regex)
+		return nullptr;
+
+	return unique_ptr<PackageFilter>(
+		new PackageNameRegex(neg, pattern, ext, icase, move(regex)));
 }
+
+class PackageGroupRegex : public PackageNameRegex {
+public:
+	PackageGroupRegex(bool neg, const std::string &pattern_,
+	                  bool ext_, bool icase_,
+	                  unique_ptr<regex_t> &&regex_)
+	: PackageNameRegex(neg, pattern_, ext_, icase_, move(regex_)) {}
+	virtual bool visible(const Package &pkg) const {
+		regmatch_t rm;
+		for (auto &i : pkg.groups) {
+			if (0 == regexec(regex.get(), i.c_str(), 0, &rm, 0))
+				return true;
+		}
+		return false;
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::groupregex(const std::string &pattern,
+                          bool ext, bool icase, bool neg)
+{
+	unique_ptr<regex_t> regex(make_regex(pattern, ext, icase));
+	if (!regex)
+		return nullptr;
+
+	return unique_ptr<PackageFilter>(
+		new PackageGroupRegex(neg, pattern, ext, icase, move(regex)));
+}
+
 #endif
 
 } // namespace filter
