@@ -56,6 +56,8 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
 		from = ++g;
 		neg = (g < glob.length() && glob[g] == '^');
 		if (neg) ++from;
+		if (glob[g] == ']') // if the group contains a ] it must come first
+			++g;
 		while (g < glob.length() && glob[g] != ']')
 			++g;
 		if (g >= glob.length()) {
@@ -69,6 +71,11 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
 
 	auto matches_group = [&](const char c) -> bool {
 		for (size_t f = from; f != to+1; ++f) {
+			if (f > from && f != to && glob[f] == '-') {
+				++f;
+				if (c >= glob[f-1] && c <= glob[f])
+					return !neg;
+			}
 			if (c == glob[f]) {
 				return !neg;
 			}
@@ -78,8 +85,11 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
 
 	if (g >= glob.length()) // nothing else to match
 		return s >= str.length(); // true if there are no contents to match either
-	if (s >= str.length())
+	if (s >= str.length()) {
+		if (glob[g] == '*')
+			return match_glob(glob, g+1, str, s+1);
 		return false;
+	}
 	switch (glob[g]) {
 		default:
 			if (glob[g] != str[s])
@@ -207,6 +217,21 @@ int main() {
 	tryglob("*is*t.", true);
 	tryglob("*is*[asdf]*t.", true);
 	tryglob("*is*[yz]*t.", false);
+	text = "Fabcdbar";
+	tryglob("Fabcdbar*", true);
+	tryglob("Fabcdbar*?", false);
+	tryglob("F[a-d]b*", true);
+	tryglob("F[a-d][a-d]c*", true);
+	tryglob("F[a-d][e-z]b*", false);
+	tryglob("F[^a-d]b*", false);
+	text = "foo-bar";
+	tryglob("foo[-]bar", true);
+	tryglob("foo[-x-z]bar", true);
+	tryglob("fo[^-n]-bar", true);
+	tryglob("fo[^n-]-bar", true);
+	text = "Fa[bc]dbar";
+	tryglob("Fa[[]bc*", true);
+	tryglob("Fa[[]bc[]]db*", true);
 	return r;
 }
 #endif
