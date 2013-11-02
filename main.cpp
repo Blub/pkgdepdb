@@ -671,29 +671,26 @@ parse_filter(const std::string &filter,
 		++at;
 	}
 
-	if (filter.compare(at, 4, "name") == 0) {
-		unique_ptr<filter::PackageFilter> pf(nullptr);
-		if (filter[at+4] == '=') // exact
-			pf = move(filter::PackageFilter::name(filter.substr(at+5), neg));
-		else if (filter[at+4] == ':') // glob
-			pf = move(filter::PackageFilter::nameglob(filter.substr(at+5), neg));
 #ifdef WITH_REGEX
-		else if (static_cast<unsigned char>(filter[at+4] - 'a') > 'z' &&
-		         static_cast<unsigned char>(filter[at+4] - 'A') > 'Z' &&
-		         static_cast<unsigned char>(filter[at+4] - '0') > '9')
+	std::string regex;
+	bool icase = false;
+	auto parse_regex = [&]() -> bool {
+		if (static_cast<unsigned char>(filter[at] - 'a') > 'z' &&
+		    static_cast<unsigned char>(filter[at] - 'A') > 'Z' &&
+		    static_cast<unsigned char>(filter[at] - '0') > '9')
 		{
 			// parse the regex enclosed using the character from filter[4]
-			char unquote = filter[at+4];
+			char unquote = filter[at];
 			if      (unquote == '(') unquote = ')';
 			else if (unquote == '{') unquote = '}';
 			else if (unquote == '[') unquote = ']';
 			else if (unquote == '<') unquote = '>';
-			if (filter.length() < at+6) {
+			if (filter.length() < at+2) {
 				log(Error, "empty filter content: %s\n", filter.c_str());
 				return false;
 			}
-			std::string regex = filter.substr(at+5);
-			bool icase = false;
+			regex = filter.substr(at+1);
+			icase = false;
 			if (regex[regex.length()-1] == 'i') {
 				if (regex[regex.length()-2] == unquote) {
 					icase = true;
@@ -702,11 +699,47 @@ parse_filter(const std::string &filter,
 			}
 			else if (regex[regex.length()-1] == unquote)
 				regex.pop_back();
-			pf = move(filter::PackageFilter::nameregex(regex, true, icase, neg));
+			return true;
 		}
+		return false;
+	};
+#endif
+
+	if (filter.compare(at, 4, "name") == 0) {
+		at += 4;
+		unique_ptr<filter::PackageFilter> pf(nullptr);
+		if (filter[at] == '=') // exact
+			pf = move(filter::PackageFilter::name(filter.substr(at+1), neg));
+		else if (filter[at] == ':') // glob
+			pf = move(filter::PackageFilter::nameglob(filter.substr(at+1), neg));
+#ifdef WITH_REGEX
+		else if (parse_regex())
+			pf = move(filter::PackageFilter::nameregex(regex, true, icase, neg));
 #endif
 		else {
-			log(Error, "unknoqn name filter: %s\n", filter.c_str());
+			log(Error, "unknown name filter: %s\n", filter.c_str());
+			return false;
+		}
+		if (!pf) {
+			log(Error, "failed to create filter: %s\n", filter.c_str());
+			return false;
+		}
+		pkg_filters.push_back(move(pf));
+		return true;
+	}
+	else if (filter.compare(at, 5, "group") == 0) {
+		at += 5;
+		unique_ptr<filter::PackageFilter> pf(nullptr);
+		if (filter[at] == '=') // exact
+			pf = move(filter::PackageFilter::group(filter.substr(at+1), neg));
+		else if (filter[at] == ':') // glob
+			pf = move(filter::PackageFilter::groupglob(filter.substr(at+1), neg));
+#ifdef WITH_REGEX
+		else if (parse_regex())
+			pf = move(filter::PackageFilter::groupregex(regex, true, icase, neg));
+#endif
+		else {
+			log(Error, "unknown group filter: %s\n", filter.c_str());
 			return false;
 		}
 		if (!pf) {
