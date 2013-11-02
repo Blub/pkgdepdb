@@ -323,6 +323,7 @@ public:
 private:
 	bool elf_finds(Elf*, const std::string& lib, const StringList *extrapath) const;
 
+public:
 	bool is_broken(const Package *pkg) const;
 	bool is_broken(const Elf *elf) const;
 

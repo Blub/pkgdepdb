@@ -86,8 +86,7 @@ public:
 	PackageBroken(bool neg)
 	: PackageFilter(neg) {}
 	virtual bool visible(const DB &db, const Package &pkg) const {
-		(void)db; (void)pkg;
-		return true;
+		return db.is_broken(&pkg);
 	}
 };
 
