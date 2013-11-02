@@ -208,7 +208,7 @@ public:
 };
 
 static bool parse_rule(DB *db, const std::string& rule);
-static bool parse_filter(const std::string &filter, FilterList&);
+static bool parse_filter(const std::string &filter, FilterList&, ObjFilterList&);
 
 bool db_store_json(DB *db, const std::string& filename);
 
@@ -248,6 +248,7 @@ main(int argc, char **argv)
 	std::vector<std::tuple<std::string,size_t>> ld_insert;
 
 	FilterList pkg_filters;
+	ObjFilterList obj_filters;
 
 	LogLevel = Message;
 	if (!ReadConfig())
@@ -340,7 +341,7 @@ main(int argc, char **argv)
 				break;
 
 			case 'f':
-				if (!parse_filter(optarg, pkg_filters)) {
+				if (!parse_filter(optarg, pkg_filters, obj_filters)) {
 					log(Error, "invalid --filter: `%s'\n", optarg);
 					return 1;
 				}
@@ -504,10 +505,10 @@ main(int argc, char **argv)
 		db->show_info();
 
 	if (show_packages)
-		db->show_packages(filter_broken, pkg_filters);
+		db->show_packages(filter_broken, pkg_filters, obj_filters);
 
 	if (show_list)
-		db->show_objects();
+		db->show_objects(obj_filters);
 
 	if (show_missing)
 		db->show_missing();
@@ -654,7 +655,7 @@ parse_rule(DB *db, const std::string& rule)
 }
 
 static bool
-parse_filter(const std::string &filter, FilterList &pkg_filters)
+parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &obj_filters)
 {
 	// -fname=foo exact
 	// -fname:foo glob
@@ -752,6 +753,28 @@ parse_filter(const std::string &filter, FilterList &pkg_filters)
 		if (!pf)
 			return false;
 		pkg_filters.push_back(move(pf));
+		return true;
+	}
+	else if (filter.compare(at, 10, "libdepends") == 0) {
+		at += 10;
+		unique_ptr<filter::ObjectFilter> pf(nullptr);
+		if (filter[at] == '=') // exact
+			pf = move(filter::ObjectFilter::depends(filter.substr(at+1), neg));
+		else if (filter[at] == ':') // glob
+			pf = move(filter::ObjectFilter::dependsglob(filter.substr(at+1), neg));
+#ifdef WITH_REGEX
+		else if (parse_regex())
+			pf = move(filter::ObjectFilter::dependsregex(regex, true, icase, neg));
+#endif
+		else {
+			log(Error, "unknown name filter: %s\n", filter.c_str());
+			return false;
+		}
+		if (!pf) {
+			log(Error, "failed to create filter: %s\n", filter.c_str());
+			return false;
+		}
+		obj_filters.push_back(move(pf));
 		return true;
 	}
 

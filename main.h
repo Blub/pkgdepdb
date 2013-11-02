@@ -226,8 +226,10 @@ using ObjListMap = std::map<std::string, std::vector<const Elf*>>;
 
 namespace filter {
 class PackageFilter;
+class ObjectFilter;
 }
 using FilterList = std::vector<std::unique_ptr<filter::PackageFilter>>;
+using ObjFilterList = std::vector<std::unique_ptr<filter::ObjectFilter>>;
 
 class DB {
 public:
@@ -279,10 +281,10 @@ public:
 
 	void show_info();
 	void show_info_json();
-	void show_packages(bool filter_broken, const FilterList&);
-	void show_packages_json(bool filter_broken, const FilterList&);
-	void show_objects();
-	void show_objects_json();
+	void show_packages(bool flt_broken, const FilterList&, const ObjFilterList&);
+	void show_packages_json(bool flt_broken, const FilterList&, const ObjFilterList&);
+	void show_objects(const ObjFilterList&);
+	void show_objects_json(const ObjFilterList&);
 	void show_missing();
 	void show_missing_json();
 	void show_found();
@@ -373,9 +375,12 @@ public:
 	static unique_ptr<PackageFilter> nameglob(const std::string&, bool neg);
 	static unique_ptr<PackageFilter> group(const std::string&, bool neg);
 	static unique_ptr<PackageFilter> groupglob(const std::string&, bool neg);
+	static unique_ptr<PackageFilter> depends(const std::string&, bool neg);
+	static unique_ptr<PackageFilter> dependsglob(const std::string&, bool neg);
 #ifdef WITH_REGEX
 	static unique_ptr<PackageFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
 	static unique_ptr<PackageFilter> groupregex(const std::string&, bool ext, bool icase, bool neg);
+	static unique_ptr<PackageFilter> dependsregex(const std::string&, bool ext, bool icase, bool neg);
 #endif
 	static unique_ptr<PackageFilter> broken(bool neg);
 };

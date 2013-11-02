@@ -50,6 +50,7 @@ PackageFilter::name(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageName(neg, s));
 }
 
+// Package Group
 class PackageGroup : public PackageName {
 public:
 	PackageGroup(bool neg, const std::string &name_)
@@ -62,6 +63,21 @@ public:
 unique_ptr<PackageFilter>
 PackageFilter::group(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageGroup(neg, s));
+}
+
+// Package Depend
+class PackageDepends : public PackageName {
+public:
+	PackageDepends(bool neg, const std::string &name_)
+	: PackageName(neg, name_) {}
+	virtual bool visible(const Package &pkg) const {
+		return util::contains(pkg.depends, this->name);
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::depends(const std::string &s, bool neg) {
+	return unique_ptr<PackageFilter>(new PackageDepends(neg, s));
 }
 
 // Object Name
@@ -112,6 +128,7 @@ PackageFilter::nameglob(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageNameGlob(neg, s));
 }
 
+// Package Group (Glob)
 class PackageGroupGlob : public PackageNameGlob {
 public:
 	PackageGroupGlob(bool neg, const std::string &name_)
@@ -130,6 +147,26 @@ PackageFilter::groupglob(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageGroupGlob(neg, s));
 }
 
+// Package Depend (Glob)
+class PackageDependsGlob : public PackageNameGlob {
+public:
+	PackageDependsGlob(bool neg, const std::string &name_)
+	: PackageNameGlob(neg, name_) {}
+	virtual bool visible(const Package &pkg) const {
+		for (auto &i : pkg.depends) {
+			if (match_glob(name, 0, i, 0))
+				return true;
+		}
+		return false;
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::dependsglob(const std::string &s, bool neg) {
+	return unique_ptr<PackageFilter>(new PackageDependsGlob(neg, s));
+}
+
+
 // Object Name (Glob)
 class ObjectNameGlob : public ObjectName {
 public:
@@ -144,15 +181,6 @@ unique_ptr<ObjectFilter>
 ObjectFilter::nameglob(const std::string &s, bool neg) {
 	return unique_ptr<ObjectFilter>(new ObjectNameGlob(neg, s));
 }
-
-class PackageBroken : public PackageFilter {
-public:
-	PackageBroken(bool neg)
-	: PackageFilter(neg) {}
-	virtual bool visible(const DB &db, const Package &pkg) const {
-		return db.is_broken(&pkg);
-	}
-};
 
 // Object Depends (Glob)
 class ObjectDependsGlob : public ObjectDepends {
@@ -174,6 +202,15 @@ ObjectFilter::dependsglob(const std::string &s, bool neg) {
 }
 
 // Broken Package
+class PackageBroken : public PackageFilter {
+public:
+	PackageBroken(bool neg)
+	: PackageFilter(neg) {}
+	virtual bool visible(const DB &db, const Package &pkg) const {
+		return db.is_broken(&pkg);
+	}
+};
+
 unique_ptr<PackageFilter>
 PackageFilter::broken(bool neg) {
 	return unique_ptr<PackageFilter>(new PackageBroken(neg));
@@ -324,6 +361,7 @@ PackageFilter::nameregex(const std::string &pattern,
 		new PackageNameRegex(neg, pattern, ext, icase, move(regex)));
 }
 
+// Package Group (Regex)
 class PackageGroupRegex : public PackageNameRegex {
 public:
 	PackageGroupRegex(bool neg, const std::string &pattern_,
@@ -350,6 +388,35 @@ PackageFilter::groupregex(const std::string &pattern,
 
 	return unique_ptr<PackageFilter>(
 		new PackageGroupRegex(neg, pattern, ext, icase, move(regex)));
+}
+
+// Package Depends (Regex)
+class PackageDependsRegex : public PackageNameRegex {
+public:
+	PackageDependsRegex(bool neg, const std::string &pattern_,
+	                    bool ext_, bool icase_,
+	                    unique_ptr<regex_t> &&regex_)
+	: PackageNameRegex(neg, pattern_, ext_, icase_, move(regex_)) {}
+	virtual bool visible(const Package &pkg) const {
+		regmatch_t rm;
+		for (auto &i : pkg.depends) {
+			if (0 == regexec(regex.get(), i.c_str(), 0, &rm, 0))
+				return true;
+		}
+		return false;
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::dependsregex(const std::string &pattern,
+                            bool ext, bool icase, bool neg)
+{
+	unique_ptr<regex_t> regex(make_regex(pattern, ext, icase));
+	if (!regex)
+		return nullptr;
+
+	return unique_ptr<PackageFilter>(
+		new PackageDependsRegex(neg, pattern, ext, icase, move(regex)));
 }
 
 // Object Name (Regex)

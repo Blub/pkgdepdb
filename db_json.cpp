@@ -40,7 +40,9 @@ print_objname(const Elf *obj)
 }
 
 void
-DB::show_packages_json(bool filter_broken, const FilterList &pkg_filters)
+DB::show_packages_json(bool filter_broken,
+                       const FilterList &pkg_filters,
+                       const ObjFilterList &obj_filters)
 {
 	printf("{");
 	if (filter_broken)
@@ -98,6 +100,8 @@ DB::show_packages_json(bool filter_broken, const FilterList &pkg_filters)
 				printf(",\n\t\t\t\"broken\": [");
 				const char *sep = "\n\t\t\t\t";
 				for (auto &obj : pkg->objects) {
+					if (!util::all(obj_filters, *this, *obj))
+						continue;
 					if (!is_broken(obj))
 						continue;
 					if (opt_verbosity >= 2) {
@@ -128,6 +132,8 @@ DB::show_packages_json(bool filter_broken, const FilterList &pkg_filters)
 					printf(",\n\t\t\t\"contains\": [");
 					const char *sep = "\n\t\t\t\t";
 					for (auto &obj : pkg->objects) {
+						if (!util::all(obj_filters, *this, *obj))
+							continue;
 						printf("%s", sep); sep = ",\n\t\t\t\t";
 						print_objname(obj);
 					}
@@ -214,7 +220,7 @@ DB::show_info_json()
 }
 
 void
-DB::show_objects_json()
+DB::show_objects_json(const ObjFilterList &obj_filters)
 {
 	if (!objects.size()) {
 		printf("{ \"objects\": [] }\n");
@@ -224,6 +230,8 @@ DB::show_objects_json()
 	printf("{ \"objects\": [");
 	const char *mainsep = "\n\t";
 	for (auto &obj : objects) {
+		if (!util::all(obj_filters, *this, *obj))
+			continue;
 		printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
 		print_objname(obj);
 		if (opt_verbosity < 1) {

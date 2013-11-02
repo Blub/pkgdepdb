@@ -763,10 +763,12 @@ DB::is_broken(const Package *pkg) const
 }
 
 void
-DB::show_packages(bool filter_broken, const FilterList &pkg_filters)
+DB::show_packages(bool filter_broken,
+                  const FilterList &pkg_filters,
+                  const ObjFilterList &obj_filters)
 {
 	if (opt_json & JSONBits::Query)
-		return show_packages_json(filter_broken, pkg_filters);
+		return show_packages_json(filter_broken, pkg_filters, obj_filters);
 
 	if (!opt_quiet)
 		printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
@@ -794,6 +796,8 @@ DB::show_packages(bool filter_broken, const FilterList &pkg_filters)
 				printf("    conflicts with: %s\n", ent.c_str());
 			if (filter_broken) {
 				for (auto &obj : pkg->objects) {
+					if (!util::all(obj_filters, *this, *obj))
+						continue;
 					if (is_broken(obj)) {
 						printf("    broken: %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
 						if (opt_verbosity >= 2) {
@@ -805,18 +809,21 @@ DB::show_packages(bool filter_broken, const FilterList &pkg_filters)
 				}
 			}
 			else {
-				for (auto &obj : pkg->objects)
+				for (auto &obj : pkg->objects) {
+					if (!util::all(obj_filters, *this, *obj))
+						continue;
 					printf("    contains %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
+				}
 			}
 		}
 	}
 }
 
 void
-DB::show_objects()
+DB::show_objects(const ObjFilterList &obj_filters)
 {
 	if (opt_json & JSONBits::Query)
-		return show_objects_json();
+		return show_objects_json(obj_filters);
 
 	if (!objects.size()) {
 		if (!opt_quiet)
@@ -826,6 +833,8 @@ DB::show_objects()
 	if (!opt_quiet)
 		printf("Objects:\n");
 	for (auto &obj : objects) {
+		if (!util::all(obj_filters, *this, *obj))
+			continue;
 		if (opt_quiet)
 			printf("%s/%s\n", obj->dirname.c_str(), obj->basename.c_str());
 		else
