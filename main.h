@@ -227,6 +227,7 @@ using ObjListMap = std::map<std::string, std::vector<const Elf*>>;
 namespace filter {
 class PackageFilter;
 }
+using FilterList = std::vector<std::unique_ptr<filter::PackageFilter>>;
 
 class DB {
 public:
@@ -278,8 +279,8 @@ public:
 
 	void show_info();
 	void show_info_json();
-	void show_packages(bool filter_broken, const vector<unique_ptr<filter::PackageFilter>>&);
-	void show_packages_json(bool filter_broken);
+	void show_packages(bool filter_broken, const FilterList&);
+	void show_packages_json(bool filter_broken, const FilterList&);
 	void show_objects();
 	void show_objects_json();
 	void show_missing();
@@ -357,9 +358,14 @@ public:
 
 	bool negate;
 	virtual ~PackageFilter();
-	virtual bool visible(const Package &pkg) const = 0;
-	inline bool operator()(const Package &pkg) const {
-		return visible(pkg) != negate;
+	virtual bool visible(const Package &pkg) const {
+		(void)pkg; return true;
+	}
+	virtual bool visible(const DB& db, const Package &pkg) const {
+		(void)db; return visible(pkg);
+	}
+	inline bool operator()(const DB& db, const Package &pkg) const {
+		return visible(db, pkg) != negate;
 	}
 
 	static unique_ptr<PackageFilter> name(const std::string&, bool neg);
@@ -370,6 +376,7 @@ public:
 	static unique_ptr<PackageFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
 	static unique_ptr<PackageFilter> groupregex(const std::string&, bool ext, bool icase, bool neg);
 #endif
+	static unique_ptr<PackageFilter> broken(bool neg);
 };
 
 }

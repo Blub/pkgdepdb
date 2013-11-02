@@ -749,6 +749,13 @@ parse_filter(const std::string &filter,
 		pkg_filters.push_back(move(pf));
 		return true;
 	}
+	else if (filter.compare(at, std::string::npos, "broken") == 0) {
+		auto pf = filter::PackageFilter::broken(neg);
+		if (!pf)
+			return false;
+		pkg_filters.push_back(move(pf));
+		return true;
+	}
 
 	return false;
 }

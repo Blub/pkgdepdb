@@ -81,6 +81,21 @@ PackageFilter::groupglob(const std::string &s, bool neg) {
 	return unique_ptr<PackageFilter>(new PackageGroupGlob(neg, s));
 }
 
+class PackageBroken : public PackageFilter {
+public:
+	PackageBroken(bool neg)
+	: PackageFilter(neg) {}
+	virtual bool visible(const DB &db, const Package &pkg) const {
+		(void)db; (void)pkg;
+		return true;
+	}
+};
+
+unique_ptr<PackageFilter>
+PackageFilter::broken(bool neg) {
+	return unique_ptr<PackageFilter>(new PackageBroken(neg));
+}
+
 // Utility functions:
 
 static bool /* tail recursive */

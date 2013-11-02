@@ -40,7 +40,7 @@ print_objname(const Elf *obj)
 }
 
 void
-DB::show_packages_json(bool filter_broken)
+DB::show_packages_json(bool filter_broken, const FilterList &pkg_filters)
 {
 	printf("{");
 	if (filter_broken)
@@ -57,6 +57,8 @@ DB::show_packages_json(bool filter_broken)
 
 	const char *mainsep = "\n\t\t";
 	for (auto &pkg : packages) {
+		if (!pkg_filters.size() || !util::all(pkg_filters, *this, *pkg))
+			continue;
 		if (filter_broken && !is_broken(pkg))
 			continue;
 		printf("%s{", mainsep); mainsep = ",\n\t\t";
