@@ -763,7 +763,8 @@ DB::is_broken(const Package *pkg) const
 }
 
 void
-DB::show_packages(bool filter_broken)
+DB::show_packages(bool filter_broken,
+                  const vector<unique_ptr<filter::PackageFilter>> &pkg_filters)
 {
 	if (opt_json & JSONBits::Query)
 		return show_packages_json(filter_broken);
@@ -771,6 +772,8 @@ DB::show_packages(bool filter_broken)
 	if (!opt_quiet)
 		printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
 	for (auto &pkg : packages) {
+		if (!pkg_filters.size() || !util::all(pkg_filters, *pkg))
+			continue;
 		if (filter_broken && !is_broken(pkg))
 			continue;
 		if (opt_quiet)

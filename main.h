@@ -12,6 +12,7 @@
 
 using std::unique_ptr;
 using std::move;
+using std::vector;
 
 #ifndef PKGDEPDB_V_MAJ
 # error "PKGDEPDB_V_MAJ not defined"
@@ -223,6 +224,10 @@ using PkgMap     = std::map<std::string, const Package*>;
 using PkgListMap = std::map<std::string, std::vector<const Package*>>;
 using ObjListMap = std::map<std::string, std::vector<const Elf*>>;
 
+namespace filter {
+class PackageFilter;
+}
+
 class DB {
 public:
 	static uint16_t CURRENT;
@@ -273,7 +278,7 @@ public:
 
 	void show_info();
 	void show_info_json();
-	void show_packages(bool filter_broken);
+	void show_packages(bool filter_broken, const vector<unique_ptr<filter::PackageFilter>>&);
 	void show_packages_json(bool filter_broken);
 	void show_objects();
 	void show_objects_json();
@@ -345,18 +350,48 @@ unique_ptr<T> mkunique(T *ptr) {
 
 namespace filter {
 class PackageFilter {
+protected:
+	PackageFilter(bool);
 public:
+	PackageFilter() = delete;
+
+	bool negate;
 	virtual ~PackageFilter();
 	virtual bool visible(const Package &pkg) const = 0;
-	bool operator()(const Package &pkg) const;
+	inline bool operator()(const Package &pkg) const {
+		return visible(pkg) != negate;
+	}
 
-	static unique_ptr<PackageFilter> name(const std::string&);
-	static unique_ptr<PackageFilter> nameglob(const std::string&);
+	static unique_ptr<PackageFilter> name(const std::string&, bool neg);
+	static unique_ptr<PackageFilter> nameglob(const std::string&, bool neg);
 #ifdef WITH_REGEX
-	static unique_ptr<PackageFilter> nameregex(const std::string&, bool ext, bool icase);
+	static unique_ptr<PackageFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
 #endif
 };
 
 }
+
+namespace util {
+	template<typename CONT, typename... Args>
+	inline bool
+	any(const CONT &lst, const Args&... args) {
+		for (auto &i : lst) {
+			if ((*i)(args...))
+				return true;
+		}
+		return false;
+	}
+
+	template<typename CONT, typename... Args>
+	inline bool
+	all(const CONT &lst, const Args&... args) {
+		for (auto &i : lst) {
+			if (!(*i)(args...))
+				return false;
+		}
+		return true;
+	}
+}
+
 
 #endif

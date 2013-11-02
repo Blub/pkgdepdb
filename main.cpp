@@ -93,6 +93,8 @@ static struct option long_opts[] = {
 
 	{ "depends",    required_argument, 0, -1024-'D' },
 
+	{ "filter",     required_argument, 0, 'f' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -137,6 +139,7 @@ help(int x)
 	             "  -P, --pkgs         show the installed packages (and -v their files)\n"
 	             "  -n, --rename=NAME  rename the database\n"
 	             "  --integrity        perform a dependency integrity check\n"
+	             "  -f, --filter=FILT  filter the queried packages\n"
 	             );
 	fprintf(out, "db query filters:\n"
 	             "  -b, --broken       only packages with broken libs (use with -P)\n"
@@ -205,6 +208,8 @@ public:
 };
 
 static bool parse_rule(DB *db, const std::string& rule);
+static bool parse_filter(const std::string &filter,
+                         std::vector<unique_ptr<filter::PackageFilter>>&);
 
 bool db_store_json(DB *db, const std::string& filename);
 
@@ -243,12 +248,14 @@ main(int argc, char **argv)
 	       rulemod   (&oldmode);
 	std::vector<std::tuple<std::string,size_t>> ld_insert;
 
+	std::vector<unique_ptr<filter::PackageFilter>> pkg_filters;
+
 	LogLevel = Message;
 	if (!ReadConfig())
 		return 1;
 	for (;;) {
 		int opt_index = 0;
-		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:j:", long_opts, &opt_index);
+		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:j:f:", long_opts, &opt_index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -331,6 +338,13 @@ main(int argc, char **argv)
 				// some sanity:
 				if (opt_max_jobs > 32)
 					opt_max_jobs = 32;
+				break;
+
+			case 'f':
+				if (!parse_filter(optarg, pkg_filters)) {
+					log(Error, "invalid --filter: `%s'\n", optarg);
+					return 1;
+				}
 				break;
 
 			case ':':
@@ -491,7 +505,7 @@ main(int argc, char **argv)
 		db->show_info();
 
 	if (show_packages)
-		db->show_packages(filter_broken);
+		db->show_packages(filter_broken, pkg_filters);
 
 	if (show_list)
 		db->show_objects();
@@ -637,5 +651,71 @@ parse_rule(DB *db, const std::string& rule)
 		return ret;
 	}
 	log(Error, "no such rule command: `%s'\n", rule.c_str());
+	return false;
+}
+
+static bool
+parse_filter(const std::string &filter,
+             std::vector<unique_ptr<filter::PackageFilter>> &pkg_filters)
+{
+	// -fname=foo exact
+	// -fname:foo glob
+	// -fname/foo/ regex
+	// -fname/foo/i iregex
+	// the manpage calls REG_BASIC "obsolete" so we default to extended
+
+	bool neg = false;
+	size_t at = 0;
+	while (filter.length() > at && filter[at] == '!') {
+		neg = !neg;
+		++at;
+	}
+
+	if (filter.compare(at, 4, "name") == 0) {
+		unique_ptr<filter::PackageFilter> pf(nullptr);
+		if (filter[at+4] == '=') // exact
+			pf = move(filter::PackageFilter::name(filter.substr(at+5), neg));
+		else if (filter[at+4] == ':') // glob
+			pf = move(filter::PackageFilter::nameglob(filter.substr(at+5), neg));
+#ifdef WITH_REGEX
+		else if (static_cast<unsigned char>(filter[at+4] - 'a') > 'z' &&
+		         static_cast<unsigned char>(filter[at+4] - 'A') > 'Z' &&
+		         static_cast<unsigned char>(filter[at+4] - '0') > '9')
+		{
+			// parse the regex enclosed using the character from filter[4]
+			char unquote = filter[at+4];
+			if      (unquote == '(') unquote = ')';
+			else if (unquote == '{') unquote = '}';
+			else if (unquote == '[') unquote = ']';
+			else if (unquote == '<') unquote = '>';
+			if (filter.length() < at+6) {
+				log(Error, "empty filter content: %s\n", filter.c_str());
+				return false;
+			}
+			std::string regex = filter.substr(at+5);
+			bool icase = false;
+			if (regex[regex.length()-1] == 'i') {
+				if (regex[regex.length()-2] == unquote) {
+					icase = true;
+					regex.erase(regex.length()-2);
+				}
+			}
+			else if (regex[regex.length()-1] == unquote)
+				regex.pop_back();
+			pf = move(filter::PackageFilter::nameregex(regex, true, icase, neg));
+		}
+#endif
+		else {
+			log(Error, "unknoqn name filter: %s\n", filter.c_str());
+			return false;
+		}
+		if (!pf) {
+			log(Error, "failed to create filter: %s\n", filter.c_str());
+			return false;
+		}
+		pkg_filters.push_back(move(pf));
+		return true;
+	}
+
 	return false;
 }

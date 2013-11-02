@@ -7,33 +7,37 @@
 
 namespace filter {
 
+PackageFilter::PackageFilter(bool neg_)
+: negate(neg_)
+{}
+
 PackageFilter::~PackageFilter()
 {}
 
 class PackageName : public PackageFilter {
 public:
 	std::string name;
-	PackageName(const std::string &name_)
-	: name(name_) {}
+	PackageName(bool neg, const std::string &name_)
+	: PackageFilter(neg), name(name_) {}
 	virtual bool visible(const Package &pkg) const;
 };
 
 unique_ptr<PackageFilter>
-PackageFilter::name(const std::string &s) {
-	return unique_ptr<PackageFilter>(new PackageName(s));
+PackageFilter::name(const std::string &s, bool neg) {
+	return unique_ptr<PackageFilter>(new PackageName(neg, s));
 }
 
 class PackageNameGlob : public PackageFilter {
 public:
 	std::string name;
-	PackageNameGlob(const std::string &name_)
-	: name(name_) {}
+	PackageNameGlob(bool neg, const std::string &name_)
+	: PackageFilter(neg), name(name_) {}
 	virtual bool visible(const Package &pkg) const;
 };
 
 unique_ptr<PackageFilter>
-PackageFilter::nameglob(const std::string &s) {
-	return unique_ptr<PackageFilter>(new PackageNameGlob(s));
+PackageFilter::nameglob(const std::string &s, bool neg) {
+	return unique_ptr<PackageFilter>(new PackageNameGlob(neg, s));
 }
 
 bool
@@ -127,8 +131,8 @@ class PackageNameRegex : public PackageFilter {
 public:
 	std::string         pattern;
 	unique_ptr<regex_t> regex;
-	PackageNameRegex(const std::string &pattern_, unique_ptr<regex_t> &&regex_)
-	: pattern(pattern_), regex(move(regex_)) {}
+	PackageNameRegex(bool neg, const std::string &pattern_, unique_ptr<regex_t> &&regex_)
+	: PackageFilter(neg), pattern(pattern_), regex(move(regex_)) {}
 	virtual bool visible(const Package &pkg) const;
 
 	~PackageNameRegex() {
@@ -137,7 +141,7 @@ public:
 };
 
 unique_ptr<PackageFilter>
-PackageFilter::nameregex(const std::string &pattern, bool ext, bool icase) {
+PackageFilter::nameregex(const std::string &pattern, bool ext, bool icase, bool neg) {
 	unique_ptr<regex_t> regex(new regex_t);
 	int cflags = REG_NOSUB;
 	if (ext)   cflags |= REG_EXTENDED;
@@ -155,7 +159,7 @@ PackageFilter::nameregex(const std::string &pattern, bool ext, bool icase) {
 		return nullptr;
 	}
 
-	return unique_ptr<PackageFilter>(new PackageNameRegex(pattern, move(regex)));
+	return unique_ptr<PackageFilter>(new PackageNameRegex(neg, pattern, move(regex)));
 }
 
 bool
