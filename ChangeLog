@@ -4,6 +4,7 @@
 		-f filters -fname= -fname: -fname/regex/
 		And negation by prefixing with a !
 		group filters added
+		added -fbroken
 
 2013-10-22 Blub
 
