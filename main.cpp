@@ -748,11 +748,55 @@ parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &
 		pkg_filters.push_back(move(pf));
 		return true;
 	}
+	else if (filter.compare(at, 7, "depends") == 0) {
+		at += 7;
+		unique_ptr<filter::PackageFilter> pf(nullptr);
+		if (filter[at] == '=') // exact
+			pf = move(filter::PackageFilter::depends(filter.substr(at+1), neg));
+		else if (filter[at] == ':') // glob
+			pf = move(filter::PackageFilter::dependsglob(filter.substr(at+1), neg));
+#ifdef WITH_REGEX
+		else if (parse_regex())
+			pf = move(filter::PackageFilter::dependsregex(regex, true, icase, neg));
+#endif
+		else {
+			log(Error, "unknown group filter: %s\n", filter.c_str());
+			return false;
+		}
+		if (!pf) {
+			log(Error, "failed to create filter: %s\n", filter.c_str());
+			return false;
+		}
+		pkg_filters.push_back(move(pf));
+		return true;
+	}
 	else if (filter.compare(at, std::string::npos, "broken") == 0) {
 		auto pf = filter::PackageFilter::broken(neg);
 		if (!pf)
 			return false;
 		pkg_filters.push_back(move(pf));
+		return true;
+	}
+	else if (filter.compare(at, 7, "libname") == 0) {
+		at += 7;
+		unique_ptr<filter::ObjectFilter> pf(nullptr);
+		if (filter[at] == '=') // exact
+			pf = move(filter::ObjectFilter::name(filter.substr(at+1), neg));
+		else if (filter[at] == ':') // glob
+			pf = move(filter::ObjectFilter::nameglob(filter.substr(at+1), neg));
+#ifdef WITH_REGEX
+		else if (parse_regex())
+			pf = move(filter::ObjectFilter::nameregex(regex, true, icase, neg));
+#endif
+		else {
+			log(Error, "unknown name filter: %s\n", filter.c_str());
+			return false;
+		}
+		if (!pf) {
+			log(Error, "failed to create filter: %s\n", filter.c_str());
+			return false;
+		}
+		obj_filters.push_back(move(pf));
 		return true;
 	}
 	else if (filter.compare(at, 10, "libdepends") == 0) {
