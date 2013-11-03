@@ -506,7 +506,7 @@ db_store(DB *db, const std::string& filename)
 
 	SerialOut &out(*sout);
 
-	if (!out.out) {
+	if (!sout || !out.out) {
 		log(Error, "failed to open output file %s for writing\n", filename.c_str());
 		return false;
 	}
@@ -601,7 +601,7 @@ db_read(DB *db, const std::string& filename)
 		log(Message, "reading database\n");
 
 	SerialIn &in(*sin);
-	if (!in.in) {
+	if (!sin || !in.in) {
 		//log(Error, "failed to open input file %s for reading\n", filename.c_str());
 		return true; // might not exist...
 	}
