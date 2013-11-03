@@ -142,6 +142,43 @@ Verbosity level 2
 .Po Fl vv Pc
 can be used to show the list of missing libraries for each broken
 library.
+.It Fl f , Fl -filter= Ns Ar FILTER
+Add a filter rule to the query. These can affect packages as well as
+libraries.
+.br
+Filters which start with an exclamation mark \(dq!\(dq are
+negated. Meaning only packages NOT matching this rule will be considered.
+.br
+Generally, filters consist of 2 parts: the attribute that is matched,
+and a matching string. After the attribute, there's either an \(dq=\(dq
+signifying an exact match, a \(dq:\(dq signifying a shell-like glob, or
+a \(dq/\(dq which starts a regular expression.
+.br
+Regex matches can actually start with any character which don't already
+have a different meaning, but not with alphanumeric characters. The regex
+ends at the end of the command, which can optionally contain the unquote
+character at the end, and an optional \(dqi\(dq flag to make the regex
+case insensitive. This means you can use \(dq@foo@i\(dq as well as
+\(dq/foo\(dq. Note that for \(dq(\(dq, \(dq[\(dq, \(dq{\(dq and \(dq<\(dq
+the closing quote characters are \(dq)\(dq, \(dq]\(dq, \(dq}\(dq and
+\(dq>\(dq respectively.
+An example of a negated filter would be: \(dq-f!name=boost\(dq, which would
+cause the \(dqboost\(dq package to be ignored.
+.It Fl f Ns name= Ns Ar NAME
+Only consider packages matching the provided name.
+.It Fl f Ns group= Ns Ar GROUP
+Only consider packages part of the provided group.
+.It Fl f Ns depends= Ns Ar PACKAGENAME
+Only consider packages depending on the provided package.
+.It Fl f Ns broken
+This rule has no match string. Consider only broken packages. Contrary to
+the
+.Fl b
+option, this will not change the output of the current query.
+.It Fl f Ns libname= Ns Ar NAME
+Only consider libraries matching the provided name.
+.It Fl f Ns libdepends= Ns Ar NAME
+Only consider libraries which link against the provided library.
 .El
 .Pp
 The following options are used to modify the library search paths used
