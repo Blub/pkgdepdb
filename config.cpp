@@ -19,8 +19,11 @@ clearpath(std::string &path)
 	if (path.length() < 2)
 		return;
 	if (path[0] == '~' && path[1] == '/') {
-		path.erase(0, 1);
-		path.insert(0, getenv("HOME"));
+		const char *home = getenv("HOME");
+		if (home) {
+			path.erase(0, 1);
+			path.insert(0, getenv("HOME"));
+		}
 	}
 }
 
