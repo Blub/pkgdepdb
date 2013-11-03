@@ -5,6 +5,8 @@
 		And negation by prefixing with a !
 		group filters added
 		added -fbroken
+	* bug fixes:
+		fixed segfault (null deref) when the db file cannot be opened
 
 2013-10-22 Blub
 
