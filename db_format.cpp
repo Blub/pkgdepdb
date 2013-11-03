@@ -43,7 +43,7 @@ using Header = struct {
 // of already-serialized objects.
 // Lame, but effective.
 
-enum class ObjRef : unsigned uint8_t {
+enum class ObjRef : uint8_t {
 	PKG,
 	PKGREF,
 	OBJ,
