@@ -6,11 +6,11 @@
 .Nm pkgdepdb
 .Nd read Arch package archive files, and print the required library names
 .Sh SYNOPSIS
-.Nm readelf
+.Nm pkgdepdb
 .Op Cm options
 .Op Ar files...
 .Pp
-.Nm readelf
+.Nm pkgdepdb
 .Fl r
 .Op Cm options
 .Ar package_names...
