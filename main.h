@@ -289,14 +289,16 @@ public:
 	void show_missing_json();
 	void show_found();
 	void show_found_json();
-	void check_integrity() const;
+	void check_integrity(const FilterList &pkg_filters,
+	                     const ObjFilterList &obj_filters) const;
 	void check_integrity(const Package    *pkg,
-                         const PkgMap     &pkgmap,
-                         const PkgListMap &providemap,
-                         const PkgListMap &replacemap,
-                         const PkgMap     &basemap,
-                         const ObjListMap &objmap,
-                         const std::vector<const Package*> &base) const;
+	                     const PkgMap     &pkgmap,
+	                     const PkgListMap &providemap,
+	                     const PkgListMap &replacemap,
+	                     const PkgMap     &basemap,
+	                     const ObjListMap &objmap,
+	                     const std::vector<const Package*> &base,
+	                     const ObjFilterList &obj_filters) const;
 
 	bool store(const std::string& filename);
 	bool read (const std::string& filename);

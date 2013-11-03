@@ -517,7 +517,7 @@ main(int argc, char **argv)
 		db->show_found();
 
 	if (do_integrity)
-		db->check_integrity();
+		db->check_integrity(pkg_filters, obj_filters);
 
 	if (!dryrun && modified && has_db) {
 		if (opt_json & JSONBits::DB)

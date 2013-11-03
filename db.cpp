@@ -1175,7 +1175,8 @@ DB::check_integrity(const Package    *pkg,
                     const PkgListMap &replacemap,
                     const PkgMap     &basemap,
                     const ObjListMap &objmap,
-                    const std::vector<const Package*> &package_base) const
+                    const std::vector<const Package*> &package_base,
+                    const ObjFilterList &obj_filters) const
 {
 	std::vector<const Package*> pulled(package_base);
 	PkgMap                      installmap(basemap);
@@ -1184,6 +1185,8 @@ DB::check_integrity(const Package    *pkg,
 
 	StringSet needed;
 	for (auto &obj : pkg->objects) {
+		if (!util::all(obj_filters, *this, *obj))
+			continue;
 		for (auto &need : obj->needed) {
 			auto fnd = objmap.find(need);
 			if (fnd == objmap.end()) {
@@ -1218,7 +1221,8 @@ DB::check_integrity(const Package    *pkg,
 }
 
 void
-DB::check_integrity() const
+DB::check_integrity(const FilterList    &pkg_filters,
+                    const ObjFilterList &obj_filters) const
 {
 	log(Message, "Looking for stale object files...\n");
 	for (auto &o : objects) {
@@ -1295,7 +1299,10 @@ DB::check_integrity() const
 #endif
 		status(0, packages.size(), 1);
 		for (size_t i = 0; i != packages.size(); ++i) {
-			check_integrity(packages[i], pkgmap, providemap, replacemap, basemap, objmap, base);
+			if (!util::all(pkg_filters, *this, *packages[i]))
+				continue;
+			check_integrity(packages[i], pkgmap, providemap, replacemap,
+			                basemap, objmap, base, obj_filters);
 			if (!opt_quiet)
 				status(i, packages.size(), 1);
 		}
@@ -1304,13 +1311,18 @@ DB::check_integrity() const
 		auto merger = [](std::vector<int> &&n) {
 			(void)n;
 		};
-		auto worker = [this,&pkgmap,&providemap,&replacemap,&objmap,&base,&basemap]
+		auto worker =
+		  [this,&pkgmap,&providemap,&replacemap,
+		   &objmap,&base,&basemap,&obj_filters,&pkg_filters]
 		(std::atomic_ulong *count, size_t from, size_t to, int &dummy) {
 			(void)dummy;
 
 			for (size_t i = from; i != to; ++i) {
 				const Package *pkg = packages[i];
-				check_integrity(pkg, pkgmap, providemap, replacemap, basemap, objmap, base);
+				if (util::all(pkg_filters, *this, *pkg)) {
+					check_integrity(pkg, pkgmap, providemap, replacemap,
+					                basemap, objmap, base, obj_filters);
+				}
 				if (count)
 					++*count;
 			}
