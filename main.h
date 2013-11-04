@@ -424,7 +424,7 @@ namespace util {
 		if (!lst.size())
 			return true;
 		for (auto &i : lst) {
-			if ((*i)(args...))
+			if ((i)(args...))
 				return true;
 		}
 		return false;
@@ -441,5 +441,27 @@ namespace util {
 	}
 }
 
+template<class T, class... Args>
+inline unique_ptr<T> mk_unique(Args&&... args) {
+	return move(unique_ptr<T>(new T(std::forward<Args>(args)...)));
+}
+
+template<typename T>
+class dtor_ptr : public unique_ptr<T> {
+public:
+	std::function<void(T*)> dtor_fun;
+	dtor_ptr(T *t, std::function<void(T*)> &&fun)
+	: unique_ptr<T>(t), dtor_fun(move(fun)) {}
+	dtor_ptr(dtor_ptr<T> &&old)
+	: unique_ptr<T>(move(old)), dtor_fun(move(old.dtor_fun)) {}
+	dtor_ptr(const dtor_ptr<T> &) = delete;
+	dtor_ptr(dtor_ptr<T> &old)
+	: unique_ptr<T>(move(old)), dtor_fun(move(old.dtor_fun)) {}
+	dtor_ptr(std::nullptr_t n)
+	: unique_ptr<T>(n) {}
+	virtual ~dtor_ptr() {
+		dtor_fun(this->get());
+	}
+};
 
 #endif
