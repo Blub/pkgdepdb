@@ -61,7 +61,7 @@ public:
 	{
 		int locktype;
 		if (dir == SerialStream::out) {
-			fd = ::open(file.c_str(), O_WRONLY | O_CREAT | 0644);
+			fd = ::open(file.c_str(), O_WRONLY | O_CREAT, 0644);
 			locktype = LOCK_EX;
 		}
 		else {
@@ -73,8 +73,9 @@ public:
 			return;
 		}
 		err = (::flock(fd, locktype) != 0);
-		if (err)
+		if (err) {
 			::close(fd);
+		}
 	}
 
 	~SerialFile()
@@ -122,7 +123,7 @@ public:
 		int locktype;
 		out = 0;
 		if (dir == SerialStream::out) {
-			fd = ::open(file.c_str(), O_WRONLY | O_CREAT | 0644);
+			fd = ::open(file.c_str(), O_WRONLY | O_CREAT, 0644);
 			locktype = LOCK_EX;
 		}
 		else {
