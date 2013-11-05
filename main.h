@@ -133,13 +133,6 @@ public:
 		if (ptr && !--(ptr->refcount))
 			delete ptr;
 	}
-	T* release() {
-		T *p = ptr;
-		ptr = NULL;
-		if (p)
-			p->refcount--;
-		return p;
-	}
 	operator T*() const { return  ptr; }
 	T*      get() const { return  ptr; }
 
