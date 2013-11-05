@@ -241,6 +241,14 @@ Remove the file-ignore rule matching exactly the provided file.
 Remove the file-ignore rule with the provided ID as shown using the
 .Fl -info
 query.
+.It Fl -rule Cm assume-found: Ns Ar name
+Assume that a library of that name is always found.
+.It Fl -rule Cm unassume-found: Ns Ar name
+Remove the assume-found rule matching exactly the provided name.
+.It Fl -rule Cm unassume-found-id: Ns Ar ID
+Remove the assume-found rule with the provided ID as shown using the
+.Fl -info
+query.
 .It Fl -rule Cm pkg-ld-clear: Ns Ar package
 Remove the package specific library path list for the provided
 package.

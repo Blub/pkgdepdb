@@ -14,7 +14,7 @@
 
 // version
 uint16_t
-DB::CURRENT = 5;
+DB::CURRENT = 6;
 
 // magic header
 static const char
@@ -28,7 +28,8 @@ namespace DBFlags {
 		IgnoreRules   = (1<<0),
 		PackageLDPath = (1<<1),
 		BasePackages  = (1<<2),
-		StrictLinking = (1<<3)
+		StrictLinking = (1<<3),
+		AssumeFound   = (1<<4)
 	};
 }
 
@@ -527,9 +528,13 @@ db_store(DB *db, const std::string& filename)
 		hdr.flags |= DBFlags::BasePackages;
 	if (db->strict_linking)
 		hdr.flags |= DBFlags::StrictLinking;
+	if (db->assume_found_rules.size())
+		hdr.flags |= DBFlags::AssumeFound;
 
 	// Figure out which database format version this will be
-	if (db->contains_groups)
+	if (hdr.flags | DBFlags::AssumeFound)
+		hdr.version = 6;
+	else if (db->contains_groups)
 		hdr.version = 5;
 	else if (db->contains_package_depends)
 		hdr.version = 4;
@@ -570,6 +575,10 @@ db_store(DB *db, const std::string& filename)
 
 	if (hdr.flags & DBFlags::IgnoreRules) {
 		if (!write_stringset(out, db->ignore_file_rules))
+			return false;
+	}
+	if (hdr.flags & DBFlags::AssumeFound) {
+		if (!write_stringset(out, db->assume_found_rules))
 			return false;
 	}
 
@@ -682,6 +691,10 @@ db_read(DB *db, const std::string& filename)
 
 	if (hdr.flags & DBFlags::IgnoreRules) {
 		if (!read_stringset(in, db->ignore_file_rules))
+			return false;
+	}
+	if (hdr.flags & DBFlags::AssumeFound) {
+		if (!read_stringset(in, db->assume_found_rules))
 			return false;
 	}
 

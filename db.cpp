@@ -303,7 +303,7 @@ DB::link_object(const Elf *obj, const Package *owner, ObjectSet &req_found, Stri
 		Elf *found = find_for(obj, needed, libpaths);
 		if (found)
 			req_found.insert(found);
-		else
+		else if (assume_found_rules.find(needed) == assume_found_rules.end())
 			req_missing.insert(needed);
 	}
 }
@@ -679,6 +679,32 @@ DB::unignore_file(size_t id)
 		--id;
 	}
 	ignore_file_rules.erase(iter);
+	return true;
+}
+
+bool
+DB::assume_found(const std::string& name)
+{
+	return std::get<1>(assume_found_rules.insert(name));
+}
+
+bool
+DB::unassume_found(const std::string& name)
+{
+	return (assume_found_rules.erase(name) > 0);
+}
+
+bool
+DB::unassume_found(size_t id)
+{
+	if (id >= assume_found_rules.size())
+		return false;
+	auto iter = assume_found_rules.begin();
+	while (id) {
+		++iter;
+		--id;
+	}
+	assume_found_rules.erase(iter);
 	return true;
 }
 

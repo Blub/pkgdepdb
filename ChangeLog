@@ -1,3 +1,9 @@
+2013-11-05 Blub
+
+	* database writing: fix: added missing open mode
+	* database bump: 6
+		db now contains a list of to-be-assumed-found libs
+
 2013-11-02 Blub
 
 	* filter support:

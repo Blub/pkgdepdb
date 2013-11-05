@@ -253,6 +253,7 @@ public:
 	StringSet                         ignore_file_rules;
 	std::map<std::string, StringList> package_library_path;
 	StringSet                         base_packages;
+	StringSet                         assume_found_rules;
 
 public:
 	bool install_package(Package* &&pkg);
@@ -307,6 +308,10 @@ public:
 	bool ignore_file  (const std::string& name);
 	bool unignore_file(const std::string& name);
 	bool unignore_file(size_t id);
+
+	bool assume_found  (const std::string& name);
+	bool unassume_found(const std::string& name);
+	bool unassume_found(size_t id);
 
 	bool add_base_package   (const std::string& name);
 	bool remove_base_package(const std::string& name);

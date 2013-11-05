@@ -156,10 +156,15 @@ help(int x)
 	             "  --relink           relink all objects\n"
 	             );
 	fprintf(out, "rules for --rule:\n"
-	             "  ignore:FILENAME    add a file-ignore rule\n"
 	             "  strict:BOOL        set strict mode (default=off)\n"
+	             "  ignore:FILENAME    add a file-ignore rule\n"
 	             "  unignore:FILENAME  remove a file-ignore rule\n"
 	             "  unignore-id:ID     remove a file-ignore rule by its id\n"
+	             "  assume-found:NAME  add a file-ignore rule\n"
+	             "  unassume-found:LIBNAME\n"
+	             "                     remove a file-ignore rule\n"
+	             "  unassume-found-id:ID\n"
+	             "                     remove a file-ignore rule by its id\n"
 	             "  pkg-ld-clear:PKG   clear a pacakge's library path\n"
 	             "  pkg-ld-append:PKG:PATH\n"
 	             "  pkg-ld-prepend:PKG:PATH\n"
@@ -564,13 +569,25 @@ parse_rule(DB *db, const std::string& rule)
 			db->strict_linking = CfgStrToBool(cmd);
 			return old == db->strict_linking;
 		})
-		|| try_rule(rule, "unignore:", "FILENAME", &ret, 
+		|| try_rule(rule, "unignore:", "FILENAME", &ret,
 		[db](const std::string &cmd) {
 			return db->unignore_file(cmd);
 		})
-		|| try_rule(rule, "unignore-id:", "ID", &ret, 
+		|| try_rule(rule, "unignore-id:", "ID", &ret,
 		[db](const std::string &cmd) {
 			return db->unignore_file(strtoul(cmd.c_str(), nullptr, 0));
+		})
+		|| try_rule(rule, "assume-found:", "LIBNAME", &ret,
+		[db](const std::string &cmd) {
+			return db->assume_found(cmd);
+		})
+		|| try_rule(rule, "unassume-found:", "LIBNAME", &ret,
+		[db](const std::string &cmd) {
+			return db->unassume_found(cmd);
+		})
+		|| try_rule(rule, "unassume-found:", "ID", &ret,
+		[db](const std::string &cmd) {
+			return db->unassume_found(strtoul(cmd.c_str(), nullptr, 0));
 		})
 		|| try_rule(rule, "pkg-ld-clear:", "PKG", &ret,
 		[db,&rule](const std::string &cmd) {
