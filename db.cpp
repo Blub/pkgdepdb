@@ -92,7 +92,7 @@ DB::wipe_packages()
 bool
 DB::delete_package(const std::string& name)
 {
-	Package *old; {
+	const Package *old; {
 		auto pkgiter = find_pkg_i(name);
 		if (pkgiter == packages.end())
 			return true;
@@ -118,8 +118,8 @@ DB::delete_package(const std::string& name)
 			// erase
 			found.second.erase(ref);
 			// search for this dependency anew
-			Elf *seeker = found.first;
-			Elf *other;
+			const Elf *seeker = found.first;
+			const Elf *other;
 			if (!seeker->owner || !package_library_path.size())
 				other = find_for(seeker, elf->basename, nullptr);
 			else {
@@ -131,10 +131,10 @@ DB::delete_package(const std::string& name)
 			}
 			if (!other) {
 				// it's missing now
-				required_missing[seeker].insert(elf->basename);
+				required_missing[const_cast<Elf*>(seeker)].insert(elf->basename);
 			} else {
 				// replace it with a new object
-				found.second.insert(other);
+				found.second.insert(const_cast<Elf*>(other));
 			}
 		}
 	}
@@ -164,7 +164,7 @@ pathlist_contains(const std::string& list, const std::string& path)
 }
 
 bool
-DB::elf_finds(Elf *elf, const std::string& path, const StringList *extrapaths) const
+DB::elf_finds(const Elf *elf, const std::string& path, const StringList *extrapaths) const
 {
 	// DT_RPATH first
 	if (elf->rpath_set && pathlist_contains(elf->rpath, path))
@@ -250,7 +250,7 @@ DB::install_package(Package* &&pkg)
 }
 
 Elf*
-DB::find_for(Elf *obj, const std::string& needed, const StringList *extrapath) const
+DB::find_for(const Elf *obj, const std::string& needed, const StringList *extrapath) const
 {
 	log(Debug, "dependency of %s/%s   :  %s\n", obj->dirname.c_str(), obj->basename.c_str(), needed.c_str());
 	for (auto &lib : objects) {
@@ -273,19 +273,19 @@ DB::find_for(Elf *obj, const std::string& needed, const StringList *extrapath) c
 }
 
 void
-DB::link_object_do(Elf *obj, Package *owner)
+DB::link_object_do(const Elf *obj, const Package *owner)
 {
 	ObjectSet req_found;
 	StringSet req_missing;
 	link_object(obj, owner, req_found, req_missing);
 	if (req_found.size())
-		required_found[obj] = std::move(req_found);
+		required_found[const_cast<Elf*>(obj)] = std::move(req_found);
 	if (req_missing.size())
-		required_missing[obj] = std::move(req_missing);
+		required_missing[const_cast<Elf*>(obj)] = std::move(req_missing);
 }
 
 void
-DB::link_object(Elf *obj, Package *owner, ObjectSet &req_found, StringSet &req_missing)
+DB::link_object(const Elf *obj, const Package *owner, ObjectSet &req_found, StringSet &req_missing)
 {
 	if (ignore_file_rules.size()) {
 		std::string full = obj->dirname + "/" + obj->basename;
@@ -398,7 +398,7 @@ DB::relink_all_threaded()
 		FoundMap   *f = &std::get<0>(tup);
 		MissingMap *m = &std::get<1>(tup);
 		for (size_t i = from; i != to; ++i) {
-			Package *pkg = this->packages[i];
+			const Package *pkg = this->packages[i];
 
 			for (auto &obj : pkg->objects) {
 				ObjectSet req_found;

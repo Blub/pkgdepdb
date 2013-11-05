@@ -264,9 +264,9 @@ public:
 public:
 	bool install_package(Package* &&pkg);
 	bool delete_package (const std::string& name);
-	Elf *find_for       (Elf*, const std::string& lib, const StringList *extrapath) const;
-	void link_object    (Elf*, Package *owner, ObjectSet &req_found, StringSet &req_missing);
-	void link_object_do (Elf*, Package *owner);
+	Elf *find_for       (const Elf*, const std::string& lib, const StringList *extrapath) const;
+	void link_object    (const Elf*, const Package *owner, ObjectSet &req_found, StringSet &req_missing);
+	void link_object_do (const Elf*, const Package *owner);
 	void relink_all     ();
 	void fix_paths      ();
 	bool wipe_packages  ();
@@ -325,7 +325,7 @@ public:
 	bool pkg_ld_clear (const std::string& package);
 
 private:
-	bool elf_finds(Elf*, const std::string& lib, const StringList *extrapath) const;
+	bool elf_finds(const Elf*, const std::string& lib, const StringList *extrapath) const;
 
 public:
 	bool is_broken(const Package *pkg) const;
