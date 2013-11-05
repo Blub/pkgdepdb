@@ -754,6 +754,12 @@ DB::show_info()
 		for (auto &ign : ignore_file_rules)
 			printf("  %u: %s\n", id++, ign.c_str());
 	}
+	if (assume_found_rules.size()) {
+		printf("Assuming the following libraries to exist:\n");
+		id = 0;
+		for (auto &ign : assume_found_rules)
+			printf("  %u: %s\n", id++, ign.c_str());
+	}
 	if (package_library_path.size()) {
 		printf("Package-specific library paths:\n");
 		id = 0;

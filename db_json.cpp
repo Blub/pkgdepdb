@@ -185,6 +185,19 @@ DB::show_info_json()
 		}
 		printf("\n\t]");
 	}
+	if (assume_found_rules.size()) {
+		printf(",\n\t\"assume_found\": [");
+		id = 0;
+		for (auto &p : assume_found_rules) {
+			printf("\n\t\t");
+			json_quote(stdout, p);
+			if (id+1 == assume_found_rules.size())
+				printf(" // %u", id++);
+			else
+				printf(", // %u", id++);
+		}
+		printf("\n\t]");
+	}
 	const char *sep;
 	if (package_library_path.size()) {
 		printf(",\n\t\"package_libray_paths\": {");
