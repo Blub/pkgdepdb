@@ -285,7 +285,7 @@ DB::link_object_do(const Elf *obj, const Package *owner)
 }
 
 void
-DB::link_object(const Elf *obj, const Package *owner, ObjectSet &req_found, StringSet &req_missing)
+DB::link_object(const Elf *obj, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const
 {
 	if (ignore_file_rules.size()) {
 		std::string full = obj->dirname + "/" + obj->basename;
