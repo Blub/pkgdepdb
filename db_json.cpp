@@ -233,7 +233,7 @@ DB::show_info_json()
 }
 
 void
-DB::show_objects_json(const ObjFilterList &obj_filters)
+DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
 {
 	if (!objects.size()) {
 		printf("{ \"objects\": [] }\n");
@@ -244,6 +244,8 @@ DB::show_objects_json(const ObjFilterList &obj_filters)
 	const char *mainsep = "\n\t";
 	for (auto &obj : objects) {
 		if (!util::all(obj_filters, *this, *obj))
+			continue;
+		if (pkg_filters.size() && (!obj->owner || !util::all(pkg_filters, *this, *obj->owner)))
 			continue;
 		printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
 		print_objname(obj);

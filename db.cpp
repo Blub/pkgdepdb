@@ -852,10 +852,10 @@ DB::show_packages(bool filter_broken,
 }
 
 void
-DB::show_objects(const ObjFilterList &obj_filters)
+DB::show_objects(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
 {
 	if (opt_json & JSONBits::Query)
-		return show_objects_json(obj_filters);
+		return show_objects_json(pkg_filters, obj_filters);
 
 	if (!objects.size()) {
 		if (!opt_quiet)
@@ -866,6 +866,8 @@ DB::show_objects(const ObjFilterList &obj_filters)
 		printf("Objects:\n");
 	for (auto &obj : objects) {
 		if (!util::all(obj_filters, *this, *obj))
+			continue;
+		if (pkg_filters.size() && (!obj->owner || !util::all(pkg_filters, *this, *obj->owner)))
 			continue;
 		if (opt_quiet)
 			printf("%s/%s\n", obj->dirname.c_str(), obj->basename.c_str());

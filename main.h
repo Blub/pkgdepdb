@@ -277,8 +277,8 @@ public:
 	void show_info_json();
 	void show_packages(bool flt_broken, const FilterList&, const ObjFilterList&);
 	void show_packages_json(bool flt_broken, const FilterList&, const ObjFilterList&);
-	void show_objects(const ObjFilterList&);
-	void show_objects_json(const ObjFilterList&);
+	void show_objects(const FilterList&, const ObjFilterList&);
+	void show_objects_json(const FilterList&, const ObjFilterList&);
 	void show_missing();
 	void show_missing_json();
 	void show_found();

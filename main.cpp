@@ -513,7 +513,7 @@ main(int argc, char **argv)
 		db->show_packages(filter_broken, pkg_filters, obj_filters);
 
 	if (show_list)
-		db->show_objects(obj_filters);
+		db->show_objects(pkg_filters, obj_filters);
 
 	if (show_missing)
 		db->show_missing();
