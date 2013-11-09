@@ -385,6 +385,7 @@ public:
 	MAKE_PKGFILTER(group)
 	MAKE_PKGFILTER(depends)
 	MAKE_PKGFILTER(optdepends)
+	MAKE_PKGFILTER(alldepends)
 	MAKE_PKGFILTER(provides)
 	MAKE_PKGFILTER(conflicts)
 	MAKE_PKGFILTER(replaces)

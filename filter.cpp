@@ -313,6 +313,52 @@ MAKE_PKGFILTER1(replaces)
 #undef MAKE_PKGFILTER1
 
 unique_ptr<PackageFilter>
+PackageFilter::alldepends(const std::string &s, bool neg) {
+	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
+		return util::contains(pkg.depends, s) ||
+		       util::contains(pkg.optdepends, s);
+	});
+}
+
+unique_ptr<PackageFilter>
+PackageFilter::alldependsglob(const std::string &s, bool neg) {
+	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
+		for (auto &i : pkg.depends) {
+			if (match_glob(s, 0, i, 0))
+				return true;
+		}
+		for (auto &i : pkg.optdepends) {
+			if (match_glob(s, 0, i, 0))
+				return true;
+		}
+		return false;
+	});
+}
+
+#ifdef WITH_REGEX
+unique_ptr<PackageFilter>
+PackageFilter::alldependsregex(const std::string &pattern,
+                               bool ext, bool icase, bool neg)
+{
+	auto regex = make_regex(pattern, ext, icase);
+	if (!regex)
+		return nullptr;
+	return mk_unique<PkgFilt>(neg, [regex](const Package &pkg) {
+		regmatch_t rm;
+		for (auto &i : pkg.depends) {
+			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
+				return true;
+		}
+		for (auto &i : pkg.optdepends) {
+			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
+				return true;
+		}
+		return false;
+	});
+}
+#endif
+
+unique_ptr<PackageFilter>
 PackageFilter::broken(bool neg) {
 	return mk_unique<PkgFilt>(neg, [](const DB &db, const Package &pkg) {
 		return db.is_broken(&pkg);

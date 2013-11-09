@@ -743,50 +743,40 @@ parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &
 		pkg_filters.push_back(move(pf));
 		return true;
 	}
-	else if (filter.compare(at, 5, "group") == 0) {
-		at += 5;
-		unique_ptr<filter::PackageFilter> pf(nullptr);
-		if (filter[at] == '=') // exact
-			pf = move(filter::PackageFilter::group(filter.substr(at+1), neg));
-		else if (filter[at] == ':') // glob
-			pf = move(filter::PackageFilter::groupglob(filter.substr(at+1), neg));
 #ifdef WITH_REGEX
-		else if (parse_regex())
-			pf = move(filter::PackageFilter::groupregex(regex, true, icase, neg));
+# define MAKE_PKGFILTER_REGEXPART(NAME)                                       \
+		else if (parse_regex())                                                   \
+			pf = move(filter::PackageFilter::NAME##regex(regex, true, icase, neg));
+#else
+# define MAKE_PKGFILTER_REGEXPART(NAME)
 #endif
-		else {
-			log(Error, "unknown group filter: %s\n", filter.c_str());
-			return false;
-		}
-		if (!pf) {
-			log(Error, "failed to create filter: %s\n", filter.c_str());
-			return false;
-		}
-		pkg_filters.push_back(move(pf));
-		return true;
+# define MAKE_PKGFILTER(NAME) \
+	else if (filter.compare(at, sizeof(#NAME)-1, #NAME) == 0) {                 \
+		at += sizeof(#NAME)-1;                                                    \
+		unique_ptr<filter::PackageFilter> pf(nullptr);                            \
+		if (filter[at] == '=') /* exact */                                        \
+			pf = move(filter::PackageFilter::NAME(filter.substr(at+1), neg));       \
+		else if (filter[at] == ':') /* glob */                                    \
+			pf = move(filter::PackageFilter::NAME##glob(filter.substr(at+1), neg)); \
+		MAKE_PKGFILTER_REGEXPART(NAME)                                            \
+		else {                                                                    \
+			log(Error, "unknown " #NAME " filter: %s\n", filter.c_str());           \
+			return false;                                                           \
+		}                                                                         \
+		if (!pf) {                                                                \
+			log(Error, "failed to create " #NAME " filter: %s\n", filter.c_str());  \
+			return false;                                                           \
+		}                                                                         \
+		pkg_filters.push_back(move(pf));                                          \
+		return true;                                                              \
 	}
-	else if (filter.compare(at, 7, "depends") == 0) {
-		at += 7;
-		unique_ptr<filter::PackageFilter> pf(nullptr);
-		if (filter[at] == '=') // exact
-			pf = move(filter::PackageFilter::depends(filter.substr(at+1), neg));
-		else if (filter[at] == ':') // glob
-			pf = move(filter::PackageFilter::dependsglob(filter.substr(at+1), neg));
-#ifdef WITH_REGEX
-		else if (parse_regex())
-			pf = move(filter::PackageFilter::dependsregex(regex, true, icase, neg));
-#endif
-		else {
-			log(Error, "unknown group filter: %s\n", filter.c_str());
-			return false;
-		}
-		if (!pf) {
-			log(Error, "failed to create filter: %s\n", filter.c_str());
-			return false;
-		}
-		pkg_filters.push_back(move(pf));
-		return true;
-	}
+	MAKE_PKGFILTER(group)
+	MAKE_PKGFILTER(depends)
+	MAKE_PKGFILTER(optdepends)
+	MAKE_PKGFILTER(alldepends)
+	MAKE_PKGFILTER(provides)
+	MAKE_PKGFILTER(conflicts)
+	MAKE_PKGFILTER(replaces)
 	else if (filter.compare(at, std::string::npos, "broken") == 0) {
 		auto pf = filter::PackageFilter::broken(neg);
 		if (!pf)
