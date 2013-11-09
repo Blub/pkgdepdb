@@ -371,17 +371,24 @@ public:
 		return visible(db, pkg) != negate;
 	}
 
-	static unique_ptr<PackageFilter> name(const std::string&, bool neg);
-	static unique_ptr<PackageFilter> nameglob(const std::string&, bool neg);
-	static unique_ptr<PackageFilter> group(const std::string&, bool neg);
-	static unique_ptr<PackageFilter> groupglob(const std::string&, bool neg);
-	static unique_ptr<PackageFilter> depends(const std::string&, bool neg);
-	static unique_ptr<PackageFilter> dependsglob(const std::string&, bool neg);
 #ifdef WITH_REGEX
-	static unique_ptr<PackageFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
-	static unique_ptr<PackageFilter> groupregex(const std::string&, bool ext, bool icase, bool neg);
-	static unique_ptr<PackageFilter> dependsregex(const std::string&, bool ext, bool icase, bool neg);
+# define MAKE_PKGFILTER(NAME) \
+	static unique_ptr<PackageFilter> NAME(const std::string&, bool neg); \
+	static unique_ptr<PackageFilter> NAME##glob(const std::string&, bool neg); \
+	static unique_ptr<PackageFilter> NAME##regex(const std::string&, bool ext, bool icase, bool neg);
+#else
+# define MAKE_PKGFILTER(NAME) \
+	static unique_ptr<PackageFilter> NAME(const std::string&, bool neg); \
+	static unique_ptr<PackageFilter> NAME##glob(const std::string&, bool neg);
 #endif
+	MAKE_PKGFILTER(name)
+	MAKE_PKGFILTER(group)
+	MAKE_PKGFILTER(depends)
+	MAKE_PKGFILTER(optdepends)
+	MAKE_PKGFILTER(provides)
+	MAKE_PKGFILTER(conflicts)
+	MAKE_PKGFILTER(replaces)
+#undef MAKE_PKGFILTER
 	static unique_ptr<PackageFilter> broken(bool neg);
 };
 

@@ -19,9 +19,6 @@ namespace util {
 
 namespace filter {
 
-static bool
-match_glob(const std::string &glob, size_t, const std::string &str, size_t);
-
 PackageFilter::PackageFilter(bool neg_)
 : negate(neg_)
 {}
@@ -55,63 +52,6 @@ public:
 	}
 };
 
-unique_ptr<PackageFilter>
-PackageFilter::name(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		return pkg.name == s;
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::nameglob(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		return match_glob(s, 0, pkg.name, 0);
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::group(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		return pkg.groups.find(s) != pkg.groups.cend();
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::groupglob(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		for (auto &i : pkg.groups) {
-			if (match_glob(s, 0, i, 0))
-				return true;
-		}
-		return false;
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::depends(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		return util::contains(pkg.depends, s);
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::dependsglob(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		for (auto &i : pkg.depends) {
-			if (match_glob(s, 0, i, 0))
-				return true;
-		}
-		return false;
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::broken(bool neg) {
-	return mk_unique<PkgFilt>(neg, [](const DB &db, const Package &pkg) {
-		return db.is_broken(&pkg);
-	});
-}
-
 // general purpose object filter
 class ObjFilt : public ObjectFilter {
 public:
@@ -125,37 +65,6 @@ public:
 	}
 };
 
-unique_ptr<ObjectFilter>
-ObjectFilter::name(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		return elf.basename == s;
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::nameglob(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		return match_glob(s, 0, elf.basename, 0);
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::depends(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		return util::contains(elf.needed, s);
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::dependsglob(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		for (auto &i : elf.needed) {
-			if (match_glob(s, 0, i, 0))
-				return true;
-		}
-		return false;
-	});
-}
 
 // Utility functions:
 
@@ -282,33 +191,18 @@ PackageFilter::nameregex(const std::string &pattern,
 	});
 }
 
-unique_ptr<PackageFilter>
-PackageFilter::groupregex(const std::string &pattern,
-                          bool ext, bool icase, bool neg)
+template<typename CONT>
+static unique_ptr<PackageFilter>
+make_pkgfilter_regex(const std::string &pattern,
+                     bool ext, bool icase,
+                     bool neg, CONT (Package::*member))
 {
 	auto regex = make_regex(pattern, ext, icase);
 	if (!regex)
 		return nullptr;
-	return mk_unique<PkgFilt>(neg, [regex](const Package &pkg) {
+	return mk_unique<PkgFilt>(neg, [regex,member](const Package &pkg) {
 		regmatch_t rm;
-		for (auto &i : pkg.groups) {
-			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
-				return true;
-		}
-		return false;
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::dependsregex(const std::string &pattern,
-                          bool ext, bool icase, bool neg)
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<PkgFilt>(neg, [regex](const Package &pkg) {
-		regmatch_t rm;
-		for (auto &i : pkg.depends) {
+		for (auto &i : pkg.*member) {
 			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
 				return true;
 		}
@@ -348,6 +242,115 @@ ObjectFilter::dependsregex(const std::string &pattern,
 
 
 #endif
+
+unique_ptr<PackageFilter>
+PackageFilter::name(const std::string &s, bool neg) {
+	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
+		return pkg.name == s;
+	});
+}
+
+unique_ptr<PackageFilter>
+PackageFilter::nameglob(const std::string &s, bool neg) {
+	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
+		return match_glob(s, 0, pkg.name, 0);
+	});
+}
+template<typename CONT>
+static unique_ptr<PackageFilter>
+make_pkgfilter(const std::string &s, bool neg, CONT (Package::*member)) {
+	return mk_unique<PkgFilt>(neg, [s,member](const Package &pkg) {
+		return util::contains(pkg.*member, s);
+	});
+}
+
+template<typename CONT>
+static unique_ptr<PackageFilter>
+make_pkgfilter_glob(const std::string &s, bool neg, CONT (Package::*member)) {
+	return mk_unique<PkgFilt>(neg, [s,member](const Package &pkg) {
+		for (auto &i : pkg.*member) {
+			if (match_glob(s, 0, i, 0))
+				return true;
+		}
+		return false;
+	});
+}
+
+#define MAKE_PKGFILTER_REGULAR(NAME,VAR) \
+unique_ptr<PackageFilter>                             \
+PackageFilter::NAME(const std::string &s, bool neg) { \
+	return make_pkgfilter(s, neg, &Package::VAR);       \
+} \
+unique_ptr<PackageFilter>                                   \
+PackageFilter::NAME##glob(const std::string &s, bool neg) { \
+	return make_pkgfilter_glob(s, neg, &Package::VAR);        \
+}
+
+#ifdef WITH_REGEX
+# define MAKE_PKGFILTER(NAME,VAR) \
+MAKE_PKGFILTER_REGULAR(NAME,VAR)                           \
+unique_ptr<PackageFilter>                                  \
+PackageFilter::NAME##regex(const std::string &pattern,     \
+                           bool ext, bool icase, bool neg) \
+{                                                          \
+	return make_pkgfilter_regex(pattern, ext, icase,         \
+	                            neg, &Package::VAR);         \
+}
+#else
+# define MAKE_PKGFILTER(A,B) MAKE_PKGFILTER_REGULAR(A,B)
+#endif
+
+#define MAKE_PKGFILTER1(NAME) MAKE_PKGFILTER(NAME,NAME)
+
+MAKE_PKGFILTER(group,groups)
+MAKE_PKGFILTER1(depends)
+MAKE_PKGFILTER1(optdepends)
+MAKE_PKGFILTER1(provides)
+MAKE_PKGFILTER1(conflicts)
+MAKE_PKGFILTER1(replaces)
+
+#undef MAKE_PKGFILTER
+#undef MAKE_PKGFILTER1
+
+unique_ptr<PackageFilter>
+PackageFilter::broken(bool neg) {
+	return mk_unique<PkgFilt>(neg, [](const DB &db, const Package &pkg) {
+		return db.is_broken(&pkg);
+	});
+}
+
+// general purpose object filter
+unique_ptr<ObjectFilter>
+ObjectFilter::name(const std::string &s, bool neg) {
+	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
+		return elf.basename == s;
+	});
+}
+
+unique_ptr<ObjectFilter>
+ObjectFilter::nameglob(const std::string &s, bool neg) {
+	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
+		return match_glob(s, 0, elf.basename, 0);
+	});
+}
+
+unique_ptr<ObjectFilter>
+ObjectFilter::depends(const std::string &s, bool neg) {
+	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
+		return util::contains(elf.needed, s);
+	});
+}
+
+unique_ptr<ObjectFilter>
+ObjectFilter::dependsglob(const std::string &s, bool neg) {
+	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
+		for (auto &i : elf.needed) {
+			if (match_glob(s, 0, i, 0))
+				return true;
+		}
+		return false;
+	});
+}
 
 } // namespace filter
 
