@@ -170,6 +170,17 @@ Only consider packages matching the provided name.
 Only consider packages part of the provided group.
 .It Fl f Ns depends= Ns Ar PACKAGENAME
 Only consider packages depending on the provided package.
+.It Fl f Ns optdepends= Ns Ar PACKAGENAME
+Only consider packages with the provided package as optional dependency
+.It Fl f Ns alldepends= Ns Ar PACKAGENAME
+Only consider packages with the provided package as dependency or optional
+dependency.
+.It Fl f Ns provides= Ns Ar NAME
+Check the package's list of provided packages.
+.It Fl f Ns conflicts= Ns Ar NAME
+The package must conflict with the provided one.
+.It Fl f Ns replaces= Ns Ar NAME
+The package must be marked as replacing the provided package.
 .It Fl f Ns broken
 This rule has no match string. Consider only broken packages. Contrary to
 the
