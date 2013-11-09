@@ -1,3 +1,8 @@
+2013-11-09 Blub
+
+	* more package filters:
+		optdepends, alldepends, provides, conflicts, replaces
+
 2013-11-05 Blub
 
 	* database writing: fix: added missing open mode
