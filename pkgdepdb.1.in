@@ -188,6 +188,10 @@ the
 option, this will not change the output of the current query.
 .It Fl f Ns libname= Ns Ar NAME
 Only consider libraries matching the provided name.
+.It Fl f Ns libpath= Ns Ar NAME
+Only consider libraries matching the provided path (includes directory,
+a slash and the filename, paths are sanitized and will not contain ./ or
+double slashes).
 .It Fl f Ns libdepends= Ns Ar NAME
 Only consider libraries which link against the provided library.
 .El
