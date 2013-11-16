@@ -691,9 +691,9 @@ parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &
 	std::string regex;
 	bool icase = false;
 	auto parse_regex = [&]() -> bool {
-		if (static_cast<unsigned char>(filter[at] - 'a') > 'z' &&
-		    static_cast<unsigned char>(filter[at] - 'A') > 'Z' &&
-		    static_cast<unsigned char>(filter[at] - '0') > '9')
+		if (static_cast<unsigned char>(filter[at] - 'a') > ('z'-'a') &&
+		    static_cast<unsigned char>(filter[at] - 'A') > ('Z'-'A') &&
+		    static_cast<unsigned char>(filter[at] - '0') > ('9'-'0'))
 		{
 			// parse the regex enclosed using the character from filter[4]
 			char unquote = filter[at];
