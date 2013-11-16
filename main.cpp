@@ -777,6 +777,8 @@ parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &
 	MAKE_PKGFILTER(provides)
 	MAKE_PKGFILTER(conflicts)
 	MAKE_PKGFILTER(replaces)
+# undef MAKE_PKGFILTER
+# undef MAKE_PKGFILTER_REGEXPART
 	else if (filter.compare(at, std::string::npos, "broken") == 0) {
 		auto pf = filter::PackageFilter::broken(neg);
 		if (!pf)
@@ -784,50 +786,40 @@ parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &
 		pkg_filters.push_back(move(pf));
 		return true;
 	}
-	else if (filter.compare(at, 7, "libname") == 0) {
-		at += 7;
-		unique_ptr<filter::ObjectFilter> pf(nullptr);
-		if (filter[at] == '=') // exact
-			pf = move(filter::ObjectFilter::name(filter.substr(at+1), neg));
-		else if (filter[at] == ':') // glob
-			pf = move(filter::ObjectFilter::nameglob(filter.substr(at+1), neg));
 #ifdef WITH_REGEX
-		else if (parse_regex())
-			pf = move(filter::ObjectFilter::nameregex(regex, true, icase, neg));
+# define MAKE_OBJFILTER_REGEXPART(NAME)                                       \
+		else if (parse_regex())                                                   \
+			pf = move(filter::ObjectFilter::NAME##regex(regex, true, icase, neg));
+#else
+# define MAKE_OBJFILTER_REGEXPART(NAME)
 #endif
-		else {
-			log(Error, "unknown name filter: %s\n", filter.c_str());
-			return false;
-		}
-		if (!pf) {
-			log(Error, "failed to create filter: %s\n", filter.c_str());
-			return false;
-		}
-		obj_filters.push_back(move(pf));
-		return true;
+# define MAKE_OBJFILTER(NAME) \
+	else if (filter.compare(at, 3+sizeof(#NAME)-1, "lib" #NAME) == 0) {             \
+		at += 3+sizeof(#NAME)-1;                                                      \
+		unique_ptr<filter::ObjectFilter> pf(nullptr);                                 \
+		if (filter[at] == '=') /* exact */                                            \
+			pf = move(filter::ObjectFilter::NAME(filter.substr(at+1), neg));       \
+		else if (filter[at] == ':') /* glob */                                        \
+			pf = move(filter::ObjectFilter::NAME##glob(filter.substr(at+1), neg)); \
+		MAKE_OBJFILTER_REGEXPART(NAME)                                                \
+		else {                                                                        \
+			log(Error, "unknown lib" #NAME " filter: %s\n", filter.c_str());            \
+			return false;                                                               \
+		}                                                                             \
+		if (!pf) {                                                                    \
+			log(Error, "failed to create lib" #NAME " filter: %s\n", filter.c_str());   \
+			return false;                                                               \
+		}                                                                             \
+		obj_filters.push_back(move(pf));                                              \
+		return true;                                                                  \
 	}
-	else if (filter.compare(at, 10, "libdepends") == 0) {
-		at += 10;
-		unique_ptr<filter::ObjectFilter> pf(nullptr);
-		if (filter[at] == '=') // exact
-			pf = move(filter::ObjectFilter::depends(filter.substr(at+1), neg));
-		else if (filter[at] == ':') // glob
-			pf = move(filter::ObjectFilter::dependsglob(filter.substr(at+1), neg));
-#ifdef WITH_REGEX
-		else if (parse_regex())
-			pf = move(filter::ObjectFilter::dependsregex(regex, true, icase, neg));
-#endif
-		else {
-			log(Error, "unknown name filter: %s\n", filter.c_str());
-			return false;
-		}
-		if (!pf) {
-			log(Error, "failed to create filter: %s\n", filter.c_str());
-			return false;
-		}
-		obj_filters.push_back(move(pf));
-		return true;
-	}
+
+	MAKE_OBJFILTER(name)
+	MAKE_OBJFILTER(depends)
+	MAKE_OBJFILTER(path)
+
+# undef MAKE_OBJFILTER
+# undef MAKE_OBJFILTER_REGEXPART
 
 	return false;
 }

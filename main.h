@@ -413,11 +413,14 @@ public:
 
 	static unique_ptr<ObjectFilter> name(const std::string&, bool neg);
 	static unique_ptr<ObjectFilter> nameglob(const std::string&, bool neg);
+	static unique_ptr<ObjectFilter> path(const std::string&, bool neg);
+	static unique_ptr<ObjectFilter> pathglob(const std::string&, bool neg);
 	static unique_ptr<ObjectFilter> depends(const std::string&, bool neg);
 	static unique_ptr<ObjectFilter> dependsglob(const std::string&, bool neg);
 #ifdef WITH_REGEX
 	static unique_ptr<ObjectFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
 	static unique_ptr<ObjectFilter> dependsregex(const std::string&, bool ext, bool icase, bool neg);
+	static unique_ptr<ObjectFilter> pathregex(const std::string&, bool ext, bool icase, bool neg);
 #endif
 };
 

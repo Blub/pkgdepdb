@@ -224,6 +224,20 @@ ObjectFilter::nameregex(const std::string &pattern,
 }
 
 unique_ptr<ObjectFilter>
+ObjectFilter::pathregex(const std::string &pattern,
+                        bool ext, bool icase, bool neg)
+{
+	auto regex = make_regex(pattern, ext, icase);
+	if (!regex)
+		return nullptr;
+	return mk_unique<ObjFilt>(neg, [regex](const Elf &elf) {
+		regmatch_t rm;
+		std::string p(elf.dirname); p.append(1, '/'); p.append(elf.basename);
+		return 0 == regexec(regex->get(), p.c_str(), 0, &rm, 0);
+	});
+}
+
+unique_ptr<ObjectFilter>
 ObjectFilter::dependsregex(const std::string &pattern,
                            bool ext, bool icase, bool neg)
 {
@@ -377,6 +391,25 @@ unique_ptr<ObjectFilter>
 ObjectFilter::nameglob(const std::string &s, bool neg) {
 	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
 		return match_glob(s, 0, elf.basename, 0);
+	});
+}
+
+unique_ptr<ObjectFilter>
+ObjectFilter::path(const std::string &s, bool neg) {
+	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
+		return (s.length() < elf.dirname.length()+2 ||
+		        s[elf.dirname.length()] != '/'      ||
+		        s.compare(0, elf.dirname.length(), elf.dirname) != 0 ||
+		        s.compare(elf.dirname.length()+1, std::string::npos,
+		                  elf.basename) != 0);
+	});
+}
+
+unique_ptr<ObjectFilter>
+ObjectFilter::pathglob(const std::string &s, bool neg) {
+	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
+		std::string p(elf.dirname); p.append(1, '/'); p.append(elf.basename);
+		return match_glob(s, 0, p, 0);
 	});
 }
 
