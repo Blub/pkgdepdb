@@ -1,3 +1,8 @@
+2013-11-16 Blub
+
+	* filter added: libpath
+	* bugfix: fix parsing of regex filter commandlines
+
 2013-11-09 Blub
 
 	* more package filters:
