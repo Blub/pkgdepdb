@@ -90,6 +90,20 @@ DB::wipe_packages()
 }
 
 bool
+DB::wipe_filelists()
+{
+	bool hadfiles = contains_filelists;
+	for (auto &pkg : packages) {
+		if (!pkg->filelist.empty()) {
+			pkg->filelist.clear();
+			hadfiles = true;
+		}
+	}
+	contains_filelists = false;
+	return hadfiles;
+}
+
+bool
 DB::delete_package(const std::string& name)
 {
 	const Package *old; {

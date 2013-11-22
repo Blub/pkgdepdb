@@ -270,6 +270,7 @@ public:
 	void relink_all     ();
 	void fix_paths      ();
 	bool wipe_packages  ();
+	bool wipe_filelists ();
 
 #ifdef ENABLE_THREADS
 	void relink_all_threaded();

@@ -99,6 +99,7 @@ static struct option long_opts[] = {
 	{ "files",      optional_argument, 0, -1024-'f' },
 	{ "no-files",   no_argument,       0, -1025-'f' },
 	{ "ls",         no_argument,       0, -1026-'f' },
+	{ "rm-files",   no_argument,       0, -1027-'f' },
 
 	{ 0, 0, 0, 0 }
 };
@@ -239,6 +240,7 @@ main(int argc, char **argv)
 	bool         do_install    = false;
 	bool         do_delete     = false;
 	bool         do_wipe       = false;
+	bool         do_wipefiles  = false;
 	bool         has_db        = false;
 	bool         modified      = false;
 	bool         show_info     = false;
@@ -332,6 +334,10 @@ main(int argc, char **argv)
 			case -1026-'f':
 				oldmode = false;
 				show_filelist = true;
+				break;
+			case -1027-'f':
+				oldmode = false;
+				do_wipefiles = true;
 				break;
 
 			case  'R': rulemod    = optarg; break;
@@ -531,6 +537,9 @@ main(int argc, char **argv)
 		log(Message, "relinking everything\n");
 		db->relink_all();
 	}
+
+	if (do_wipefiles)
+		modified = db->wipe_filelists();
 
 	if (show_info)
 		db->show_info();
