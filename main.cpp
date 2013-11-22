@@ -20,6 +20,7 @@ unsigned int  opt_json      = 0;
 unsigned int  opt_max_jobs  = 0;
 bool          opt_quiet     = false;
 bool          opt_package_depends = true;
+bool          opt_package_filelist = false;
 
 enum {
     RESET = 0,

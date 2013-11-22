@@ -1,3 +1,8 @@
+2013-11-22 Blub
+
+	* database bump: 7
+		now optionally contains a list of files of each package
+
 2013-11-16 Blub
 
 	* filter added: libpath

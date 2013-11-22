@@ -174,7 +174,8 @@ ReadConfig(std::istream &in, const char *path)
 			std::make_tuple("package_depends",  cfg_bool(opt_package_depends)),
 			std::make_tuple("josn",             cfg_json),
 			std::make_tuple("json",             cfg_json),
-			std::make_tuple("jobs",             cfg_numeric(opt_max_jobs))
+			std::make_tuple("jobs",             cfg_numeric(opt_max_jobs)),
+			std::make_tuple("file_lists",       cfg_bool(opt_package_filelist)),
 		};
 
 		for (auto &r : rules) {

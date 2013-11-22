@@ -219,6 +219,13 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 	std::string filename(archive_entry_pathname(entry));
 	bool isinfo = filename == ".PKGINFO";
 
+	// one less string-copy:
+	guard addfile([&filename,pkg]() {
+		pkg->filelist.insert(std::move(filename));
+	});
+	if (!opt_package_filelist)
+		addfile.release();
+
 	// for now we only care about files named lib.*\.so(\.|$)
 	if (!isinfo && !care_about(entry))
 	{

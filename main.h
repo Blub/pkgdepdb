@@ -56,6 +56,7 @@ extern std::string  opt_default_db;
 extern unsigned int opt_verbosity;
 extern bool         opt_quiet;
 extern bool         opt_package_depends;
+extern bool         opt_package_filelist;
 extern unsigned int opt_max_jobs;
 extern unsigned int opt_json;
 
@@ -196,6 +197,9 @@ public:
 	StringList              replaces;
 	// DB version 5:
 	StringSet               groups;
+	// DB version 6:
+	// the filelist includes object files in v6 - makes things easier
+	StringSet               filelist;
 
 	void show_needed();
 	Elf* find(const std::string &dirname, const std::string &basename) const;
@@ -332,6 +336,7 @@ public:
 public: // NOT SERIALIZED:
 	bool contains_package_depends;
 	bool contains_groups;
+	bool contains_filelists;
 };
 
 // Utility functions:

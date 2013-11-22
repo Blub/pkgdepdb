@@ -14,7 +14,7 @@
 
 // version
 uint16_t
-DB::CURRENT = 6;
+DB::CURRENT = 7;
 
 // magic header
 static const char
@@ -29,14 +29,16 @@ namespace DBFlags {
 		PackageLDPath = (1<<1),
 		BasePackages  = (1<<2),
 		StrictLinking = (1<<3),
-		AssumeFound   = (1<<4)
+		AssumeFound   = (1<<4),
+		FileLists     = (1<<5)
 	};
 }
 
+using HdrFlags = uint16_t;
 using Header = struct {
 	uint8_t   magic[sizeof(depdb_magic)];
 	uint16_t  version;
-	uint16_t  flags;
+	HdrFlags  flags;
 	uint8_t   reserved[22];
 };
 
@@ -394,7 +396,7 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 }
 
 static bool
-write_pkg(SerialOut &out, Package *pkg, unsigned hdrver)
+write_pkg(SerialOut &out, Package *pkg, unsigned hdrver, HdrFlags flags)
 {
 	// check if the package has already been serialized
 	auto prev = out.pkgs.find(pkg);
@@ -430,11 +432,15 @@ write_pkg(SerialOut &out, Package *pkg, unsigned hdrver)
 	}
 	if (hdrver >= 5 && !write_stringset(out, pkg->groups))
 		return false;
+
+	if (flags & DBFlags::FileLists && !write_stringset(out, pkg->filelist))
+		return false;
+
 	return true;
 }
 
 static bool
-read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver)
+read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
 {
 	ObjRef r;
 	in >= r;
@@ -484,6 +490,10 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver)
 	}
 	if (hdrver >= 5 && !read_stringset(in, pkg->groups))
 		return false;
+
+	if (flags & DBFlags::FileLists && !read_stringset(in, pkg->filelist))
+		return false;
+
 	return true;
 }
 
@@ -530,9 +540,13 @@ db_store(DB *db, const std::string& filename)
 		hdr.flags |= DBFlags::StrictLinking;
 	if (db->assume_found_rules.size())
 		hdr.flags |= DBFlags::AssumeFound;
+	if (db->contains_filelists)
+	  hdr.flags |= DBFlags::FileLists;
 
 	// Figure out which database format version this will be
-	if (hdr.flags | DBFlags::AssumeFound)
+	if (hdr.flags & DBFlags::FileLists)
+		hdr.version = 7;
+	else if (hdr.flags & DBFlags::AssumeFound)
 		hdr.version = 6;
 	else if (db->contains_groups)
 		hdr.version = 5;
@@ -550,7 +564,7 @@ db_store(DB *db, const std::string& filename)
 
 	out <= (uint32_t)db->packages.size();
 	for (auto &pkg : db->packages) {
-		if (!write_pkg(out, pkg, hdr.version))
+		if (!write_pkg(out, pkg, hdr.version, hdr.flags))
 			return false;
 	}
 
@@ -637,6 +651,8 @@ db_read(DB *db, const std::string& filename)
 		db->contains_package_depends = true;
 	if (hdr.version >= 5)
 		db->contains_groups = true;
+	if (hdr.flags & DBFlags::FileLists)
+		db->contains_filelists = true;
 
 	in >= db->name;
 	if (!read_stringlist(in, db->library_path)) {
@@ -649,7 +665,7 @@ db_read(DB *db, const std::string& filename)
 	in >= len;
 	db->packages.resize(len);
 	for (uint32_t i = 0; i != len; ++i) {
-		if (!read_pkg(in, db->packages[i], hdr.version)) {
+		if (!read_pkg(in, db->packages[i], hdr.version, hdr.flags)) {
 			log(Error, "failed reading packages\n");
 			return false;
 		}

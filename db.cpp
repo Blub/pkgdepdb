@@ -209,6 +209,8 @@ DB::install_package(Package* &&pkg)
 		contains_package_depends = true;
 	if (pkg->groups.size())
 		contains_groups = true;
+	if (pkg->filelist.size())
+		contains_filelists = true;
 
 	const StringList *libpaths = 0;
 	if (package_library_path.size()) {
