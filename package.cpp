@@ -223,7 +223,7 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 	guard addfile([&filename,pkg]() {
 		pkg->filelist.insert(std::move(filename));
 	});
-	if (!opt_package_filelist)
+	if (!opt_package_filelist || isinfo || filename == ".INSTALL" || filename == ".MTREE")
 		addfile.release();
 
 	// for now we only care about files named lib.*\.so(\.|$)
