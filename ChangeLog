@@ -2,6 +2,10 @@
 
 	* database bump: 7
 		now optionally contains a list of files of each package
+	* new query: filelist
+		--ls now queries files
+	* new filter: filename filter for filelist queries
+		-ffile
 
 2013-11-16 Blub
 

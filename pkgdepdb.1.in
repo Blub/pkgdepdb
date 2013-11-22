@@ -142,6 +142,8 @@ successfully.
 Show a list of installed packages. With
 .Fl v
 the list of contained object files is shown for each package as well.
+.It Fl -ls
+List the packages' file lists.
 .El
 .Pp
 The following query filters are available:
@@ -210,6 +212,8 @@ a slash and the filename, paths are sanitized and will not contain ./ or
 double slashes).
 .It Fl f Ns libdepends= Ns Ar NAME
 Only consider libraries which link against the provided library.
+.It Fl f Ns file= Ns Ar NAME
+Only show files matching a certain name.
 .El
 .Pp
 The following options are used to modify the library search paths used
