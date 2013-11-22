@@ -31,6 +31,8 @@ Show the usage message.
 .It Fl -version
 Show version info.
 .It Fl d , Fl -db= Ns Ar file
+(Config var: database)
+.br
 Specifies the database filename to use. If it exists it will be read,
 otherwise a new database will be put into place.
 .Pp
@@ -64,14 +66,26 @@ Dry run: do not commit the changes to the database file.
 Increase the verbosity level. May be specified multiple times. Default
 verbosity level is 0.
 .It Fl q , Fl -quiet
+(Config var: quiet=<yes|no>)
+.br
 Not the opposite of
 .Fl v
 but rather disables progress-messages.
 .It Fl -depends=<yes|no>
+(Config var: package_depends)
+.br
 Enable or disable package-dependency tracking. While disabled, newly
 installed packages will not contain any dependency or
 optional-dependency information.
+.It Fl -files Ns , Fl -files=<yes|no> Ns , Fl -no-files
+(Config var: file_lists)
+.br
+When enabled, newly installed packages will contain a list of all their
+contained files, even non-ELF files,
+with these exceptions: .PKGINFO, .INSTALL and .MTREE
 .It Fl J , Fl -json= Ns Ar MODE
+(Config var: json)
+.br
 Change the json mode. By default json will not be used anywhere.
 .Ar MODE
 can start with a
@@ -104,6 +118,8 @@ Modify the databases ruleset. See the
 .Sx RULES
 section.
 .It Fl j Ar COUNT
+(Config var: jobs)
+.br
 When thread support is enabled, this limits the number of jobs
 running simultaneously to at most
 .Ar COUNT Ns .

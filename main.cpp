@@ -113,6 +113,7 @@ help(int x)
 	             "  -v, --verbose      print more information\n"
 	             "  -q, --quiet        suppress progress messages\n"
 	             "  --depends=<YES|NO> enable or disable package dependencies\n"
+	             "  --files=<YES|NO>   whether to store all non-object files of packages\n"
 	             "  -J, --json=PART    activate json mode for parts of the program\n"
 #ifdef ENABLE_THREADS
 	             "  -j N               limit to at most N threads\n"
