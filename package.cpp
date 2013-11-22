@@ -6,10 +6,8 @@
 #include "main.h"
 
 static bool
-care_about(struct archive_entry *entry)
+care_about(struct archive_entry *entry, mode_t mode)
 {
-	mode_t mode = archive_entry_mode(entry);
-
 #if 0
 	if (AE_IFLNK == (mode & AE_IFLNK)) {
 		// ignoring symlinks for now
@@ -219,21 +217,29 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 	std::string filename(archive_entry_pathname(entry));
 	bool isinfo = filename == ".PKGINFO";
 
+	mode_t mode = archive_entry_mode(entry);
+
 	// one less string-copy:
 	guard addfile([&filename,pkg]() {
 		pkg->filelist.insert(std::move(filename));
 	});
-	if (!opt_package_filelist || isinfo || filename == ".INSTALL" || filename == ".MTREE")
+	if (!opt_package_filelist ||
+	    isinfo ||
+	    (AE_IFDIR == (mode & AE_IFDIR)) ||
+	    filename[filename.length()-1] == '/' ||
+	    filename == ".INSTALL" ||
+	    filename == ".MTREE")
+	{
 		addfile.release();
+	}
 
 	// for now we only care about files named lib.*\.so(\.|$)
-	if (!isinfo && !care_about(entry))
+	if (!isinfo && !care_about(entry, mode))
 	{
 		archive_read_data_skip(tar);
 		return true;
 	}
 
-	mode_t mode = archive_entry_mode(entry);
 	if (AE_IFLNK == (mode & AE_IFLNK)) {
 		// it's a symlink...
 		const char *link = archive_entry_symlink(entry);
