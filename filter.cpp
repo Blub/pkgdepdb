@@ -33,6 +33,13 @@ ObjectFilter::ObjectFilter(bool neg_)
 ObjectFilter::~ObjectFilter()
 {}
 
+StringFilter::StringFilter(bool neg_)
+: negate(neg_)
+{}
+
+StringFilter::~StringFilter()
+{}
+
 // general purpose package filter
 class PkgFilt : public PackageFilter {
 public:
@@ -65,6 +72,18 @@ public:
 	}
 };
 
+// general purpose string filter
+class StrFilt : public StringFilter {
+public:
+	std::function<bool(const std::string&)> func;
+
+	StrFilt(bool neg, std::function<bool(const std::string&)> &&fn)
+	: StringFilter(neg), func(move(fn)) {}
+
+	virtual bool visible(const std::string &str) const {
+		return func(str);
+	}
+};
 
 // Utility functions:
 
@@ -254,6 +273,18 @@ ObjectFilter::dependsregex(const std::string &pattern,
 	});
 }
 
+unique_ptr<StringFilter>
+StringFilter::filterregex(const std::string &pattern,
+                          bool ext, bool icase, bool neg)
+{
+	auto regex = make_regex(pattern, ext, icase);
+	if (!regex)
+		return nullptr;
+	return mk_unique<StrFilt>(neg, [regex](const std::string &str) {
+		regmatch_t rm;
+		return 0 == regexec(regex->get(), str.c_str(), 0, &rm, 0);
+	});
+}
 
 #endif
 
@@ -428,6 +459,21 @@ ObjectFilter::dependsglob(const std::string &s, bool neg) {
 				return true;
 		}
 		return false;
+	});
+}
+
+// string filter
+unique_ptr<StringFilter>
+StringFilter::filter(const std::string &s, bool neg) {
+	return mk_unique<StrFilt>(neg, [s](const std::string &str) {
+		return str == s;
+	});
+}
+
+unique_ptr<StringFilter>
+StringFilter::filterglob(const std::string &s, bool neg) {
+	return mk_unique<StrFilt>(neg, [s](const std::string &str) {
+		return match_glob(s, 0, str, 0);
 	});
 }
 

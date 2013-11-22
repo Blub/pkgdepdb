@@ -323,6 +323,39 @@ DB::show_found_json()
 }
 
 void
+DB::show_filelist_json(const FilterList &pkg_filters,
+                       const StrFilterList &str_filters)
+{
+	printf("{ \"filelist\": [");
+	const char *mainsep = "\n\t";
+	for (auto &pkg : packages) {
+		if (!util::all(pkg_filters, *this, *pkg))
+			continue;
+		if (!opt_quiet) {
+			printf("%s", mainsep); mainsep = ",\n\t";
+			json_quote(stdout, pkg->name);
+			printf(": [");
+		}
+
+		const char *sep = "\n\t\t";
+		for (auto &file : pkg->filelist) {
+			if (!util::all(str_filters, file))
+				continue;
+			if (!opt_quiet) {
+				printf("%s", sep); sep = ",\n\t\t";
+				json_quote(stdout, file);
+			} else {
+				printf("%s", mainsep); mainsep = ",\n\t";
+				json_quote(stdout, file);
+			}
+		}
+		if (!opt_quiet)
+			printf("\n\t]");
+	}
+	printf("\n] }\n");
+}
+
+void
 DB::show_missing_json()
 {
 	if (!required_missing.size()) {

@@ -98,6 +98,7 @@ static struct option long_opts[] = {
 
 	{ "files",      optional_argument, 0, -1024-'f' },
 	{ "no-files",   no_argument,       0, -1025-'f' },
+	{ "ls",         no_argument,       0, -1026-'f' },
 
 	{ 0, 0, 0, 0 }
 };
@@ -145,6 +146,7 @@ help(int x)
 	             "  -n, --rename=NAME  rename the database\n"
 	             "  --integrity        perform a dependency integrity check\n"
 	             "  -f, --filter=FILT  filter the queried packages\n"
+	             "  --ls               list all package files\n"
 	             );
 	fprintf(out, "db query filters:\n"
 	             "  -b, --broken       only packages with broken libs (use with -P)\n"
@@ -218,7 +220,10 @@ public:
 };
 
 static bool parse_rule(DB *db, const std::string& rule);
-static bool parse_filter(const std::string &filter, FilterList&, ObjFilterList&);
+static bool parse_filter(const std::string &filter,
+                         FilterList&,
+                         ObjFilterList&,
+                         StrFilterList&);
 
 bool db_store_json(DB *db, const std::string& filename);
 
@@ -241,6 +246,7 @@ main(int argc, char **argv)
 	bool         show_missing  = false;
 	bool         show_found    = false;
 	bool         show_packages = false;
+	bool         show_filelist = false;
 	bool         do_rename     = false;
 	bool         do_relink     = false;
 	bool         do_fixpaths   = false;
@@ -259,6 +265,7 @@ main(int argc, char **argv)
 
 	FilterList pkg_filters;
 	ObjFilterList obj_filters;
+	StrFilterList str_filters;
 
 	LogLevel = Message;
 	if (!ReadConfig())
@@ -322,6 +329,9 @@ main(int argc, char **argv)
 			case -1025-'f':
 				opt_package_filelist = false;
 				break;
+			case -1026-'f':
+				show_filelist = true;
+				break;
 
 			case  'R': rulemod    = optarg; break;
 			case -'A': ld_append  = optarg; break;
@@ -361,7 +371,7 @@ main(int argc, char **argv)
 				break;
 
 			case 'f':
-				if (!parse_filter(optarg, pkg_filters, obj_filters)) {
+				if (!parse_filter(optarg, pkg_filters, obj_filters, str_filters)) {
 					log(Error, "invalid --filter: `%s'\n", optarg);
 					return 1;
 				}
@@ -536,6 +546,9 @@ main(int argc, char **argv)
 	if (show_found)
 		db->show_found();
 
+	if (show_filelist)
+		db->show_filelist(pkg_filters, str_filters);
+
 	if (do_integrity)
 		db->check_integrity(pkg_filters, obj_filters);
 
@@ -687,7 +700,10 @@ parse_rule(DB *db, const std::string& rule)
 }
 
 static bool
-parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &obj_filters)
+parse_filter(const std::string &filter,
+             FilterList &pkg_filters,
+             ObjFilterList &obj_filters,
+             StrFilterList &str_filters)
 {
 	// -fname=foo exact
 	// -fname:foo glob
@@ -828,13 +844,33 @@ parse_filter(const std::string &filter, FilterList &pkg_filters, ObjFilterList &
 		obj_filters.push_back(move(pf));                                              \
 		return true;                                                                  \
 	}
-
 	MAKE_OBJFILTER(name)
 	MAKE_OBJFILTER(depends)
 	MAKE_OBJFILTER(path)
-
 # undef MAKE_OBJFILTER
 # undef MAKE_OBJFILTER_REGEXPART
+	else if (filter.compare(at, 4, "file") == 0) {
+		at += 4;
+		unique_ptr<filter::StringFilter> pf(nullptr);
+		if (filter[at] == '=') /* exact */
+			pf = move(filter::StringFilter::filter(filter.substr(at+1), neg));
+		else if (filter[at] == ':') /* glob */
+			pf = move(filter::StringFilter::filterglob(filter.substr(at+1), neg));
+#ifdef WITH_REGEX
+		else if (parse_regex())
+			pf = move(filter::StringFilter::filterregex(regex, true, icase, neg));
+#endif
+		else {
+			log(Error, "unknown file filter: %s\n", filter.c_str());
+			return false;
+		}
+		if (!pf) {
+			log(Error, "failed to create file filter: %s\n", filter.c_str());
+			return false;
+		}
+		str_filters.push_back(move(pf));
+		return true;
+	}
 
 	return false;
 }

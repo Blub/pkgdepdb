@@ -948,6 +948,26 @@ DB::show_found()
 	}
 }
 
+void
+DB::show_filelist(const FilterList &pkg_filters,
+                  const StrFilterList &str_filters)
+{
+	if (opt_json & JSONBits::Query)
+		return show_filelist_json(pkg_filters, str_filters);
+
+	for (auto &pkg : packages) {
+		if (!util::all(pkg_filters, *this, *pkg))
+			continue;
+		for (auto &file : pkg->filelist) {
+			if (!util::all(str_filters, file))
+				continue;
+			if (!opt_quiet)
+				printf("%s ", pkg->name.c_str());
+			printf("%s\n", file.c_str());
+		}
+	}
+}
+
 static void
 strip_version(std::string &s)
 {

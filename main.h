@@ -224,9 +224,11 @@ using ObjListMap = std::map<std::string, std::vector<const Elf*>>;
 namespace filter {
 class PackageFilter;
 class ObjectFilter;
+class StringFilter;
 }
 using FilterList = std::vector<std::unique_ptr<filter::PackageFilter>>;
 using ObjFilterList = std::vector<std::unique_ptr<filter::ObjectFilter>>;
+using StrFilterList = std::vector<std::unique_ptr<filter::StringFilter>>;
 
 class DB {
 public:
@@ -287,6 +289,8 @@ public:
 	void show_missing_json();
 	void show_found();
 	void show_found_json();
+	void show_filelist(const FilterList&, const StrFilterList&);
+	void show_filelist_json(const FilterList&, const StrFilterList&);
 	void check_integrity(const FilterList &pkg_filters,
 	                     const ObjFilterList &obj_filters) const;
 	void check_integrity(const Package    *pkg,
@@ -426,6 +430,29 @@ public:
 	static unique_ptr<ObjectFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
 	static unique_ptr<ObjectFilter> dependsregex(const std::string&, bool ext, bool icase, bool neg);
 	static unique_ptr<ObjectFilter> pathregex(const std::string&, bool ext, bool icase, bool neg);
+#endif
+};
+
+class StringFilter {
+protected:
+	StringFilter(bool);
+public:
+	StringFilter() = delete;
+
+	bool negate;
+	virtual ~StringFilter();
+
+	virtual bool visible(const std::string& str) const {
+		(void)str; return true;
+	}
+	inline bool operator()(const std::string &str) const {
+		return visible(str) != negate;
+	}
+
+	static unique_ptr<StringFilter> filter(const std::string&, bool neg);
+	static unique_ptr<StringFilter> filterglob(const std::string&, bool neg);
+#ifdef WITH_REGEX
+	static unique_ptr<StringFilter> filterregex(const std::string&, bool ext, bool icase, bool neg);
 #endif
 };
 
