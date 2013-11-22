@@ -31,6 +31,7 @@ DB::DB() {
 	loaded_version = DB::CURRENT;
 	contains_package_depends = false;
 	contains_groups          = false;
+	contains_filelists       = false;
 	strict_linking           = false;
 }
 
