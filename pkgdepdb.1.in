@@ -50,6 +50,9 @@ archive files!
 Wipe database: remove all packages, but keep settings and rules.
 Useful to clean up and start over without having to re-add all the
 library paths and rules.
+.It Fl -rm-files
+Strip the database of its file-list. Causes the database to be stored
+as if it was created with \(dqfile_lists=off\(dq / \(dq--files=off\(dq.
 .It Fl n , Fl -rename= Ns Ar name
 Change the database's contained name. This does not affect the
 filename. The database-name is currently not used anywhere except when
