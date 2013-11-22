@@ -96,6 +96,9 @@ static struct option long_opts[] = {
 
 	{ "filter",     required_argument, 0, 'f' },
 
+	{ "files",      optional_argument, 0, -1024-'f' },
+	{ "no-files",   no_argument,       0, -1025-'f' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -307,6 +310,16 @@ main(int argc, char **argv)
 
 			case -1024-'D':
 				opt_package_depends = CfgStrToBool(optarg);
+				break;
+
+			case -1024-'f':
+				if (optarg)
+					opt_package_filelist = CfgStrToBool(optarg);
+				else
+					opt_package_filelist = true;
+				break;
+			case -1025-'f':
+				opt_package_filelist = false;
 				break;
 
 			case  'R': rulemod    = optarg; break;
