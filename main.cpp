@@ -330,6 +330,7 @@ main(int argc, char **argv)
 				opt_package_filelist = false;
 				break;
 			case -1026-'f':
+				oldmode = false;
 				show_filelist = true;
 				break;
 
