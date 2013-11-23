@@ -992,7 +992,7 @@ strip_version(std::string &s)
 }
 
 #ifdef WITH_ALPM
-static bool
+bool
 split_depstring(const std::string &full, std::string &name, std::string &op, std::string &ver)
 {
 	size_t opidx = full.find_first_of("=<>!");
@@ -1090,7 +1090,7 @@ version_satisfies(const std::string &dop, const std::string &dver, const std::st
 	return false;
 }
 
-static bool
+bool
 package_satisfies(const Package *other, const std::string &dep, const std::string &op, const std::string &ver)
 {
 	if (version_op(op, other->version.c_str(), ver.c_str()))
@@ -1410,11 +1410,28 @@ DB::check_integrity(const FilterList    &pkg_filters,
 		}
 	}
 	for (auto &file : file_counter) {
-		auto pkgs = std::get<1>(file);
-		if (pkgs.size() > 1) {
-			printf("%zu packages contain file: %s\n", pkgs.size(), std::get<0>(file)->c_str());
+		auto &pkgs = std::get<1>(file);
+		if (pkgs.size() < 2)
+			continue;
+
+		std::vector<const Package*> realpkgs;
+		// Do not consider two conflicting packages which contain the same files to be
+		// file-conflicting.
+		for (auto &a : pkgs) {
+			bool conflict = false;
+			for (auto &b : pkgs) {
+				if (&a == &b) continue;
+				if ( (conflict = a->conflicts_with(*b)) )
+					break;
+			}
+			if (!conflict)
+				realpkgs.push_back(a);
+		}
+
+		if (realpkgs.size() > 1) {
+			printf("%zu packages contain file: %s\n", realpkgs.size(), std::get<0>(file)->c_str());
 			if (opt_verbosity) {
-				for (auto &p : pkgs)
+				for (auto &p : realpkgs)
 					printf("\t%s\n", p->name.c_str());
 			}
 		}

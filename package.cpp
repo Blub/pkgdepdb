@@ -425,3 +425,36 @@ Package::show_needed()
 		}
 	}
 }
+
+bool
+Package::conflicts_with(const Package &other) const
+{
+	for (auto &conf : conflicts) {
+#ifdef WITH_ALPM
+		std::string name, op, ver;
+		split_depstring(conf, name, op, ver);
+		if (ver.length()) {
+			if (package_satisfies(&other, name, op, ver))
+				return true;
+		} else {
+#else
+			std::string &name(conf);
+#endif
+			if (other.name == name)
+				return true;
+			for (auto &prov : other.provides) {
+#ifdef WITH_ALPM
+				std::string provname;
+				split_depstring(prov, provname, op, ver);
+#else
+				std::string &provname(prov);
+#endif
+				if (provname == name)
+					return true;
+			}
+#ifdef WITH_ALPM
+		}
+#endif
+	}
+	return false;
+}

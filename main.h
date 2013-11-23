@@ -121,6 +121,15 @@ using StringSet   = std::set<std::string>;
 
 /// Package class
 /// reads a package archive, extracts information
+#ifdef WITH_ALPM
+bool split_depstring(const std::string &str,
+                     std::string &name, std::string &op, std::string &ver);
+bool
+package_satisfies(const Package *other,
+                  const std::string &dep,
+                  const std::string &op,
+                  const std::string &ver);
+#endif
 class Package {
 public:
 	static Package* open(const std::string& path);
@@ -146,6 +155,7 @@ public:
 
 public: // loading utiltiy functions
 	void guess(const std::string& name);
+	bool conflicts_with(const Package&) const;
 
 public: // NOT SERIALIZED:
 	// used only while loading an archive
