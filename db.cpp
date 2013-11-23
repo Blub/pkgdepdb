@@ -1401,4 +1401,22 @@ DB::check_integrity(const FilterList    &pkg_filters,
 		thread::work<int>(packages.size(), status, worker, merger);
 	}
 #endif
+
+	log(Message, "Checking for file conflicts...\n");
+	std::map<strref,std::vector<const Package*>> file_counter;
+	for (auto &pkg : packages) {
+		for (auto &file : pkg->filelist) {
+			file_counter[file].push_back(pkg);
+		}
+	}
+	for (auto &file : file_counter) {
+		auto pkgs = std::get<1>(file);
+		if (pkgs.size() > 1) {
+			printf("%zu packages contain file: %s\n", pkgs.size(), std::get<0>(file)->c_str());
+			if (opt_verbosity) {
+				for (auto &p : pkgs)
+					printf("\t%s\n", p->name.c_str());
+			}
+		}
+	}
 }
