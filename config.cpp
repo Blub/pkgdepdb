@@ -209,6 +209,7 @@ ReadConfig()
 	std::string etcdir(PKGDEPDB_ETC);
 
 	std::vector<std::string> config_paths({
+		home   + "/.config/pkgdepdb/config",
 		home   + "/.pkgdepdb/config",
 		etcdir + "/pkgdepdb.conf"
 	});
