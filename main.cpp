@@ -11,6 +11,8 @@
 
 #include "main.h"
 
+std::string strref::empty("");
+
 static int LogLevel = Message;
 static const char *arg0 = 0;
 

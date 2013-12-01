@@ -9,8 +9,9 @@ using std::vector;
 
 class strref {
 public:
+	static std::string empty;
 	const std::string &s_;
-	strref() : s_("") {}
+	strref() : s_(empty) {}
 	strref(const std::string &s) : s_(s) {}
 	inline operator const std::string&() const;
 	inline bool operator< (const std::string &s) const;
