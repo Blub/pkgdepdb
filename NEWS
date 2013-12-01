@@ -1,4 +1,4 @@
-2013-11-03 Release 0.1.4
+2013-11-09 Release 0.1.4
 	- More filters, minor fixes
 	- noteworthy bug fixes:
 		* fixed: open() lacked a mode
