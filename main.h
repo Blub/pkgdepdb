@@ -331,6 +331,7 @@ public:
 	MAKE_PKGFILTER(provides)
 	MAKE_PKGFILTER(conflicts)
 	MAKE_PKGFILTER(replaces)
+	MAKE_PKGFILTER(pkglibdepends)
 #undef MAKE_PKGFILTER
 	static unique_ptr<PackageFilter> broken(bool neg);
 };
@@ -341,7 +342,9 @@ protected:
 public:
 	ObjectFilter() = delete;
 
-	bool negate;
+	size_t refcount;
+	bool   negate;
+
 	virtual ~ObjectFilter();
 	virtual bool visible(const Elf &elf) const {
 		(void)elf; return true;

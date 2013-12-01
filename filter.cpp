@@ -27,7 +27,7 @@ PackageFilter::~PackageFilter()
 {}
 
 ObjectFilter::ObjectFilter(bool neg_)
-: negate(neg_)
+: refcount(0), negate(neg_)
 {}
 
 ObjectFilter::~ObjectFilter()
@@ -398,6 +398,49 @@ PackageFilter::alldependsregex(const std::string &pattern,
 			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
 				return true;
 		}
+		return false;
+	});
+}
+#endif
+
+unique_ptr<PackageFilter>
+PackageFilter::pkglibdepends(const std::string &s, bool neg) {
+	rptr<ObjectFilter> libfilter(ObjectFilter::depends(s, false).release());
+	if (!libfilter)
+		return nullptr;
+	return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
+		for (auto &e : pkg.objects)
+			if (libfilter->visible(*e))
+				return true;
+		return false;
+	});
+}
+
+unique_ptr<PackageFilter>
+PackageFilter::pkglibdependsglob(const std::string &s, bool neg) {
+	rptr<ObjectFilter> libfilter(ObjectFilter::dependsglob(s, false).release());
+	if (!libfilter)
+		return nullptr;
+	return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
+		for (auto &e : pkg.objects)
+			if (libfilter->visible(*e))
+				return true;
+		return false;
+	});
+}
+
+#ifdef WITH_REGEX
+unique_ptr<PackageFilter>
+PackageFilter::pkglibdependsregex(const std::string &pattern,
+                                  bool ext, bool icase, bool neg)
+{
+	rptr<ObjectFilter> libfilter(ObjectFilter::dependsregex(pattern, ext, icase, false).release());
+	if (!libfilter)
+		return nullptr;
+	return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
+		for (auto &e : pkg.objects)
+			if (libfilter->visible(*e))
+				return true;
 		return false;
 	});
 }

@@ -1,3 +1,9 @@
+2013-12-01 Blub
+
+	* pkglibdepends filter:
+		-fpkglibdepends: filter packages which contain libraries
+		which match -flibdepends with the provided pattern.
+
 2013-11-22 Blub
 
 	* database bump: 7

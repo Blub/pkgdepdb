@@ -818,6 +818,7 @@ parse_filter(const std::string &filter,
 	MAKE_PKGFILTER(provides)
 	MAKE_PKGFILTER(conflicts)
 	MAKE_PKGFILTER(replaces)
+	MAKE_PKGFILTER(pkglibdepends)
 # undef MAKE_PKGFILTER
 # undef MAKE_PKGFILTER_REGEXPART
 	else if (filter.compare(at, std::string::npos, "broken") == 0) {
