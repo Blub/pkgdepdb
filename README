@@ -11,8 +11,10 @@ Description:
 
     Additionally it can manage a dependency database.  In this mode it
     performs a  virtual  installation  of  a  package's  binaries  and
-    libraries into a database, in which only the dependency  lists  is
-    maintained.
+    libraries  into  a  database,  in  which  dependency  lists,   and
+    optionally filelists are maintained. The packages and files can be
+    queried with various query types. A general integrity check of the
+    repository can be performed as well.
 
     Read the manpage for more information, including usage examples.
 
@@ -24,8 +26,11 @@ Installation:
             a C++11 compatible compiler
             libarchive
             BSD or GNU compatible `make'
+          optionally:
+            libalpm (part of pacman, the ArchLinux package manager)
         runtime:
             libarchive
+            libalpm (non-optional if compiled in)
 
     Installation:
 

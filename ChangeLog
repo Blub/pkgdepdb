@@ -4,6 +4,10 @@
 		-fpkglibdepends: filter packages which contain libraries
 		which match -flibdepends with the provided pattern.
 
+2013-11-28 Blub
+
+	* ~/.config/pgkdepdb now supersedes ~/.pkgdepdb
+
 2013-11-22 Blub
 
 	* database bump: 7

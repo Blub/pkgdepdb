@@ -1,3 +1,16 @@
+2013-12-01 Release 0.1.5
+	- Config in ~/.config/pkgdepdb now supersedes ~/.pkgdepdb
+	- More filtres:
+		-flibpath
+		-ffile
+		-fpkglibdepends
+	- DB version 7:
+		* Can now contain the entire file list of packages
+		  and use the -ffile filter with --ls
+		* --ls: lists package files
+	- Regex filter commandlines now work with more starting characters
+	  (fixed a bug parsing the quote character.)
+
 2013-11-09 Release 0.1.4
 	- More filters, minor fixes
 	- noteworthy bug fixes:
