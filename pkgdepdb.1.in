@@ -196,6 +196,9 @@ Only consider packages with the provided package as optional dependency
 .It Fl f Ns alldepends= Ns Ar PACKAGENAME
 Only consider packages with the provided package as dependency or optional
 dependency.
+.It Fl f Ns pkglibdepends= Ns Ar NAME
+Only consider packages which contain at least one library matching the
+\(dq-flibdepends\(dq filter with the provided pattern.
 .It Fl f Ns provides= Ns Ar NAME
 Check the package's list of provided packages.
 .It Fl f Ns conflicts= Ns Ar NAME
