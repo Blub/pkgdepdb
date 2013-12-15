@@ -127,10 +127,8 @@ public:
 	dtor_ptr(std::nullptr_t)
 	: ptr(nullptr), refcount(0) {}
 	~dtor_ptr() {
-		if (ptr) {
+		if (ptr)
 			dtor_fun(ptr);
-			delete ptr;
-		}
 	}
 
 	operator T*() const { return  ptr; }
