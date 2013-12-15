@@ -189,7 +189,6 @@ make_regex(const std::string &pattern, bool ext, bool icase) {
 		return nullptr;
 	}
 
-	//return std::make_shared<dtor_ptr<regex_t>>(regex.release(), [](regex_t *r) {
 	return new dtor_ptr<regex_t>(regex.release(), [](regex_t *r) {
 		regfree(r);
 		delete r;
