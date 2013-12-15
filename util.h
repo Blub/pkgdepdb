@@ -108,22 +108,35 @@ inline unique_ptr<T> mk_unique(Args&&... args) {
 	return move(unique_ptr<T>(new T(std::forward<Args>(args)...)));
 }
 
+// pointer containing a user-defined destructor
+// this also contains a refcount so it can be used inside an rptr<>
+// note that the refcount doesn't count references to the contained
+// pointer, but to the dtor_ptr object itself!
 template<typename T>
-class dtor_ptr : public unique_ptr<T> {
+class dtor_ptr {
 public:
+	T                      *ptr;
+	size_t                  refcount; // to *this* not to ptr
 	std::function<void(T*)> dtor_fun;
+
 	dtor_ptr(T *t, std::function<void(T*)> &&fun)
-	: unique_ptr<T>(t), dtor_fun(move(fun)) {}
+	: ptr(t), refcount(0), dtor_fun(move(fun)) {}
 	dtor_ptr(dtor_ptr<T> &&old)
-	: unique_ptr<T>(move(old)), dtor_fun(move(old.dtor_fun)) {}
+	: ptr(old.ptr), refcount(0), dtor_fun(move(old.dtor_fun) ) { old.ptr = nullptr; }
 	dtor_ptr(const dtor_ptr<T> &) = delete;
-	dtor_ptr(dtor_ptr<T> &old)
-	: unique_ptr<T>(move(old)), dtor_fun(move(old.dtor_fun)) {}
-	dtor_ptr(std::nullptr_t n)
-	: unique_ptr<T>(n) {}
-	virtual ~dtor_ptr() {
-		dtor_fun(this->get());
+	dtor_ptr(std::nullptr_t)
+	: ptr(nullptr), refcount(0) {}
+	~dtor_ptr() {
+		if (ptr)
+			dtor_fun(ptr);
 	}
+
+	operator T*() const { return  ptr; }
+	T*      get() const { return  ptr; }
+	bool     operator!() const  { return !ptr; }
+	T&       operator*()        { return *ptr; }
+	T*       operator->()       { return  ptr; }
+	const T* operator->() const { return ptr; }
 };
 
 namespace util {

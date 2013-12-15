@@ -7,8 +7,6 @@
 
 #include "main.h"
 
-using std::shared_ptr;
-
 namespace util {
 	template<typename C, typename K>
 	inline bool
@@ -172,7 +170,7 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
 }
 
 #ifdef WITH_REGEX
-static shared_ptr<dtor_ptr<regex_t>>
+static rptr<dtor_ptr<regex_t>>
 make_regex(const std::string &pattern, bool ext, bool icase) {
 	unique_ptr<regex_t> regex(new regex_t);
 	int cflags = REG_NOSUB;
@@ -191,9 +189,11 @@ make_regex(const std::string &pattern, bool ext, bool icase) {
 		return nullptr;
 	}
 
-	return shared_ptr<dtor_ptr<regex_t>>(new dtor_ptr<regex_t>(regex.release(), [](regex_t *r) {
+	//return std::make_shared<dtor_ptr<regex_t>>(regex.release(), [](regex_t *r) {
+	return new dtor_ptr<regex_t>(regex.release(), [](regex_t *r) {
 		regfree(r);
-	}));
+		delete r;
+	});
 }
 
 // Package Name (Regex)
