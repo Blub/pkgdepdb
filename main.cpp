@@ -77,6 +77,7 @@ static struct option long_opts[] = {
 	{ "wipe",    no_argument,       0, -'W' },
 
 	{ "broken",  no_argument,       0, 'b' },
+	{ "not-empty",  no_argument,    0, -'E' },
 
 	{ "integrity",  no_argument,    0, -'G' },
 
@@ -153,6 +154,8 @@ help(int x)
 	             );
 	fprintf(out, "db query filters:\n"
 	             "  -b, --broken       only packages with broken libs (use with -P)\n"
+	             "      --not-empty    filter out packages which are empty after filters\n"
+	             "                     have been applied\n"
 	             );
 	fprintf(out, "db library path options: (run --relink after these changes)\n"
 	             "  --ld-prepend=DIR   add or move a directory to the\n"
@@ -256,6 +259,7 @@ main(int argc, char **argv)
 	bool         do_fixpaths   = false;
 	bool         dryrun        = false;
 	bool         filter_broken = false;
+	bool         filter_nempty = false;
 	bool         do_integrity  = false;
 	bool oldmode = true;
 
@@ -314,6 +318,8 @@ main(int argc, char **argv)
 			case 'F':  oldmode = false; show_found    = true; break;
 			case 'P':  oldmode = false; show_packages = true; break;
 			case 'b':  oldmode = false; filter_broken = true; break;
+
+			case -'E': oldmode = false; filter_nempty = true; break;
 
 			case -'R': oldmode = false; do_relink   = true; break;
 			case -'F': oldmode = false; do_fixpaths = true; break;
@@ -547,7 +553,7 @@ main(int argc, char **argv)
 		db->show_info();
 
 	if (show_packages)
-		db->show_packages(filter_broken, pkg_filters, obj_filters);
+		db->show_packages(filter_broken, filter_nempty, pkg_filters, obj_filters);
 
 	if (show_list)
 		db->show_objects(pkg_filters, obj_filters);

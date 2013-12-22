@@ -41,6 +41,7 @@ print_objname(const Elf *obj)
 
 void
 DB::show_packages_json(bool filter_broken,
+                       bool filter_notempty,
                        const FilterList &pkg_filters,
                        const ObjFilterList &obj_filters)
 {
@@ -62,6 +63,8 @@ DB::show_packages_json(bool filter_broken,
 		if (!util::all(pkg_filters, *this, *pkg))
 			continue;
 		if (filter_broken && !is_broken(pkg))
+			continue;
+		if (filter_notempty && is_empty(pkg, obj_filters))
 			continue;
 		printf("%s{", mainsep); mainsep = ",\n\t\t";
 		printf("\n\t\t\t\"name\": ");

@@ -232,8 +232,8 @@ public:
 
 	void show_info();
 	void show_info_json();
-	void show_packages(bool flt_broken, const FilterList&, const ObjFilterList&);
-	void show_packages_json(bool flt_broken, const FilterList&, const ObjFilterList&);
+	void show_packages(bool flt_broken, bool flt_notempty, const FilterList&, const ObjFilterList&);
+	void show_packages_json(bool flt_broken, bool flt_notempty, const FilterList&, const ObjFilterList&);
 	void show_objects(const FilterList&, const ObjFilterList&);
 	void show_objects_json(const FilterList&, const ObjFilterList&);
 	void show_missing();
@@ -287,6 +287,7 @@ private:
 public:
 	bool is_broken(const Package *pkg) const;
 	bool is_broken(const Elf *elf) const;
+	bool is_empty (const Package *elf, const ObjFilterList &filters) const;
 
 public: // NOT SERIALIZED:
 	bool contains_package_depends;

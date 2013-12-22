@@ -802,6 +802,17 @@ DB::is_broken(const Elf *obj) const
 }
 
 bool
+DB::is_empty(const Package *pkg, const ObjFilterList &filters) const
+{
+	size_t vis = 0;
+	for (auto &obj : pkg->objects) {
+		if (util::all(filters, *this, *obj))
+			++vis;
+	}
+	return vis == 0;
+}
+
+bool
 DB::is_broken(const Package *pkg) const
 {
 	for (auto &obj : pkg->objects) {
@@ -813,11 +824,12 @@ DB::is_broken(const Package *pkg) const
 
 void
 DB::show_packages(bool filter_broken,
+                  bool filter_notempty,
                   const FilterList &pkg_filters,
                   const ObjFilterList &obj_filters)
 {
 	if (opt_json & JSONBits::Query)
-		return show_packages_json(filter_broken, pkg_filters, obj_filters);
+		return show_packages_json(filter_broken, filter_notempty, pkg_filters, obj_filters);
 
 	if (!opt_quiet)
 		printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
@@ -825,6 +837,8 @@ DB::show_packages(bool filter_broken,
 		if (!util::all(pkg_filters, *this, *pkg))
 			continue;
 		if (filter_broken && !is_broken(pkg))
+			continue;
+		if (filter_notempty && is_empty(pkg, obj_filters))
 			continue;
 		if (opt_quiet)
 			printf("%s\n", pkg->name.c_str());
