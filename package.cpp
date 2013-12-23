@@ -221,7 +221,7 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 
 	// one less string-copy:
 	guard addfile([&filename,pkg]() {
-		pkg->filelist.insert(std::move(filename));
+		pkg->filelist.emplace_back(std::move(filename));
 	});
 	if (!opt_package_filelist ||
 	    isinfo ||

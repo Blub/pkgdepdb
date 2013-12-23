@@ -148,7 +148,7 @@ public:
 	StringSet               groups;
 	// DB version 6:
 	// the filelist includes object files in v6 - makes things easier
-	StringSet               filelist;
+	StringList              filelist;
 
 	void show_needed();
 	Elf* find(const std::string &dirname, const std::string &basename) const;

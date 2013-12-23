@@ -485,7 +485,7 @@ write_pkg(SerialOut &out, Package *pkg, unsigned hdrver, HdrFlags flags)
 	if (hdrver >= 5 && !write_stringset(out, pkg->groups))
 		return false;
 
-	if (flags & DBFlags::FileLists && !write_stringset(out, pkg->filelist))
+	if (flags & DBFlags::FileLists && !write_stringlist(out, pkg->filelist))
 		return false;
 
 	return true;
@@ -555,7 +555,7 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
 	if (hdrver >= 5 && !read_stringset(in, pkg->groups))
 		return false;
 
-	if (flags & DBFlags::FileLists && !read_stringset(in, pkg->filelist))
+	if (flags & DBFlags::FileLists && !read_stringlist(in, pkg->filelist))
 		return false;
 
 	return true;
