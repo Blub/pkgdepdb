@@ -331,10 +331,11 @@ read_stringset(SerialIn &in, StringSet &list)
 {
 	uint32_t len;
 	in >= len;
+	StringSet::iterator hint = list.end();
 	for (uint32_t i = 0; i != len; ++i) {
 		std::string str;
 		in >= str;
-		list.insert(std::move(str));
+		hint = list.emplace_hint(hint, std::move(str));
 	}
 	return in.in;
 }
