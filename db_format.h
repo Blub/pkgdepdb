@@ -28,8 +28,12 @@ public:
 	DB                           *db;
 	SerialStream                 &in;
 	std::unique_ptr<SerialStream> in_;
-	PkgInMap                      pkgs;
-	ObjInMap                      objs;
+	PkgInMap                      old_pkgref;
+	ObjInMap                      old_objref;
+
+	std::vector<Elf*>             objref;
+	std::vector<Package*>         pkgref;
+	bool                          ver8_refs; // whether objref and pkgref are used
 
 private:
 	SerialIn(DB*, SerialStream*);
@@ -43,8 +47,12 @@ public:
 	DB                           *db;
 	SerialStream                 &out;
 	std::unique_ptr<SerialStream> out_;
-	PkgOutMap                     pkgs;
-	ObjOutMap                     objs;
+
+	std::map<const Elf*,    size_t> objref;
+	std::map<const Package*,size_t> pkgref;
+
+	bool GetObjRef(const Elf*,     size_t *out);
+	bool GetPkgRef(const Package*, size_t *out);
 
 private:
 	SerialOut(DB*, SerialStream*);

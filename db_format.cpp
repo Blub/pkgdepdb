@@ -14,7 +14,7 @@
 
 // version
 uint16_t
-DB::CURRENT = 7;
+DB::CURRENT = 8;
 
 // magic header
 static const char
@@ -181,7 +181,7 @@ public:
 };
 
 SerialIn::SerialIn(DB *db_, SerialStream *in__)
-: db(db_), in(*in__), in_(in__)
+: db(db_), in(*in__), in_(in__), ver8_refs(false)
 { }
 
 SerialIn*
@@ -216,6 +216,26 @@ SerialOut::open(DB *db, const std::string& file, bool gz)
 
 	SerialOut *s = new SerialOut(db, out);
 	return s;
+}
+
+bool SerialOut::GetObjRef(const Elf *e, size_t *out) {
+	auto exists = objref.find(e);
+	if (exists != objref.end()) {
+		*out = exists->second;
+		return true;
+	}
+	objref[e] = *out = objref.size();
+	return false;
+}
+
+bool SerialOut::GetPkgRef(const Package *p, size_t *out) {
+	auto exists = pkgref.find(p);
+	if (exists != pkgref.end()) {
+		*out = exists->second;
+		return true;
+	}
+	pkgref[p] = *out = pkgref.size();
+	return false;
 }
 
 static bool write_obj(SerialOut &out, Elf       *obj);
@@ -285,11 +305,14 @@ write_stringlist(SerialOut &out, const std::vector<std::string> &list)
 bool
 read_stringlist(SerialIn &in, std::vector<std::string> &list)
 {
+	static std::string s;
 	uint32_t len;
 	in >= len;
-	list.resize(len);
-	for (uint32_t i = 0; i != len; ++i)
-		in >= list[i];
+	list.reserve(len);
+	for (uint32_t i = 0; i != len; ++i) {
+		in >= s;
+		list.emplace_back(std::move(s));
+	}
 	return in.in;
 }
 
@@ -320,15 +343,15 @@ static bool
 write_obj(SerialOut &out, Elf *obj)
 {
 	// check if the object has already been serialized
-	auto prev = out.objs.find(obj);
-	if (prev != out.objs.end()) {
-		out <= ObjRef::OBJREF <= prev->second;
+
+	size_t ref = (size_t)-1;
+	if (out.GetObjRef(obj, &ref)) {
+		out <= ObjRef::OBJREF <= ref;
 		return true;
 	}
 
 	// OBJ ObjRef; and remember our pointer in the ObjOutMap
 	out <= ObjRef::OBJ;
-	out.objs[obj] = out.out.tellp();
 
 	// Serialize the actual object data
 	out <= obj->dirname
@@ -355,12 +378,20 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 	size_t ref;
 	if (r == ObjRef::OBJREF) {
 		in >= ref;
-		auto existing = in.objs.find(ref);
-		if (existing == in.objs.end()) {
-			log(Error, "db error: failed to find previously deserialized object\n");
-			return false;
+		if (in.ver8_refs) {
+			if (ref >= in.objref.size()) {
+				log(Error, "db error: objref out of range\n");
+				return false;
+			}
+			obj = in.objref[ref];
+		} else {
+			auto existing = in.old_objref.find(ref);
+			if (existing == in.old_objref.end()) {
+				log(Error, "db error: failed to find previously deserialized object\n");
+				return false;
+			}
+			obj = existing->second;
 		}
-		obj = existing->second;
 		return true;
 	}
 	if (r != ObjRef::OBJ) {
@@ -370,8 +401,12 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 
 	// Remember the one we're constructing now:
 	obj = new Elf;
-	ref = in.in.tellg();
-	in.objs[ref] = obj.get();
+	if (in.ver8_refs)
+		in.objref.push_back(obj.get());
+	else {
+		ref = in.in.tellg();
+		in.old_objref[ref] = obj.get();
+	}
 
 	// Read out the object data
 
@@ -399,15 +434,14 @@ static bool
 write_pkg(SerialOut &out, Package *pkg, unsigned hdrver, HdrFlags flags)
 {
 	// check if the package has already been serialized
-	auto prev = out.pkgs.find(pkg);
-	if (prev != out.pkgs.end()) {
-		out <= ObjRef::PKGREF <= prev->second;
+	size_t ref = (size_t)-1;
+	if (out.GetPkgRef(pkg, &ref)) {
+		out <= ObjRef::PKGREF <= ref;
 		return true;
 	}
 
 	// PKG ObjRef; and remember our pointer in the PkgOutMap
 	out <= ObjRef::PKG;
-	out.pkgs[pkg] = out.out.tellp();
 
 	// Now serialize the actual package data:
 	out <= pkg->name
@@ -447,12 +481,20 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
 	size_t ref;
 	if (r == ObjRef::PKGREF) {
 		in >= ref;
-		auto existing = in.pkgs.find(ref);
-		if (existing == in.pkgs.end()) {
-			log(Error, "db error: failed to find previously deserialized package\n");
-			return false;
+		if (in.ver8_refs) {
+			if (ref >= in.pkgref.size()) {
+				log(Error, "db error: pkgref out of range\n");
+				return false;
+			}
+			pkg = in.pkgref[ref];
+		} else {
+			auto existing = in.old_pkgref.find(ref);
+			if (existing == in.old_pkgref.end()) {
+				log(Error, "db error: failed to find previously deserialized package\n");
+				return false;
+			}
+			pkg = existing->second;
 		}
-		pkg = existing->second;
 		return true;
 	}
 	if (r != ObjRef::PKG) {
@@ -462,8 +504,12 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
 
 	// Remember the one we're constructing now:
 	pkg = new Package;
-	ref = in.in.tellg();
-	in.pkgs[ref] = pkg;
+	if (in.ver8_refs)
+		in.pkgref.push_back(pkg);
+	else {
+		ref = in.in.tellg();
+		in.old_pkgref[ref] = pkg;
+	}
 
 	// Now serialize the actual package data:
 	in >= pkg->name
@@ -557,6 +603,10 @@ db_store(DB *db, const std::string& filename)
 
 	// okay
 
+	// ver8 introduces faster refs...
+	if (hdr.version < 8)
+		hdr.version = 8;
+
 	out <= hdr;
 	out <= db->name;
 	if (!write_stringlist(out, db->library_path))
@@ -646,6 +696,9 @@ db_read(DB *db, const std::string& filename)
 		    (unsigned)DB::CURRENT);
 		return false;
 	}
+
+	if (hdr.version >= 8)
+		in.ver8_refs = true;
 
 	if (hdr.version >= 3)
 		db->contains_package_depends = true;
