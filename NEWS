@@ -1,4 +1,4 @@
----------- Release 0.1.6
+2013-12-23 Release 0.1.6
 	- Noticeably more efficient database reading.
 	- Tiny bugfixes
 	- Change in database layout
