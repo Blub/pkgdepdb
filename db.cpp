@@ -280,15 +280,6 @@ void
 DB::link_object_do(Elf *obj, const Package *owner)
 {
 	link_object(obj, owner, obj->req_found, obj->req_missing);
-#if 0
-	ObjectSet req_found;
-	StringSet req_missing;
-	link_object(obj, owner, req_found, req_missing);
-	if (req_found.size())
-		required_found[const_cast<Elf*>(obj)] = std::move(req_found);
-	if (req_missing.size())
-		required_missing[const_cast<Elf*>(obj)] = std::move(req_missing);
-#endif
 }
 
 void
