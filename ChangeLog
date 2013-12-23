@@ -1,3 +1,18 @@
+2013-12-23 Blub
+
+	* database bump: 8
+		OBJREF and PKGREF entries now don't use arbitrary numbers, but represent
+		the object's "index". The first object written out has index 0, the second
+		index 1 and so on. This avoids lookups in std::maps.
+	* more read/write efficient database layout:
+		The required_found and required_missing map<>s have been removed. Since
+		they mapped each object to one set, this set is now stored in the objects
+		itself. This makes install/remove a tiny bit slower, but barely noticable
+		and worth the gain. Additionally some deduping and cleanup happened in the
+		related areas.
+	* --touch option
+	* bugfix: fixed some uses of std::remove
+
 2013-12-01 Blub
 
 	* pkglibdepends filter:
