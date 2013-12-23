@@ -111,15 +111,17 @@ DB::show_packages_json(bool filter_broken,
 						printf("%s{", sep); sep = ",\n\t\t\t\t";
 						printf("\n\t\t\t\t\t\"object\": ");
 						print_objname(obj);
-						printf(",\n\t\t\t\t\t\"misses\": [");
-						auto list = required_missing.find(obj);
-						const char *missep = "\n\t\t\t\t\t\t";
-						for (auto &missing : list->second) {
-							printf("%s", missep);
-							missep = ",\n\t\t\t\t\t\t";
-							json_quote(stdout, missing);
+						auto& list = obj->req_missing;
+						if (!list.empty()) {
+							printf(",\n\t\t\t\t\t\"misses\": [");
+							const char *missep = "\n\t\t\t\t\t\t";
+							for (auto &missing : list) {
+								printf("%s", missep);
+								missep = ",\n\t\t\t\t\t\t";
+								json_quote(stdout, missing);
+							}
+							printf("\n\t\t\t\t\t]");
 						}
-						printf("\n\t\t\t\t\t]");
 						printf("\n\t\t\t\t}");
 					} else {
 						printf("%s", sep); sep = ",\n\t\t\t\t";
@@ -276,7 +278,7 @@ DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fi
 				break;
 			}
 			printf(",\n\t\t\"finds\": ["); {
-				auto &set = required_found[obj];
+				auto &set = obj->req_found;
 				const char *sep = "\n\t\t\t";
 				for (auto &found : set) {
 					printf("%s", sep); sep = ",\n\t\t\t";
@@ -284,7 +286,7 @@ DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fi
 				}
 			}
 			printf("\n\t\t],\n\t\t\"misses\": ["); {
-				auto &set = required_missing[obj];
+				auto &set = obj->req_missing;
 				const char *sep = "\n\t\t\t";
 				for (auto &miss : set) {
 					printf("%s", sep); sep = ",\n\t\t\t";
@@ -301,22 +303,17 @@ DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fi
 void
 DB::show_found_json()
 {
-	if (!required_found.size()) {
-		printf("{ \"found_objects\": {} }\n");
-		return;
-	}
-
 	printf("{ \"found_objects\": {");
 	const char *mainsep = "\n\t";
-	for (auto &fnd : required_found) {
-		const Elf *obj = fnd.first;
+	for (const Elf *obj : objects) {
+		if (obj->req_found.empty())
+			continue;
 		printf("%s", mainsep); mainsep = ",\n\t";
 		print_objname(obj);
 		printf(": [");
 
-		ObjectSet &set = fnd.second;
 		const char *sep = "\n\t\t";
-		for (auto &s : set) {
+		for (auto &s : obj->req_found) {
 			printf("%s", sep); sep = ",\n\t\t";
 			json_quote(stdout, s->basename);
 		}
@@ -361,22 +358,17 @@ DB::show_filelist_json(const FilterList &pkg_filters,
 void
 DB::show_missing_json()
 {
-	if (!required_missing.size()) {
-		printf("{ \"missing_objects\": {} }\n");
-		return;
-	}
-
 	printf("{ \"missing_objects\": {");
 	const char *mainsep = "\n\t";
-	for (auto &mis : required_missing) {
-		const Elf *obj = mis.first;
+	for (const Elf *obj : objects) {
+		if (obj->req_missing.empty())
+			continue;
 		printf("%s", mainsep); mainsep = ",\n\t";
 		print_objname(obj);
 		printf(": [");
 
-		StringSet &set = mis.second;
 		const char *sep = "\n\t\t";
-		for (auto &s : set) {
+		for (auto &s : obj->req_missing) {
 			printf("%s", sep); sep = ",\n\t\t";
 			json_quote(stdout, s);
 		}
@@ -479,6 +471,7 @@ json_pkg(FILE *out, const Package *pkg)
 	fprintf(out, "\n\t\t}");
 }
 
+#if 0
 static void
 json_obj_found(FILE *out, const Elf *obj, const ObjectSet &found)
 {
@@ -502,6 +495,7 @@ json_obj_missing(FILE *out, const Elf *obj, const StringSet &missing)
 	fprintf(out, "\n\t\t\t]"
 	             "\n\t\t}");
 }
+#endif
 
 bool
 db_store_json(DB *db, const std::string& filename)
@@ -542,6 +536,7 @@ db_store_json(DB *db, const std::string& filename)
 
 	fprintf(out, "\n\t]");
 
+#if 0
 	if (!db->required_found.empty()) {
 		fprintf(out, ",\n\t\"found\": [");
 		comma = false;
@@ -564,6 +559,7 @@ db_store_json(DB *db, const std::string& filename)
 		}
 		fprintf(out, "\n\t]");
 	}
+#endif
 
 	fprintf(out, "\n}\n");
 	return true;

@@ -59,8 +59,6 @@ DB::DB(bool wiped, const DB &copy)
 	if (!wiped) {
 		stdreplace(packages,         copy.packages);
 		stdreplace(objects,          copy.objects);
-		stdreplace(required_found,   copy.required_found);
-		stdreplace(required_missing, copy.required_missing);
 	}
 }
 
@@ -85,8 +83,6 @@ DB::wipe_packages()
 		return false;
 	objects.clear();
 	packages.clear();
-	required_found.clear();
-	required_missing.clear();
 	return true;
 }
 
@@ -104,6 +100,22 @@ DB::wipe_filelists()
 	return hadfiles;
 }
 
+const StringList*
+DB::get_obj_libpath(const Elf *elf) const {
+	return elf->owner ? get_pkg_libpath(elf->owner) : nullptr;
+}
+
+const StringList*
+DB::get_pkg_libpath(const Package *pkg) const {
+	if (!package_library_path.size())
+		return nullptr;
+
+	auto iter = package_library_path.find(pkg->name);
+	if (iter != package_library_path.end())
+		return &iter->second;
+	return nullptr;
+}
+
 bool
 DB::delete_package(const std::string& name)
 {
@@ -118,46 +130,36 @@ DB::delete_package(const std::string& name)
 
 	for (auto &elfsp : old->objects) {
 		Elf *elf = elfsp.get();
-		required_found.erase(elf);
-		required_missing.erase(elf);
 		// remove the object from the list
-		auto self = std::find(objects.begin(), objects.end(), elf);
-		objects.erase(self);
+		objects.erase(std::remove(objects.begin(), objects.end(), elf),
+		              objects.end());
+	}
 
+	for (auto &seeker : objects) {
+		for (auto &elfsp : old->objects) {
+		Elf *elf = elfsp.get();
 		// for each object which depends on this object, search for a replacing object
-		for (auto &found : required_found) {
-			// does this object depend on 'elf'?
-			auto ref = std::find(found.second.begin(), found.second.end(), elf);
-			if (ref == found.second.end())
+			auto ref = std::find(seeker->req_found.begin(),
+			                     seeker->req_found.end(),
+			                     elf);
+			if (ref == seeker->req_found.end())
 				continue;
-			// erase
-			found.second.erase(ref);
-			// search for this dependency anew
-			const Elf *seeker = found.first;
-			const Elf *other;
-			if (!seeker->owner || !package_library_path.size())
-				other = find_for(seeker, elf->basename, nullptr);
-			else {
-				auto iter = package_library_path.find(seeker->owner->name);
-				if (iter == package_library_path.end())
-					other = find_for(seeker, elf->basename, nullptr);
-				else
-					other = find_for(seeker, elf->basename, &iter->second);
-			}
-			if (!other) {
-				// it's missing now
-				required_missing[const_cast<Elf*>(seeker)].insert(elf->basename);
-			} else {
-				// replace it with a new object
-				found.second.insert(const_cast<Elf*>(other));
-			}
+			seeker->req_found.erase(ref);
+
+			const StringList *libpaths = get_obj_libpath(seeker);
+			if (Elf *other = find_for(seeker, elf->basename, libpaths))
+				seeker->req_found.insert(other);
+			else
+				seeker->req_missing.insert(elf->basename);
 		}
 	}
 
 	delete old;
 
-	std::remove_if(objects.begin(), objects.end(),
-		[](rptr<Elf> &obj) { return 1 == obj->refcount; });
+	objects.erase(
+		std::remove_if(objects.begin(), objects.end(),
+			[](rptr<Elf> &obj) { return 1 == obj->refcount; }),
+		objects.end());
 
 	return true;
 }
@@ -227,42 +229,27 @@ DB::install_package(Package* &&pkg)
 	if (pkg->filelist.size())
 		contains_filelists = true;
 
-	const StringList *libpaths = 0;
-	if (package_library_path.size()) {
-		auto iter = package_library_path.find(pkg->name);
-		if (iter != package_library_path.end())
-			libpaths = &iter->second;
-	}
+	const StringList *libpaths = get_pkg_libpath(pkg);
 
 	for (auto &obj : pkg->objects)
 		objects.push_back(obj);
+	// loop anew since we need to also be able to found our own packages
+	for (auto &obj : pkg->objects)
+		link_object_do(obj, pkg);
 
-	for (auto &obj : pkg->objects) {
-		// check if the object is required
-		for (auto missing = required_missing.begin(); missing != required_missing.end();) {
-			Elf *seeker = missing->first;
+	// check for packages which are looking for any of our packages
+	for (auto &seeker : objects) {
+		for (auto &obj : pkg->objects) {
 			if (!seeker->can_use(*obj, strict_linking) ||
 			    !elf_finds(seeker, obj->dirname, libpaths))
 			{
-				++missing;
 				continue;
 			}
 
-			bool needs = (0 != missing->second.erase(obj->basename));
-
-			if (needs) // the library is indeed required and found:
-				required_found[seeker].insert(obj);
-
-			if (0 == missing->second.size())
-				required_missing.erase(missing++);
-			else
-				++missing;
+			if (0 != seeker->req_missing.erase(obj->basename))
+				seeker->req_found.insert(obj);
 		}
-
-		// search for whatever THIS object requires
-		link_object_do(obj, pkg);
 	}
-
 	return true;
 }
 
@@ -290,8 +277,10 @@ DB::find_for(const Elf *obj, const std::string& needed, const StringList *extrap
 }
 
 void
-DB::link_object_do(const Elf *obj, const Package *owner)
+DB::link_object_do(Elf *obj, const Package *owner)
 {
+	link_object(obj, owner, obj->req_found, obj->req_missing);
+#if 0
 	ObjectSet req_found;
 	StringSet req_missing;
 	link_object(obj, owner, req_found, req_missing);
@@ -299,22 +288,19 @@ DB::link_object_do(const Elf *obj, const Package *owner)
 		required_found[const_cast<Elf*>(obj)] = std::move(req_found);
 	if (req_missing.size())
 		required_missing[const_cast<Elf*>(obj)] = std::move(req_missing);
+#endif
 }
 
 void
-DB::link_object(const Elf *obj, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const
+DB::link_object(Elf *obj, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const
 {
 	if (ignore_file_rules.size()) {
 		std::string full = obj->dirname + "/" + obj->basename;
 		if (ignore_file_rules.find(full) != ignore_file_rules.end())
 			return;
 	}
-	const StringList *libpaths = 0;
-	if (package_library_path.size()) {
-		auto iter = package_library_path.find(owner->name);
-		if (iter != package_library_path.end())
-			libpaths = &iter->second;
-	}
+
+	const StringList *libpaths = get_pkg_libpath(owner);
 
 	for (auto &needed : obj->needed) {
 		Elf *found = find_for(obj, needed, libpaths);
@@ -436,9 +422,9 @@ DB::relink_all_threaded()
 			FoundMap   &found = std::get<0>(t);
 			MissingMap &missing = std::get<1>(t);
 			for (auto &f : found)
-				required_found[f.first] = std::move(f.second);
+				f.first->req_found = std::move(f.second);
 			for (auto &m : missing)
-				required_missing[m.first] = std::move(m.second);
+				m.first->req_missing = std::move(m.second);
 		}
 	};
 	double fac = 100.0 / double(packages.size());
@@ -461,8 +447,6 @@ DB::relink_all_threaded()
 void
 DB::relink_all()
 {
-	required_found.clear();
-	required_missing.clear();
 	if (!packages.size())
 		return;
 
@@ -518,9 +502,7 @@ bool
 DB::empty() const
 {
 	return packages.size()         == 0 &&
-	       objects.size()          == 0 &&
-	       required_found.size()   == 0 &&
-	       required_missing.size() == 0;
+	       objects.size()          == 0;
 }
 
 bool
@@ -798,7 +780,7 @@ DB::show_info()
 bool
 DB::is_broken(const Elf *obj) const
 {
-	return required_missing.find(const_cast<Elf*>(obj)) != required_missing.end();
+	return obj->req_missing.size() != 0;
 }
 
 bool
@@ -864,8 +846,7 @@ DB::show_packages(bool filter_broken,
 					if (is_broken(obj)) {
 						printf("    broken: %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
 						if (opt_verbosity >= 2) {
-							auto list = required_missing.find(obj);
-							for (auto &missing : list->second)
+							for (auto &missing : obj->req_missing)
 								printf("      misses: %s\n", missing.c_str());
 						}
 					}
@@ -916,20 +897,14 @@ DB::show_objects(const FilterList &pkg_filters, const ObjFilterList &obj_filters
 		if (opt_verbosity < 2)
 			continue;
 		printf("     finds:\n"); {
-			auto &set = required_found[obj];
-			for (auto &found : set)
+			for (auto &found : obj->req_found)
 				printf("       -> %s / %s\n", found->dirname.c_str(), found->basename.c_str());
 		}
 		printf("     misses:\n"); {
-			auto &set = required_missing[obj];
-			for (auto &miss : set)
+			for (auto &miss : obj->req_missing)
 				printf("       -> %s\n", miss.c_str());
 		}
 	}
-	printf("\n`found` entry set size: %lu\n",
-	       (unsigned long)required_found.size());
-	printf("`missing` entry set size: %lu\n",
-	       (unsigned long)required_missing.size());
 }
 
 void
@@ -938,22 +913,18 @@ DB::show_missing()
 	if (opt_json & JSONBits::Query)
 		return show_missing_json();
 
-	if (!required_missing.size()) {
-		if (!opt_quiet)
-			printf("Missing: nothing\n");
-		return;
-	}
 	if (!opt_quiet)
 		printf("Missing:\n");
-	for (auto &mis : required_missing) {
-		Elf       *obj = mis.first;
-		StringSet &set = mis.second;
+	for (Elf *obj : objects) {
+		if (obj->req_missing.empty())
+			continue;
 		if (opt_quiet)
 			printf("%s/%s\n", obj->dirname.c_str(), obj->basename.c_str());
 		else
 			printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
-		for (auto &s : set)
+		for (auto &s : obj->req_missing) {
 			printf("    misses: %s\n", s.c_str());
+		}
 	}
 }
 
@@ -965,14 +936,14 @@ DB::show_found()
 
 	if (!opt_quiet)
 		printf("Found:\n");
-	for (auto &fnd : required_found) {
-		Elf       *obj = fnd.first;
-		ObjectSet &set = fnd.second;
+	for (Elf *obj : objects) {
+		if (obj->req_found.empty())
+			continue;
 		if (opt_quiet)
 			printf("%s/%s\n", obj->dirname.c_str(), obj->basename.c_str());
 		else
 			printf("  -> %s / %s\n", obj->dirname.c_str(), obj->basename.c_str());
-		for (auto &s : set)
+		for (auto &s : obj->req_found)
 			printf("    finds: %s\n", s->basename.c_str());
 	}
 }

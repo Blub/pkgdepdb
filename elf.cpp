@@ -30,6 +30,8 @@ Elf::Elf(const Elf& cp)
   rpath  (cp.rpath),
   runpath(cp.runpath),
   needed(cp.needed),
+  req_found(cp.req_found),
+  req_missing(cp.req_missing),
   owner(cp.owner)
 {
 }

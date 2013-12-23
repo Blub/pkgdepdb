@@ -238,7 +238,7 @@ bool SerialOut::GetPkgRef(const Package *p, size_t *out) {
 	return false;
 }
 
-static bool write_obj(SerialOut &out, Elf       *obj);
+static bool write_obj(SerialOut &out, const Elf *obj);
 static bool read_obj (SerialIn  &in,  rptr<Elf> &obj);
 
 bool
@@ -358,7 +358,7 @@ read_stringset(SerialIn &in, StringSet &list)
 }
 
 static bool
-write_obj(SerialOut &out, Elf *obj)
+write_obj(SerialOut &out, const Elf *obj)
 {
 	// check if the object has already been serialized
 
@@ -636,22 +636,36 @@ db_store(DB *db, const std::string& filename)
 			return false;
 	}
 
-	if (!write_objlist(out, db->objects))
-		return false;
-
-	out <= (uint32_t)db->required_found.size();
-	for (auto &found : db->required_found) {
-		if (!write_obj(out, found.first))
-			return false;
-		if (!write_objset(out, found.second))
-			return false;
+	uint32_t cnt_found = 0,
+	         cnt_missing = 0;
+	{
+		out <= (uint32_t)db->objects.size();
+		for (auto &obj : db->objects) {
+			if (!write_obj(out, obj))
+				return false;
+			if (!obj->req_found.empty())
+				++cnt_found;
+			if (!obj->req_missing.empty())
+				++cnt_missing;
+		}
 	}
 
-	out <= (uint32_t)db->required_missing.size();
-	for (auto &missing : db->required_missing) {
-		if (!write_obj(out, missing.first))
+	out <= cnt_found;
+	for (Elf *obj : db->objects) {
+		if (obj->req_found.empty())
+			continue;
+		if (!write_obj(out, obj))
 			return false;
-		if (!write_stringset(out, missing.second))
+		if (!write_objset(out, obj->req_found))
+			return false;
+	}
+	out <= cnt_missing;
+	for (Elf *obj : db->objects) {
+		if (obj->req_missing.empty())
+			continue;
+		if (!write_obj(out, obj))
+			return false;
+		if (!write_stringset(out, obj->req_missing))
 			return false;
 	}
 
@@ -748,33 +762,24 @@ db_read(DB *db, const std::string& filename)
 	}
 
 	in >= len;
-	decltype(db->required_found)::const_iterator fhnt =
-		db->required_found.end();
+	rptr<Elf> obj;
 	for (uint32_t i = 0; i != len; ++i) {
-		rptr<Elf> obj;
-		ObjectSet oset;
 		if (!read_obj(in, obj) ||
-		    !read_objset(in, oset))
+		    !read_objset(in, obj->req_found))
 		{
-			log(Error, "failed reading map of found depdendencies\n");
+			log(Error, "failed reading map of found dependencies\n");
 			return false;
 		}
-		fhnt = db->required_found.emplace_hint(fhnt, obj.get(), std::move(oset));
 	}
 
 	in >= len;
-	decltype(db->required_missing)::const_iterator mhnt =
-		db->required_missing.end();
 	for (uint32_t i = 0; i != len; ++i) {
-		rptr<Elf> obj;
-		StringSet sset;
 		if (!read_obj(in, obj) ||
-		    !read_stringset(in, sset))
+		    !read_stringset(in, obj->req_missing))
 		{
-			log(Error, "failed reading map of missing depdendencies\n");
+			log(Error, "failed reading map of missing dependencies\n");
 			return false;
 		}
-		mhnt = db->required_missing.emplace_hint(mhnt, obj.get(), std::move(sset));
 	}
 
 	if (hdr.version < 2)

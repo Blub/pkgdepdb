@@ -69,6 +69,14 @@ bool CfgStrToBool   (const std::string& line);
 bool CfgParseJSONBit(const char *bit);
 
 class Package;
+class Elf;
+
+using PackageList = std::vector<Package*>;
+using ObjectList  = std::vector<rptr<Elf>>;
+using StringList  = std::vector<std::string>;
+
+using ObjectSet   = std::set<rptr<Elf>>;
+using StringSet   = std::set<std::string>;
 
 class Elf {
 public:
@@ -104,6 +112,11 @@ public: // utility functions for printing stuff
 	const char *dataString()  const;
 	const char *osabiString() const;
 
+public: // NOT serialized INSIDE the object, but as part of the DB
+        // (for compatibility with older database dumps)
+	ObjectSet req_found;
+	StringSet req_missing;
+
 public: // NOT SERIALIZED:
 	struct {
 		size_t id;
@@ -111,13 +124,6 @@ public: // NOT SERIALIZED:
 
 	Package *owner;
 };
-
-using PackageList = std::vector<Package*>;
-using ObjectList  = std::vector<rptr<Elf>>;
-using StringList  = std::vector<std::string>;
-
-using ObjectSet   = std::set<rptr<Elf>>;
-using StringSet   = std::set<std::string>;
 
 /// Package class
 /// reads a package archive, extracts information
@@ -203,9 +209,6 @@ public:
 	PackageList packages;
 	ObjectList  objects;
 
-	std::map<Elf*, ObjectSet> required_found;
-	std::map<Elf*, StringSet> required_missing;
-
 	StringSet                         ignore_file_rules;
 	std::map<std::string, StringList> package_library_path;
 	StringSet                         base_packages;
@@ -215,8 +218,8 @@ public:
 	bool install_package(Package* &&pkg);
 	bool delete_package (const std::string& name);
 	Elf *find_for       (const Elf*, const std::string& lib, const StringList *extrapath) const;
-	void link_object    (const Elf*, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const;
-	void link_object_do (const Elf*, const Package *owner);
+	void link_object    (Elf*, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const;
+	void link_object_do (Elf*, const Package *owner);
 	void relink_all     ();
 	void fix_paths      ();
 	bool wipe_packages  ();
@@ -283,6 +286,9 @@ public:
 
 private:
 	bool elf_finds(const Elf*, const std::string& lib, const StringList *extrapath) const;
+
+	const StringList* get_obj_libpath(const Elf*) const;
+	const StringList* get_pkg_libpath(const Package*) const;
 
 public:
 	bool is_broken(const Package *pkg) const;
