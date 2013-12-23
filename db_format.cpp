@@ -730,6 +730,8 @@ db_read(DB *db, const std::string& filename)
 	}
 
 	in >= len;
+	decltype(db->required_found)::const_iterator fhnt =
+		db->required_found.end();
 	for (uint32_t i = 0; i != len; ++i) {
 		rptr<Elf> obj;
 		ObjectSet oset;
@@ -739,10 +741,12 @@ db_read(DB *db, const std::string& filename)
 			log(Error, "failed reading map of found depdendencies\n");
 			return false;
 		}
-		db->required_found[obj.get()] = std::move(oset);
+		fhnt = db->required_found.emplace_hint(fhnt, obj.get(), std::move(oset));
 	}
 
 	in >= len;
+	decltype(db->required_missing)::const_iterator mhnt =
+		db->required_missing.end();
 	for (uint32_t i = 0; i != len; ++i) {
 		rptr<Elf> obj;
 		StringSet sset;
@@ -752,7 +756,7 @@ db_read(DB *db, const std::string& filename)
 			log(Error, "failed reading map of missing depdendencies\n");
 			return false;
 		}
-		db->required_missing[obj.get()] = std::move(sset);
+		mhnt = db->required_missing.emplace_hint(mhnt, obj.get(), std::move(sset));
 	}
 
 	if (hdr.version < 2)
