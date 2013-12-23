@@ -142,6 +142,7 @@ help(int x)
 	             "                     handle ../ in paths (includes --relink)\n"
 	             "  -R, --rule=CMD     modify rules\n"
 	             "  --wipe             remove all packages, keep rules/settings\n"
+	             "  --touch            write out the db even without modifications\n"
 	             );
 	fprintf(out, "db query options:\n"
 	             "  -I, --info         show general information about the db\n"
