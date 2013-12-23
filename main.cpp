@@ -104,6 +104,8 @@ static struct option long_opts[] = {
 	{ "ls",         no_argument,       0, -1026-'f' },
 	{ "rm-files",   no_argument,       0, -1027-'f' },
 
+	{ "touch",      no_argument,       0, -1024-'T' },
+
 	{ 0, 0, 0, 0 }
 };
 
@@ -325,6 +327,8 @@ main(int argc, char **argv)
 			case -'F': oldmode = false; do_fixpaths = true; break;
 
 			case -'G': oldmode = false; do_integrity = true; break;
+
+			case -1024-'T': oldmode = false; modified = true; break;
 
 			case -1024-'D':
 				opt_package_depends = CfgStrToBool(optarg);
