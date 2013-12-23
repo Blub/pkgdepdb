@@ -281,6 +281,13 @@ write_objset(SerialOut &out, const ObjectSet& list)
 bool
 read_objset(SerialIn &in, ObjectSet& list)
 {
+#if 0
+	ObjectList lst;
+	if (!read_objlist(in, lst))
+		return false;
+	list.~ObjectSet();
+	new (&list) ObjectSet(lst.begin(), lst.end());
+#else
 	uint32_t len;
 	in >= len;
 	for (size_t i = 0; i != len; ++i) {
@@ -289,6 +296,7 @@ read_objset(SerialIn &in, ObjectSet& list)
 			return false;
 		list.insert(obj);
 	}
+#endif
 	return in.in;
 }
 
@@ -329,6 +337,14 @@ write_stringset(SerialOut &out, const StringSet &list)
 bool
 read_stringset(SerialIn &in, StringSet &list)
 {
+#if 1
+	StringList lst;
+	if (!read_stringlist(in, lst))
+		return false;
+	list.~StringSet();
+	new (&list) StringSet(lst.begin(), lst.end());
+#else
+	// "HINTS"... yeah right :P
 	uint32_t len;
 	in >= len;
 	StringSet::iterator hint = list.end();
@@ -337,6 +353,7 @@ read_stringset(SerialIn &in, StringSet &list)
 		in >= str;
 		hint = list.emplace_hint(hint, std::move(str));
 	}
+#endif
 	return in.in;
 }
 
