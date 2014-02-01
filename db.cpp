@@ -1293,7 +1293,7 @@ DB::check_integrity(const FilterList    &pkg_filters,
 			if (fnd == map.end())
 				map.emplace(name, std::move(std::vector<const Package*>({pkg})));
 			else
-				map[name].push_back(pkg);
+				fnd->second.push_back(pkg);
 		};
 		for (auto prov : p->provides)
 			addit(p, prov, providemap);
