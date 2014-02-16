@@ -279,6 +279,8 @@ DB::find_for(const Elf *obj, const std::string& needed, const StringList *extrap
 void
 DB::link_object_do(Elf *obj, const Package *owner)
 {
+	obj->req_found.clear();
+	obj->req_missing.clear();
 	link_object(obj, owner, obj->req_found, obj->req_missing);
 }
 
@@ -385,38 +387,37 @@ namespace thread {
 void
 DB::relink_all_threaded()
 {
-	using FoundMap   = std::map<Elf*, ObjectSet>;
-	using MissingMap = std::map<Elf*, StringSet>;
-	using Tuple      = std::tuple<FoundMap, MissingMap>;
-	auto worker = [this](std::atomic_ulong *count, size_t from, size_t to, Tuple &tup) {
-		FoundMap   *f = &std::get<0>(tup);
-		MissingMap *m = &std::get<1>(tup);
+	//using FoundMap   = std::map<Elf*, ObjectSet>;
+	//using MissingMap = std::map<Elf*, StringSet>;
+	//using Tuple      = std::tuple<FoundMap, MissingMap>;
+	auto worker = [this](std::atomic_ulong *count, size_t from, size_t to, int&) {
+		//FoundMap   *f = &std::get<0>(tup);
+		//MissingMap *m = &std::get<1>(tup);
 		for (size_t i = from; i != to; ++i) {
 			const Package *pkg = this->packages[i];
 
 			for (auto &obj : pkg->objects) {
-				ObjectSet req_found;
-				StringSet req_missing;
-				this->link_object(obj, pkg, req_found, req_missing);
-				if (req_found.size())
-					(*f)[obj] = std::move(req_found);
-				if (req_missing.size())
-					(*m)[obj] = std::move(req_missing);
+				this->link_object_do(obj, pkg);
+				//ObjectSet req_found;
+				//StringSet req_missing;
+				//this->link_object(obj, pkg, req_found, req_missing);
+				//(*f)[obj] = std::move(req_found);
+				//(*m)[obj] = std::move(req_missing);
 			}
 
 			if (count && !opt_quiet)
 				(*count)++;
 		}
 	};
-	auto merger = [this](std::vector<Tuple> &&tup) {
-		for (auto &t : tup) {
-			FoundMap   &found = std::get<0>(t);
-			MissingMap &missing = std::get<1>(t);
-			for (auto &f : found)
-				f.first->req_found = std::move(f.second);
-			for (auto &m : missing)
-				m.first->req_missing = std::move(m.second);
-		}
+	auto merger = [this](std::vector<int> &&) {
+		//for (auto &t : tup) {
+		//	FoundMap   &found = std::get<0>(t);
+		//	MissingMap &missing = std::get<1>(t);
+		//	for (auto &f : found)
+		//		f.first->req_found = std::move(f.second);
+		//	for (auto &m : missing)
+		//		m.first->req_missing = std::move(m.second);
+		//}
 	};
 	double fac = 100.0 / double(packages.size());
 	unsigned int pc = 1000;
@@ -431,7 +432,7 @@ DB::relink_all_threaded()
 		if (at == cnt)
 			printf("\n");
 	};
-	thread::work<Tuple>(packages.size(), status, worker, merger);
+	thread::work<int>(packages.size(), status, worker, merger);
 }
 #endif
 
