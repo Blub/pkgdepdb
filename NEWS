@@ -1,3 +1,8 @@
+2014-XX-XX Release 0.1.7
+	- Bugfixes:
+		* --relink didn't properly clear missing/found sets
+	- threaded --relink improved
+
 2013-12-23 Release 0.1.6
 	- Noticeably more efficient database reading.
 	- Tiny bugfixes

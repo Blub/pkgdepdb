@@ -1,3 +1,7 @@
+2014-02-16 Blub
+
+	* bugfix: --relink didn't properly clear the missing/found sets
+
 2013-12-23 Blub
 
 	* database bump: 8
