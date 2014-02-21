@@ -19,7 +19,7 @@ using ObjClass = uint32_t;
 
 static inline ObjClass
 getObjClass(unsigned char ei_class, unsigned char ei_data, unsigned char ei_osabi) {
-	return (ei_data << 16) | (ei_class << 8) | ei_osabi;
+	return static_cast<ObjClass>((ei_data << 16) | (ei_class << 8) | ei_osabi);
 }
 
 static inline ObjClass
@@ -308,7 +308,7 @@ DB::link_object(Elf *obj, const Package *owner, ObjectSet &req_found, StringSet 
 namespace thread {
 	static unsigned int ncpus_init() {
 		long v = sysconf(_SC_NPROCESSORS_CONF);
-		return (v <= 0 ? 1 : v);
+		return (v <= 0 ? 1 : (unsigned int)v);
 	}
 
 	static unsigned int ncpus = ncpus_init();
@@ -422,7 +422,7 @@ DB::relink_all_threaded()
 	double fac = 100.0 / double(packages.size());
 	unsigned int pc = 1000;
 	auto status = [fac, &pc](unsigned long at, unsigned long cnt, unsigned long threadcount) {
-		unsigned int newpc = fac * double(at);
+		auto newpc = (unsigned int)(fac * double(at));
 		if (newpc == pc)
 			return;
 		pc = newpc;
@@ -466,7 +466,7 @@ DB::relink_all()
 		}
 		if (!opt_quiet) {
 			++count;
-			unsigned int newpc = fac * double(count);
+			auto newpc = (unsigned int)(fac * double(count));
 			if (newpc != pc) {
 				pc = newpc;
 				printf("\rrelinking: %3u%% (%lu / %lu packages)",
@@ -1329,7 +1329,7 @@ DB::check_integrity(const FilterList    &pkg_filters,
 	double fac = 100.0 / double(packages.size());
 	unsigned int pc = 100;
 	auto status = [fac,&pc](unsigned long at, unsigned long cnt, unsigned long threads) {
-		unsigned int newpc = fac * double(at);
+		auto newpc = (unsigned int)(fac * double(at));
 		if (newpc == pc)
 			return;
 		pc = newpc;

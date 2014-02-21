@@ -253,9 +253,10 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 	}
 
 	// Check the size
-	size_t size = archive_entry_size(entry);
-	if (!size)
+	auto isize = archive_entry_size(entry);
+	if (isize <= 0)
 		return true;
+	auto size = static_cast<size_t>(isize);
 
 	if (isinfo)
 		return read_info(pkg, tar, size);

@@ -17,6 +17,85 @@ namespace util {
 
 namespace filter {
 
+Match::Match() {}
+Match::~Match() {}
+
+class ExactMatch : public Match {
+public:
+	std::string text_;
+	ExactMatch(std::string&&);
+	bool operator()(const std::string&) const override;
+};
+
+class GlobMatch : public Match {
+public:
+	std::string glob_;
+	GlobMatch(std::string&&);
+	bool operator()(const std::string&) const override;
+};
+
+ExactMatch::ExactMatch(std::string &&text)
+: text_(move(text)) {}
+
+GlobMatch::GlobMatch(std::string &&glob)
+: glob_(move(glob)) {}
+
+rptr<Match>
+Match::CreateExact(std::string &&text) {
+	return new ExactMatch(move(text));
+}
+
+rptr<Match>
+Match::CreateGlob (std::string &&text) {
+	return new GlobMatch(move(text));
+}
+
+#ifdef WITH_REGEX
+class RegexMatch : public Match {
+public:
+	std::string pattern_;
+	bool        icase_;
+	regex_t     regex_;
+	bool        compiled_;
+	RegexMatch(std::string&&, bool icase);
+	~RegexMatch();
+	bool operator()(const std::string&) const override;
+};
+
+RegexMatch::RegexMatch(std::string &&pattern, bool icase)
+: pattern_ (move(pattern)),
+  icase_   (icase),
+  compiled_(false)
+{
+	int cflags = REG_NOSUB | REG_EXTENDED;
+	if (icase) cflags |= REG_ICASE;
+
+	int err;
+	if ( (err = ::regcomp(&regex_, pattern_.c_str(), cflags)) != 0) {
+		char buf[4096];
+		regerror(err, &regex_, buf, sizeof(buf));
+		log(Error, "failed to compile regex (flags: %s): %s\n",
+		    (icase ? "case insensitive" : "case sensitive"),
+		    pattern.c_str());
+		log(Error, "regex error: %s\n", buf);
+		return;
+	}
+	compiled_ = true;
+}
+
+RegexMatch::~RegexMatch() {
+	regfree(&regex_);
+}
+
+rptr<Match>
+Match::CreateRegex(std::string &&text, bool icase) {
+	auto match = mk_rptr<RegexMatch>(move(text), icase);
+	if (!match->compiled_)
+		return nullptr;
+	return match.release();
+}
+#endif
+
 PackageFilter::PackageFilter(bool neg_)
 : negate(neg_)
 {}
@@ -169,180 +248,29 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
 	}
 }
 
-#ifdef WITH_REGEX
-static rptr<dtor_ptr<regex_t>>
-make_regex(const std::string &pattern, bool ext, bool icase) {
-	unique_ptr<regex_t> regex(new regex_t);
-	int cflags = REG_NOSUB;
-	if (ext)   cflags |= REG_EXTENDED;
-	if (icase) cflags |= REG_ICASE;
-
-	int err;
-	if ( (err = ::regcomp(regex.get(), pattern.c_str(), cflags)) != 0) {
-		char buf[4096];
-		regerror(err, regex.get(), buf, sizeof(buf));
-		log(Error, "failed to compile regex (flags: %s, %s): %s\n",
-		    (ext ? "extended" : "basic"),
-		    (icase ? "case insensitive" : "case sensitive"),
-		    pattern.c_str());
-		log(Error, "regex error: %s\n", buf);
-		return nullptr;
-	}
-
-	return new dtor_ptr<regex_t>(regex.release(), [](regex_t *r) {
-		regfree(r);
-		delete r;
-	});
-}
-
-// Package Name (Regex)
 unique_ptr<PackageFilter>
-PackageFilter::nameregex(const std::string &pattern,
-                         bool ext, bool icase, bool neg)
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<PkgFilt>(neg, [regex](const Package &pkg) {
-		regmatch_t rm;
-		return 0 == regexec(regex->get(), pkg.name.c_str(), 0, &rm, 0);
+PackageFilter::name(rptr<Match> matcher, bool neg) {
+	return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
+		return (*matcher)(pkg.name);
 	});
 }
 
 template<typename CONT>
 static unique_ptr<PackageFilter>
-make_pkgfilter_regex(const std::string &pattern,
-                     bool ext, bool icase,
-                     bool neg, CONT (Package::*member))
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<PkgFilt>(neg, [regex,member](const Package &pkg) {
-		regmatch_t rm;
+make_pkgfilter(rptr<Match> matcher, bool neg, CONT (Package::*member)) {
+	return mk_unique<PkgFilt>(neg, [matcher,member](const Package &pkg) {
 		for (auto &i : pkg.*member) {
-			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
+			if ((*matcher)(i))
 				return true;
 		}
 		return false;
 	});
 }
-
-unique_ptr<ObjectFilter>
-ObjectFilter::nameregex(const std::string &pattern,
-                        bool ext, bool icase, bool neg)
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<ObjFilt>(neg, [regex](const Elf &elf) {
-		regmatch_t rm;
-		return 0 == regexec(regex->get(), elf.basename.c_str(), 0, &rm, 0);
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::pathregex(const std::string &pattern,
-                        bool ext, bool icase, bool neg)
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<ObjFilt>(neg, [regex](const Elf &elf) {
-		regmatch_t rm;
-		std::string p(elf.dirname); p.append(1, '/'); p.append(elf.basename);
-		return 0 == regexec(regex->get(), p.c_str(), 0, &rm, 0);
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::dependsregex(const std::string &pattern,
-                           bool ext, bool icase, bool neg)
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<ObjFilt>(neg, [regex](const Elf &elf) {
-		regmatch_t rm;
-		for (auto &lib : elf.needed) {
-			if (0 == regexec(regex->get(), lib.c_str(), 0, &rm, 0))
-				return true;
-		}
-		return false;
-	});
-}
-
-unique_ptr<StringFilter>
-StringFilter::filterregex(const std::string &pattern,
-                          bool ext, bool icase, bool neg)
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<StrFilt>(neg, [regex](const std::string &str) {
-		regmatch_t rm;
-		return 0 == regexec(regex->get(), str.c_str(), 0, &rm, 0);
-	});
-}
-
-#endif
-
-unique_ptr<PackageFilter>
-PackageFilter::name(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		return pkg.name == s;
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::nameglob(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		return match_glob(s, 0, pkg.name, 0);
-	});
-}
-template<typename CONT>
-static unique_ptr<PackageFilter>
-make_pkgfilter(const std::string &s, bool neg, CONT (Package::*member)) {
-	return mk_unique<PkgFilt>(neg, [s,member](const Package &pkg) {
-		return util::contains(pkg.*member, s);
-	});
-}
-
-template<typename CONT>
-static unique_ptr<PackageFilter>
-make_pkgfilter_glob(const std::string &s, bool neg, CONT (Package::*member)) {
-	return mk_unique<PkgFilt>(neg, [s,member](const Package &pkg) {
-		for (auto &i : pkg.*member) {
-			if (match_glob(s, 0, i, 0))
-				return true;
-		}
-		return false;
-	});
-}
-
-#define MAKE_PKGFILTER_REGULAR(NAME,VAR) \
+#define MAKE_PKGFILTER(NAME,VAR)                      \
 unique_ptr<PackageFilter>                             \
-PackageFilter::NAME(const std::string &s, bool neg) { \
-	return make_pkgfilter(s, neg, &Package::VAR);       \
-} \
-unique_ptr<PackageFilter>                                   \
-PackageFilter::NAME##glob(const std::string &s, bool neg) { \
-	return make_pkgfilter_glob(s, neg, &Package::VAR);        \
+PackageFilter::NAME(rptr<Match> matcher, bool neg) {  \
+	return make_pkgfilter(matcher, neg, &Package::VAR); \
 }
-
-#ifdef WITH_REGEX
-# define MAKE_PKGFILTER(NAME,VAR) \
-MAKE_PKGFILTER_REGULAR(NAME,VAR)                           \
-unique_ptr<PackageFilter>                                  \
-PackageFilter::NAME##regex(const std::string &pattern,     \
-                           bool ext, bool icase, bool neg) \
-{                                                          \
-	return make_pkgfilter_regex(pattern, ext, icase,         \
-	                            neg, &Package::VAR);         \
-}
-#else
-# define MAKE_PKGFILTER(A,B) MAKE_PKGFILTER_REGULAR(A,B)
-#endif
 
 #define MAKE_PKGFILTER1(NAME) MAKE_PKGFILTER(NAME,NAME)
 
@@ -357,54 +285,21 @@ MAKE_PKGFILTER1(replaces)
 #undef MAKE_PKGFILTER1
 
 unique_ptr<PackageFilter>
-PackageFilter::alldepends(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		return util::contains(pkg.depends, s) ||
-		       util::contains(pkg.optdepends, s);
-	});
-}
-
-unique_ptr<PackageFilter>
-PackageFilter::alldependsglob(const std::string &s, bool neg) {
-	return mk_unique<PkgFilt>(neg, [s](const Package &pkg) {
-		for (auto &i : pkg.depends) {
-			if (match_glob(s, 0, i, 0))
+PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
+	return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
+		for (auto &i : pkg.depends)
+			if ((*matcher)(i))
 				return true;
-		}
-		for (auto &i : pkg.optdepends) {
-			if (match_glob(s, 0, i, 0))
+		for (auto &i : pkg.optdepends)
+			if ((*matcher)(i))
 				return true;
-		}
 		return false;
 	});
 }
 
-#ifdef WITH_REGEX
 unique_ptr<PackageFilter>
-PackageFilter::alldependsregex(const std::string &pattern,
-                               bool ext, bool icase, bool neg)
-{
-	auto regex = make_regex(pattern, ext, icase);
-	if (!regex)
-		return nullptr;
-	return mk_unique<PkgFilt>(neg, [regex](const Package &pkg) {
-		regmatch_t rm;
-		for (auto &i : pkg.depends) {
-			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
-				return true;
-		}
-		for (auto &i : pkg.optdepends) {
-			if (0 == regexec(regex->get(), i.c_str(), 0, &rm, 0))
-				return true;
-		}
-		return false;
-	});
-}
-#endif
-
-unique_ptr<PackageFilter>
-PackageFilter::pkglibdepends(const std::string &s, bool neg) {
-	rptr<ObjectFilter> libfilter(ObjectFilter::depends(s, false).release());
+PackageFilter::pkglibdepends(rptr<Match> matcher, bool neg) {
+	rptr<ObjectFilter> libfilter(ObjectFilter::depends(matcher, false).release());
 	if (!libfilter)
 		return nullptr;
 	return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
@@ -414,36 +309,6 @@ PackageFilter::pkglibdepends(const std::string &s, bool neg) {
 		return false;
 	});
 }
-
-unique_ptr<PackageFilter>
-PackageFilter::pkglibdependsglob(const std::string &s, bool neg) {
-	rptr<ObjectFilter> libfilter(ObjectFilter::dependsglob(s, false).release());
-	if (!libfilter)
-		return nullptr;
-	return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
-		for (auto &e : pkg.objects)
-			if (libfilter->visible(*e))
-				return true;
-		return false;
-	});
-}
-
-#ifdef WITH_REGEX
-unique_ptr<PackageFilter>
-PackageFilter::pkglibdependsregex(const std::string &pattern,
-                                  bool ext, bool icase, bool neg)
-{
-	rptr<ObjectFilter> libfilter(ObjectFilter::dependsregex(pattern, ext, icase, false).release());
-	if (!libfilter)
-		return nullptr;
-	return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
-		for (auto &e : pkg.objects)
-			if (libfilter->visible(*e))
-				return true;
-		return false;
-	});
-}
-#endif
 
 unique_ptr<PackageFilter>
 PackageFilter::broken(bool neg) {
@@ -454,70 +319,52 @@ PackageFilter::broken(bool neg) {
 
 // general purpose object filter
 unique_ptr<ObjectFilter>
-ObjectFilter::name(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		return elf.basename == s;
+ObjectFilter::name(rptr<Match> matcher, bool neg) {
+	return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
+		return (*matcher)(elf.basename);
 	});
 }
 
 unique_ptr<ObjectFilter>
-ObjectFilter::nameglob(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		return match_glob(s, 0, elf.basename, 0);
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::path(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		return (s.length() < elf.dirname.length()+2 ||
-		        s[elf.dirname.length()] != '/'      ||
-		        s.compare(0, elf.dirname.length(), elf.dirname) != 0 ||
-		        s.compare(elf.dirname.length()+1, std::string::npos,
-		                  elf.basename) != 0);
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::pathglob(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
+ObjectFilter::path(rptr<Match> matcher, bool neg) {
+	return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
 		std::string p(elf.dirname); p.append(1, '/'); p.append(elf.basename);
-		return match_glob(s, 0, p, 0);
+		return (*matcher)(p);
 	});
 }
 
 unique_ptr<ObjectFilter>
-ObjectFilter::depends(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		return util::contains(elf.needed, s);
-	});
-}
-
-unique_ptr<ObjectFilter>
-ObjectFilter::dependsglob(const std::string &s, bool neg) {
-	return mk_unique<ObjFilt>(neg, [s](const Elf &elf) {
-		for (auto &i : elf.needed) {
-			if (match_glob(s, 0, i, 0))
+ObjectFilter::depends(rptr<Match> matcher, bool neg) {
+	return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
+		for (auto &i : elf.needed)
+			if ((*matcher)(i))
 				return true;
-		}
 		return false;
 	});
 }
 
 // string filter
 unique_ptr<StringFilter>
-StringFilter::filter(const std::string &s, bool neg) {
-	return mk_unique<StrFilt>(neg, [s](const std::string &str) {
-		return str == s;
+StringFilter::filter(rptr<Match> matcher, bool neg) {
+	return mk_unique<StrFilt>(neg, [matcher](const std::string &str) {
+		return (*matcher)(str);
 	});
 }
 
-unique_ptr<StringFilter>
-StringFilter::filterglob(const std::string &s, bool neg) {
-	return mk_unique<StrFilt>(neg, [s](const std::string &str) {
-		return match_glob(s, 0, str, 0);
-	});
+bool ExactMatch::operator()(const std::string &other) const {
+	return text_ == other;
 }
+
+bool GlobMatch::operator()(const std::string &other) const {
+	return match_glob(glob_, 0, other, 0);
+}
+
+#ifdef WITH_REGEX
+bool RegexMatch::operator()(const std::string &other) const {
+	regmatch_t rm;
+	return 0 == regexec(&regex_, other.c_str(), 0, &rm, 0);
+}
+#endif
 
 } // namespace filter
 

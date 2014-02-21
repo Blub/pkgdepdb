@@ -42,7 +42,8 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 {
 	std::unique_ptr<Elf> object(new Elf);
 
-	auto checksize = [size,name](size_t off, size_t sz, const char *msg) -> bool {
+	auto checksize = [size,name](ssize_t ioff, size_t sz, const char *msg) -> bool {
+		size_t off = size_t(ioff);
 		if (off + sz > size) {
 			log(Error, "%s: unexpected end of file in ELF file, offset %lu (file size %lu): %s\n",
 			    name, (unsigned long)(off + sz), (unsigned long)size, msg);
@@ -51,11 +52,13 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 		return true;
 	};
 
-	HDR  *hdr   = (HDR*)(data);
-	auto  shnum = Eswap<BE>(hdr->e_shnum);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-align"
+	HDR  *hdr     = (HDR*)(data);
+	auto  shnum   = Eswap<BE>(hdr->e_shnum);
 	auto  e_shoff = Eswap<BE>(hdr->e_shoff);
 
-	if (!checksize(e_shoff, sizeof(SecHDR), "looking for section headers"))
+	if (!checksize((ssize_t)e_shoff, sizeof(SecHDR), "looking for section headers"))
 		return 0;
 
 	SecHDR *sec_start = (SecHDR*)(data + e_shoff);
@@ -83,6 +86,7 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 	}
 
 	Dyn   *dyn_start = (Dyn*)(data + Eswap<BE>(dynhdr->sh_offset));
+#pragma clang diagnostic pop
 	size_t dyncount = Eswap<BE>(dynhdr->sh_size) / sizeof(Dyn);
 
 	if (!checksize((char*)(dyn_start + dyncount-1)-data, sizeof(Dyn), ".dynamic entries"))
@@ -118,7 +122,7 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 		return 0;
 	}
 
-	size_t dynstr_at = Eswap<BE>(dynstrsec->sh_offset);
+	auto dynstr_at = ssize_t(Eswap<BE>(dynstrsec->sh_offset));
 	if (!checksize(dynstr_at, strsz, "looking for .dynstr section"))
 		return 0;
 
@@ -172,10 +176,10 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 	return object.release();
 }
 
-auto LoadElf32LE = &LoadElf<false, Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
-auto LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
-auto LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
-auto LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
+static const auto LoadElf32LE = &LoadElf<false, Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
+static const auto LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
+static const auto LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
+static const auto LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
 
 Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
 {

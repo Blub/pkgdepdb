@@ -89,6 +89,14 @@ public:
 	bool operator==(T* t) const {
 		return ptr == t;
 	}
+	inline T* release() {
+		if (!ptr)
+			return nullptr;
+		auto p = ptr;
+		ptr->refcount--;
+		ptr = nullptr;
+		return p;
+	}
 };
 
 class guard {
@@ -106,6 +114,11 @@ public:
 template<class T, class... Args>
 inline unique_ptr<T> mk_unique(Args&&... args) {
 	return move(unique_ptr<T>(new T(std::forward<Args>(args)...)));
+}
+
+template<class T, class... Args>
+inline rptr<T> mk_rptr(Args&&... args) {
+  return move(rptr<T>(new T(std::forward<Args>(args)...)));
 }
 
 // pointer containing a user-defined destructor

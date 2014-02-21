@@ -39,7 +39,7 @@ template<typename T>
 static std::function<bool(std::string&)>
 cfg_numeric(T &ref) {
 	return [&ref](std::string &line) -> bool {
-		ref = strtoul(line.c_str(), nullptr, 0);
+		ref = static_cast<T>(strtoul(line.c_str(), nullptr, 0));
 		return true;
 	};
 }
@@ -146,7 +146,7 @@ cfg_json(std::string &line)
 	return true;
 }
 
-bool
+static bool
 ReadConfig(std::istream &in, const char *path)
 {
 	std::string line;

@@ -11,8 +11,8 @@ template<> inline uint8_t  Eswap_be(uint8_t  x) {
 
 template<> inline uint16_t Eswap_be(uint16_t x) {
 	uint8_t *y = (uint8_t*)&x;
-	return (uint16_t(y[0])<<(1*8)) |
-	       (uint16_t(y[1])<<(0*8));
+	return uint16_t(uint16_t(y[0])<<(1*8)) |
+	       uint16_t(uint16_t(y[1])<<(0*8));
 }
 
 template<> inline uint32_t Eswap_be(uint32_t x) {
@@ -43,8 +43,8 @@ template<> inline uint8_t  Eswap_le(uint8_t  x) {
 
 template<> inline uint16_t Eswap_le(uint16_t x) {
 	uint8_t *y = (uint8_t*)&x;
-	return (uint16_t(y[0])<<(0*8)) |
-	       (uint16_t(y[1])<<(1*8));
+	return uint16_t(uint16_t(y[0])<<(0*8)) |
+	       uint16_t(uint16_t(y[1])<<(1*8));
 }
 
 template<> inline uint32_t Eswap_le(uint32_t x) {
@@ -68,10 +68,11 @@ template<> inline uint64_t Eswap_le(uint64_t x) {
 }
 
 template<bool BE, typename T> inline T Eswap(T x) {
+	using unsigned_t = typename std::make_unsigned<T>::type;
 	if (BE)
-		return static_cast<T>(Eswap_be<typename std::make_unsigned<T>::type>(x));
+		return static_cast<T>(Eswap_be<unsigned_t>(unsigned_t(x)));
 	else
-		return static_cast<T>(Eswap_le<typename std::make_unsigned<T>::type>(x));
+		return static_cast<T>(Eswap_le<unsigned_t>(unsigned_t(x)));
 }
 
 #endif

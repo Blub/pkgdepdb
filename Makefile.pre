@@ -1,0 +1,11 @@
+CLANG_FLAGS := -Weverything \
+               -Wno-c++98-compat \
+               -Wno-c++98-compat-pedantic \
+               -Wno-padded \
+               -Wno-weak-vtables \
+               -Wno-global-constructors \
+               -Wno-exit-time-destructors \
+               -Wno-shadow \
+               -Wno-sign-conversion \
+               -Werror
+

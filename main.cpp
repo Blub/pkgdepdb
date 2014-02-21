@@ -110,7 +110,7 @@ static struct option long_opts[] = {
 };
 
 static void
-help(int x)
+help [[noreturn]] (int x)
 {
 	FILE *out = x ? stderr : stdout;
 	fprintf(out, "usage: %s [options] packages...\n", arg0);
@@ -197,7 +197,7 @@ help(int x)
 }
 
 static void
-version(int x)
+version [[noreturn]] (int x)
 {
 	printf("pkgdepdb " FULL_VERSION_STRING "\n");
 	exit(x);
@@ -206,25 +206,25 @@ version(int x)
 // don't ask
 class ArgArg {
 public:
-	bool        on;
-	bool       *mode;
-	std::vector<std::string> arg;
+	bool        on_;
+	bool       *mode_;
+	std::vector<std::string> arg_;
 
 	ArgArg(bool *om) {
-		mode = om;
-		on = false;
+		mode_ = om;
+		on_ = false;
 	}
 
-	operator bool() const { return on; }
-	inline bool operator!() const { return !on; }
+	operator bool() const { return on_; }
+	inline bool operator!() const { return !on_; }
 	inline void operator=(bool on) {
-		this->on = on;
-		*mode = false;
+		on_ = on;
+		*mode_ = false;
 	}
 	inline void operator=(const char *arg) {
-		on = true;
-		*mode = false;
-		this->arg.push_back(arg);
+		on_ = true;
+		*mode_ = false;
+		arg_.push_back(arg);
 	}
 };
 
@@ -233,8 +233,6 @@ static bool parse_filter(const std::string &filter,
                          FilterList&,
                          ObjFilterList&,
                          StrFilterList&);
-
-bool db_store_json(DB *db, const std::string& filename);
 
 int
 main(int argc, char **argv)
@@ -281,6 +279,8 @@ main(int argc, char **argv)
 	LogLevel = Message;
 	if (!ReadConfig())
 		return 1;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunreachable-code"
 	for (;;) {
 		int opt_index = 0;
 		int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:j:f:", long_opts, &opt_index);
@@ -384,7 +384,7 @@ main(int argc, char **argv)
 				break;
 
 			case 'j':
-				opt_max_jobs = strtoul(optarg, nullptr, 0);
+				opt_max_jobs = (unsigned int)strtoul(optarg, nullptr, 0);
 				// some sanity:
 				if (opt_max_jobs > 32)
 					opt_max_jobs = 32;
@@ -403,6 +403,7 @@ main(int argc, char **argv)
 				break;
 		}
 	}
+#pragma clang diagnostic pop
 
 	if (opt_quiet)
 		LogLevel = Print;
@@ -490,20 +491,20 @@ main(int argc, char **argv)
 	}
 
 	if (rulemod) {
-		for (auto &rule : rulemod.arg)
+		for (auto &rule : rulemod.arg_)
 			modified = parse_rule(db.get(), rule) || modified;
 	}
 
 	if (ld_append) {
-		for (auto &dir : ld_append.arg)
+		for (auto &dir : ld_append.arg_)
 			modified = db->ld_append(dir)  || modified;
 	}
 	if (ld_prepend) {
-		for (auto &dir : ld_prepend.arg)
+		for (auto &dir : ld_prepend.arg_)
 			modified = db->ld_prepend(dir) || modified;
 	}
 	if (ld_delete) {
-		for (auto &dir : ld_delete.arg)
+		for (auto &dir : ld_delete.arg_)
 			modified = db->ld_delete(dir)  || modified;
 	}
 	for (auto &ins : ld_insert) {
@@ -668,7 +669,7 @@ parse_rule(DB *db, const std::string& rule)
 		})
 		|| try_rule(rule, "pkg-ld-insert:", "PKG:ID:PATH", &ret,
 		[db,&rule](const std::string &cmd) {
-			size_t s1, s2;
+			size_t s1, s2 = 0;
 			s1 = cmd.find_first_of(':');
 			if (s1 != std::string::npos)
 				s2 = cmd.find_first_of(':', s1+1);
@@ -741,6 +742,14 @@ parse_filter(const std::string &filter,
 		++at;
 	}
 
+	if (filter.compare(at, std::string::npos, "broken") == 0) {
+		auto pf = filter::PackageFilter::broken(neg);
+		if (!pf)
+			return false;
+		pkg_filters.push_back(move(pf));
+		return true;
+	}
+
 #ifdef WITH_REGEX
 	std::string regex;
 	bool icase = false;
@@ -775,126 +784,49 @@ parse_filter(const std::string &filter,
 	};
 #endif
 
-	if (filter.compare(at, 4, "name") == 0) {
-		at += 4;
-		unique_ptr<filter::PackageFilter> pf(nullptr);
-		if (filter[at] == '=') // exact
-			pf = move(filter::PackageFilter::name(filter.substr(at+1), neg));
-		else if (filter[at] == ':') // glob
-			pf = move(filter::PackageFilter::nameglob(filter.substr(at+1), neg));
+	auto parsematch = [&]() -> rptr<filter::Match> {
+		if (filter[at] == '=')
+			return filter::Match::CreateExact(move(filter.substr(at+1)));
+		else if (filter[at] == ':')
+			return filter::Match::CreateGlob(move(filter.substr(at+1)));
 #ifdef WITH_REGEX
 		else if (parse_regex())
-			pf = move(filter::PackageFilter::nameregex(regex, true, icase, neg));
+			return filter::Match::CreateRegex(move(regex), icase);
 #endif
-		else {
-			log(Error, "unknown name filter: %s\n", filter.c_str());
-			return false;
-		}
-		if (!pf) {
-			log(Error, "failed to create filter: %s\n", filter.c_str());
-			return false;
-		}
-		pkg_filters.push_back(move(pf));
-		return true;
-	}
-#ifdef WITH_REGEX
-# define MAKE_PKGFILTER_REGEXPART(NAME)                                       \
-		else if (parse_regex())                                                   \
-			pf = move(filter::PackageFilter::NAME##regex(regex, true, icase, neg));
-#else
-# define MAKE_PKGFILTER_REGEXPART(NAME)
-#endif
-# define MAKE_PKGFILTER(NAME) \
-	else if (filter.compare(at, sizeof(#NAME)-1, #NAME) == 0) {                 \
-		at += sizeof(#NAME)-1;                                                    \
-		unique_ptr<filter::PackageFilter> pf(nullptr);                            \
-		if (filter[at] == '=') /* exact */                                        \
-			pf = move(filter::PackageFilter::NAME(filter.substr(at+1), neg));       \
-		else if (filter[at] == ':') /* glob */                                    \
-			pf = move(filter::PackageFilter::NAME##glob(filter.substr(at+1), neg)); \
-		MAKE_PKGFILTER_REGEXPART(NAME)                                            \
-		else {                                                                    \
-			log(Error, "unknown " #NAME " filter: %s\n", filter.c_str());           \
-			return false;                                                           \
-		}                                                                         \
-		if (!pf) {                                                                \
-			log(Error, "failed to create " #NAME " filter: %s\n", filter.c_str());  \
-			return false;                                                           \
-		}                                                                         \
-		pkg_filters.push_back(move(pf));                                          \
-		return true;                                                              \
-	}
-	MAKE_PKGFILTER(group)
-	MAKE_PKGFILTER(depends)
-	MAKE_PKGFILTER(optdepends)
-	MAKE_PKGFILTER(alldepends)
-	MAKE_PKGFILTER(provides)
-	MAKE_PKGFILTER(conflicts)
-	MAKE_PKGFILTER(replaces)
-	MAKE_PKGFILTER(pkglibdepends)
-# undef MAKE_PKGFILTER
-# undef MAKE_PKGFILTER_REGEXPART
-	else if (filter.compare(at, std::string::npos, "broken") == 0) {
-		auto pf = filter::PackageFilter::broken(neg);
-		if (!pf)
-			return false;
-		pkg_filters.push_back(move(pf));
-		return true;
-	}
-#ifdef WITH_REGEX
-# define MAKE_OBJFILTER_REGEXPART(NAME)                                       \
-		else if (parse_regex())                                                   \
-			pf = move(filter::ObjectFilter::NAME##regex(regex, true, icase, neg));
-#else
-# define MAKE_OBJFILTER_REGEXPART(NAME)
-#endif
-# define MAKE_OBJFILTER(NAME) \
-	else if (filter.compare(at, 3+sizeof(#NAME)-1, "lib" #NAME) == 0) {             \
-		at += 3+sizeof(#NAME)-1;                                                      \
-		unique_ptr<filter::ObjectFilter> pf(nullptr);                                 \
-		if (filter[at] == '=') /* exact */                                            \
-			pf = move(filter::ObjectFilter::NAME(filter.substr(at+1), neg));       \
-		else if (filter[at] == ':') /* glob */                                        \
-			pf = move(filter::ObjectFilter::NAME##glob(filter.substr(at+1), neg)); \
-		MAKE_OBJFILTER_REGEXPART(NAME)                                                \
-		else {                                                                        \
-			log(Error, "unknown lib" #NAME " filter: %s\n", filter.c_str());            \
-			return false;                                                               \
-		}                                                                             \
-		if (!pf) {                                                                    \
-			log(Error, "failed to create lib" #NAME " filter: %s\n", filter.c_str());   \
-			return false;                                                               \
-		}                                                                             \
-		obj_filters.push_back(move(pf));                                              \
-		return true;                                                                  \
-	}
-	MAKE_OBJFILTER(name)
-	MAKE_OBJFILTER(depends)
-	MAKE_OBJFILTER(path)
-# undef MAKE_OBJFILTER
-# undef MAKE_OBJFILTER_REGEXPART
-	else if (filter.compare(at, 4, "file") == 0) {
-		at += 4;
-		unique_ptr<filter::StringFilter> pf(nullptr);
-		if (filter[at] == '=') /* exact */
-			pf = move(filter::StringFilter::filter(filter.substr(at+1), neg));
-		else if (filter[at] == ':') /* glob */
-			pf = move(filter::StringFilter::filterglob(filter.substr(at+1), neg));
-#ifdef WITH_REGEX
-		else if (parse_regex())
-			pf = move(filter::StringFilter::filterregex(regex, true, icase, neg));
-#endif
-		else {
-			log(Error, "unknown file filter: %s\n", filter.c_str());
-			return false;
-		}
-		if (!pf) {
-			log(Error, "failed to create file filter: %s\n", filter.c_str());
-			return false;
-		}
-		str_filters.push_back(move(pf));
-		return true;
-	}
+		return nullptr;
+	};
+
+#define ADDFILTER2(TYPE, NAME, FUNC, DEST) do {                 \
+	if (filter.compare(at, sizeof(#NAME)-1, #NAME) == 0) {        \
+		at += sizeof(#NAME)-1;                                      \
+		auto match = parsematch();                                  \
+		if (!match)                                                 \
+			return false;                                             \
+		DEST.push_back(move(filter::TYPE::FUNC(move(match), neg))); \
+		return true;                                                \
+	} } while(0)
+
+#define ADDFILTER(TYPE, NAME, DEST) ADDFILTER2(TYPE, NAME, NAME, DEST)
+
+#define MAKE_PKGFILTER(NAME) ADDFILTER(PackageFilter, NAME, pkg_filters)
+	MAKE_PKGFILTER(name);
+	MAKE_PKGFILTER(group);
+	MAKE_PKGFILTER(depends);
+	MAKE_PKGFILTER(optdepends);
+	MAKE_PKGFILTER(alldepends);
+	MAKE_PKGFILTER(provides);
+	MAKE_PKGFILTER(conflicts);
+	MAKE_PKGFILTER(replaces);
+	MAKE_PKGFILTER(pkglibdepends);
+#undef MAKE_PKGFILTER
+
+#define MAKE_OBJFILTER(NAME) ADDFILTER(ObjectFilter, NAME, obj_filters)
+	MAKE_OBJFILTER(name);
+	MAKE_OBJFILTER(depends);
+	MAKE_OBJFILTER(path);
+#undef MAKE_OBJFILTER
+
+	ADDFILTER2(StringFilter, file, filter, str_filters);
 
 	return false;
 }

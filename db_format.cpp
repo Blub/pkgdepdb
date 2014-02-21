@@ -160,6 +160,8 @@ public:
 		return out && !err;
 	}
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 	virtual ssize_t
 	write(const void *buf, size_t bytes)
 	{
@@ -171,6 +173,7 @@ public:
 	{
 		return gzread(out, buf, bytes);
 	}
+#pragma clang diagnostic pop
 
 	virtual size_t tellp() const {
 		return gztell(out);
@@ -244,7 +247,7 @@ static bool read_obj (SerialIn  &in,  rptr<Elf> &obj);
 bool
 write_objlist(SerialOut &out, const ObjectList& list)
 {
-	uint32_t len = list.size();
+	auto len = static_cast<uint32_t>(list.size());
 	out.out.write((const char*)&len, sizeof(len));
 	for (auto &obj : list) {
 		if (!write_obj(out, obj))
@@ -269,7 +272,7 @@ read_objlist(SerialIn &in, ObjectList& list)
 bool
 write_objset(SerialOut &out, const ObjectSet& list)
 {
-	uint32_t len = list.size();
+	auto len = static_cast<uint32_t>(list.size());
 	out.out.write((const char*)&len, sizeof(len));
 	for (auto &obj : list) {
 		if (!write_obj(out, obj))
@@ -303,7 +306,7 @@ read_objset(SerialIn &in, ObjectSet& list)
 bool
 write_stringlist(SerialOut &out, const std::vector<std::string> &list)
 {
-	uint32_t len = list.size();
+	auto len = static_cast<uint32_t>(list.size());
 	out.out.write((const char*)&len, sizeof(len));
 	for (auto &s : list)
 		out <= s;
@@ -327,7 +330,7 @@ read_stringlist(SerialIn &in, std::vector<std::string> &list)
 bool
 write_stringset(SerialOut &out, const StringSet &list)
 {
-	uint32_t len = list.size();
+	auto len = static_cast<uint32_t>(list.size());
 	out.out.write((const char*)&len, sizeof(len));
 	for (auto &s : list)
 		out <= s;

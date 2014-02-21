@@ -81,7 +81,7 @@ operator>=(SerialIn &in, T& r)
 static inline SerialOut&
 operator<=(SerialOut &out, const std::string& r)
 {
-	uint32_t len = r.length();
+	auto len = static_cast<uint32_t>(r.length());
 	out.out.write((const char*)&len, sizeof(len));
 	out.out.write(r.c_str(), len);
 	return out;

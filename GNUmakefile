@@ -5,6 +5,11 @@ OBJECTS_SRC = $(subst .o,.cpp,$(OBJECTS))
 -include .localflags
 
 -include .cflags
+
+-include Makefile.pre
+ifeq ($(CXX),clang++)
+	CPPFLAGS+=$(CLANG_FLAGS)
+endif
 -include Makefile
 
 ifneq ($(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null),)

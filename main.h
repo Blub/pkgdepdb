@@ -58,10 +58,9 @@ extern unsigned int opt_max_jobs;
 extern unsigned int opt_json;
 
 namespace JSONBits {
-	enum {
+	static const unsigned int
 		Query = (1<<0),
-		DB    = (1<<1)
-	};
+		DB    = (1<<1);
 }
 
 bool ReadConfig     ();
@@ -302,6 +301,20 @@ public: // NOT SERIALIZED:
 };
 
 namespace filter {
+class Match {
+public:
+	size_t refcount; // make it a capturable rptr
+	Match();
+	virtual ~Match();
+	virtual bool operator()(const std::string&) const = 0;
+
+	static rptr<Match> CreateExact(std::string &&text);
+	static rptr<Match> CreateGlob (std::string &&text);
+#ifdef WITH_REGEX
+	static rptr<Match> CreateRegex(std::string &&text, bool icase);
+#endif
+};
+
 class PackageFilter {
 protected:
 	PackageFilter(bool);
@@ -320,27 +333,17 @@ public:
 		return visible(db, pkg) != negate;
 	}
 
-#ifdef WITH_REGEX
-# define MAKE_PKGFILTER(NAME) \
-	static unique_ptr<PackageFilter> NAME(const std::string&, bool neg); \
-	static unique_ptr<PackageFilter> NAME##glob(const std::string&, bool neg); \
-	static unique_ptr<PackageFilter> NAME##regex(const std::string&, bool ext, bool icase, bool neg);
-#else
-# define MAKE_PKGFILTER(NAME) \
-	static unique_ptr<PackageFilter> NAME(const std::string&, bool neg); \
-	static unique_ptr<PackageFilter> NAME##glob(const std::string&, bool neg);
-#endif
-	MAKE_PKGFILTER(name)
-	MAKE_PKGFILTER(group)
-	MAKE_PKGFILTER(depends)
-	MAKE_PKGFILTER(optdepends)
-	MAKE_PKGFILTER(alldepends)
-	MAKE_PKGFILTER(provides)
-	MAKE_PKGFILTER(conflicts)
-	MAKE_PKGFILTER(replaces)
-	MAKE_PKGFILTER(pkglibdepends)
-#undef MAKE_PKGFILTER
-	static unique_ptr<PackageFilter> broken(bool neg);
+	static unique_ptr<PackageFilter> name         (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> group        (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> depends      (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> optdepends   (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> alldepends   (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> provides     (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> conflicts    (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> replaces     (rptr<Match>, bool neg);
+	static unique_ptr<PackageFilter> pkglibdepends(rptr<Match>, bool neg);
+
+	static unique_ptr<PackageFilter> broken       (bool neg);
 };
 
 class ObjectFilter {
@@ -363,17 +366,9 @@ public:
 		return visible(db, elf) != negate;
 	}
 
-	static unique_ptr<ObjectFilter> name(const std::string&, bool neg);
-	static unique_ptr<ObjectFilter> nameglob(const std::string&, bool neg);
-	static unique_ptr<ObjectFilter> path(const std::string&, bool neg);
-	static unique_ptr<ObjectFilter> pathglob(const std::string&, bool neg);
-	static unique_ptr<ObjectFilter> depends(const std::string&, bool neg);
-	static unique_ptr<ObjectFilter> dependsglob(const std::string&, bool neg);
-#ifdef WITH_REGEX
-	static unique_ptr<ObjectFilter> nameregex(const std::string&, bool ext, bool icase, bool neg);
-	static unique_ptr<ObjectFilter> dependsregex(const std::string&, bool ext, bool icase, bool neg);
-	static unique_ptr<ObjectFilter> pathregex(const std::string&, bool ext, bool icase, bool neg);
-#endif
+	static unique_ptr<ObjectFilter> name   (rptr<Match>, bool neg);
+	static unique_ptr<ObjectFilter> path   (rptr<Match>, bool neg);
+	static unique_ptr<ObjectFilter> depends(rptr<Match>, bool neg);
 };
 
 class StringFilter {
@@ -392,13 +387,11 @@ public:
 		return visible(str) != negate;
 	}
 
-	static unique_ptr<StringFilter> filter(const std::string&, bool neg);
-	static unique_ptr<StringFilter> filterglob(const std::string&, bool neg);
-#ifdef WITH_REGEX
-	static unique_ptr<StringFilter> filterregex(const std::string&, bool ext, bool icase, bool neg);
-#endif
+	static unique_ptr<StringFilter> filter(rptr<Match>, bool neg);
 };
 
 }
+
+bool db_store_json(DB *db, const std::string& filename);
 
 #endif
