@@ -204,7 +204,7 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
   auto split(std::move(splitpath(filename)));
   object->dirname_  = std::move(std::get<0>(split));
   object->basename_ = std::move(std::get<1>(split));
-  object->solve_paths(object->dirname_);
+  object->SolvePaths(object->dirname_);
 
   pkg->objects_.push_back(object);
 
@@ -265,7 +265,7 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 }
 
 Elf*
-Package::find(const std::string& dirname, const std::string& basename) const
+Package::Find(const std::string& dirname, const std::string& basename) const
 {
   for (auto &obj : objects_) {
     if (obj->dirname_ == dirname && obj->basename_ == basename)
@@ -275,7 +275,7 @@ Package::find(const std::string& dirname, const std::string& basename) const
 }
 
 void
-Package::guess(const std::string& path)
+Package::Guess(const std::string& path)
 {
   // extract the basename:
   size_t at = path.find_last_of('/');
@@ -369,7 +369,7 @@ Package::Open(const std::string& path)
   archive_read_free(tar);
 
   if (!package->name_.length() && !package->version_.length())
-    package->guess(path);
+    package->Guess(path);
 
   bool changed;
   do {
@@ -393,7 +393,7 @@ Package::Open(const std::string& path)
         linkto = splitpath(fullpath);
       }
 
-      Elf *obj = package->find(std::get<0>(linkto), std::get<1>(linkto));
+      Elf *obj = package->Find(std::get<0>(linkto), std::get<1>(linkto));
       if (!obj) {
         ++link;
         continue;
@@ -403,7 +403,7 @@ Package::Open(const std::string& path)
       Elf *copy = new Elf(*obj);
       copy->dirname_  = std::move(std::get<0>(linkfrom));
       copy->basename_ = std::move(std::get<1>(linkfrom));
-      copy->solve_paths(obj->dirname_);
+      copy->SolvePaths(obj->dirname_);
 
       package->objects_.push_back(copy);
       package->load_.symlinks.erase(link++);
@@ -415,7 +415,7 @@ Package::Open(const std::string& path)
 }
 
 void
-Package::show_needed()
+Package::ShowNeeded()
 {
   const char *name = this->name_.c_str();
   for (auto &obj : objects_) {
@@ -428,7 +428,7 @@ Package::show_needed()
 }
 
 bool
-Package::conflicts_with(const Package &other) const
+Package::ConflictsWith(const Package &other) const
 {
   for (auto &conf : conflicts_) {
 #ifdef WITH_ALPM

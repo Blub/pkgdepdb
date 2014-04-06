@@ -331,7 +331,7 @@ replace_origin(std::string& path, const std::string& origin)
 }
 
 void
-Elf::solve_paths(const std::string& origin)
+Elf::SolvePaths(const std::string& origin)
 {
   if (rpath_set_)
     replace_origin(rpath_, origin);
@@ -388,7 +388,7 @@ Elf::osabiString() const
 }
 
 bool
-Elf::can_use(const Elf &other, bool strict) const
+Elf::CanUse(const Elf &other, bool strict) const
 {
   if (ei_data_  != other.ei_data_ ||
       ei_class_ != other.ei_class_)

@@ -103,8 +103,8 @@ public:
   std::vector<std::string> needed_;
 
 public: // utility functions while loading
-  void solve_paths(const std::string& origin);
-  bool can_use(const Elf &other, bool strict) const;
+  void SolvePaths(const std::string& origin);
+  bool CanUse(const Elf &other, bool strict) const;
 
 public: // utility functions for printing stuff
   const char *classString() const;
@@ -155,12 +155,12 @@ public:
   // the filelist includes object files in v6 - makes things easier
   StringList              filelist_;
 
-  void show_needed();
-  Elf* find(const std::string &dirname, const std::string &basename) const;
+  void ShowNeeded();
+  Elf* Find(const std::string &dirname, const std::string &basename) const;
 
 public: // loading utiltiy functions
-  void guess(const std::string& name);
-  bool conflicts_with(const Package&) const;
+  void Guess(const std::string& name);
+  bool ConflictsWith(const Package&) const;
 
 public: // NOT SERIALIZED:
   // used only while loading an archive

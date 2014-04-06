@@ -434,7 +434,7 @@ main(int argc, char **argv)
       help(1);
     while (optind < argc) {
       Package *package = Package::Open(argv[optind++]);
-      package->show_needed();
+      package->ShowNeeded();
       delete package;
     }
     return 0;
@@ -466,7 +466,7 @@ main(int argc, char **argv)
         if (do_install)
           packages.push_back(package);
         else {
-          package->show_needed();
+          package->ShowNeeded();
           delete package;
         }
       }

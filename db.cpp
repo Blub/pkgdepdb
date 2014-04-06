@@ -242,7 +242,7 @@ DB::install_package(Package* &&pkg)
   // check for packages which are looking for any of our packages
   for (auto &seeker : objects_) {
     for (auto &obj : pkg->objects_) {
-      if (!seeker->can_use(*obj, strict_linking_) ||
+      if (!seeker->CanUse(*obj, strict_linking_) ||
           !elf_finds(seeker, obj->dirname_, libpaths))
       {
         continue;
@@ -260,7 +260,7 @@ DB::find_for(const Elf *obj, const std::string& needed, const StringList *extrap
 {
   log(Debug, "dependency of %s/%s   :  %s\n", obj->dirname_.c_str(), obj->basename_.c_str(), needed.c_str());
   for (auto &lib : objects_) {
-    if (!obj->can_use(*lib, strict_linking_)) {
+    if (!obj->CanUse(*lib, strict_linking_)) {
       log(Debug, "  skipping %s/%s (objclass)\n", lib->dirname_.c_str(), lib->basename_.c_str());
       continue;
     }
@@ -1400,7 +1400,7 @@ DB::check_integrity(const FilterList    &pkg_filters,
       bool conflict = false;
       for (auto &b : pkgs) {
         if (&a == &b) continue;
-        if ( (conflict = a->conflicts_with(*b)) )
+        if ( (conflict = a->ConflictsWith(*b)) )
           break;
       }
       if (!conflict)
