@@ -375,17 +375,17 @@ write_obj(SerialOut &out, const Elf *obj)
   out <= ObjRef::OBJ;
 
   // Serialize the actual object data
-  out <= obj->dirname
-      <= obj->basename
-      <= obj->ei_class
-      <= obj->ei_data
-      <= obj->ei_osabi
-      <= (uint8_t)obj->rpath_set
-      <= (uint8_t)obj->runpath_set
-      <= obj->rpath
-      <= obj->runpath;
+  out <= obj->dirname_
+      <= obj->basename_
+      <= obj->ei_class_
+      <= obj->ei_data_
+      <= obj->ei_osabi_
+      <= (uint8_t)obj->rpath_set_
+      <= (uint8_t)obj->runpath_set_
+      <= obj->rpath_
+      <= obj->runpath_;
 
-  if (!write_stringlist(out, obj->needed))
+  if (!write_stringlist(out, obj->needed_))
     return false;
 
   return true;
@@ -433,19 +433,19 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 
   // Serialize the actual object data
   uint8_t rpset, runpset;
-  in >= obj->dirname
-     >= obj->basename
-     >= obj->ei_class
-     >= obj->ei_data
-     >= obj->ei_osabi
+  in >= obj->dirname_
+     >= obj->basename_
+     >= obj->ei_class_
+     >= obj->ei_data_
+     >= obj->ei_osabi_
      >= rpset
      >= runpset
-     >= obj->rpath
-     >= obj->runpath;
-  obj->rpath_set   = rpset;
-  obj->runpath_set = runpset;
+     >= obj->rpath_
+     >= obj->runpath_;
+  obj->rpath_set_   = rpset;
+  obj->runpath_set_ = runpset;
 
-  if (!read_stringlist(in, obj->needed))
+  if (!read_stringlist(in, obj->needed_))
     return false;
 
   return true;
@@ -465,30 +465,30 @@ write_pkg(SerialOut &out, Package *pkg, unsigned hdrver, HdrFlags flags)
   out <= ObjRef::PKG;
 
   // Now serialize the actual package data:
-  out <= pkg->name
-      <= pkg->version;
-  if (!write_objlist(out, pkg->objects))
+  out <= pkg->name_
+      <= pkg->version_;
+  if (!write_objlist(out, pkg->objects_))
     return false;
 
   if (hdrver >= 3) {
-    if (!write_stringlist(out, pkg->depends) ||
-        !write_stringlist(out, pkg->optdepends))
+    if (!write_stringlist(out, pkg->depends_) ||
+        !write_stringlist(out, pkg->optdepends_))
     {
       return false;
     }
   }
   if (hdrver >= 4) {
-    if (!write_stringlist(out, pkg->provides) ||
-        !write_stringlist(out, pkg->conflicts) ||
-        !write_stringlist(out, pkg->replaces))
+    if (!write_stringlist(out, pkg->provides_)  ||
+        !write_stringlist(out, pkg->conflicts_) ||
+        !write_stringlist(out, pkg->replaces_))
     {
       return false;
     }
   }
-  if (hdrver >= 5 && !write_stringset(out, pkg->groups))
+  if (hdrver >= 5 && !write_stringset(out, pkg->groups_))
     return false;
 
-  if (flags & DBFlags::FileLists && !write_stringlist(out, pkg->filelist))
+  if (flags & DBFlags::FileLists && !write_stringlist(out, pkg->filelist_))
     return false;
 
   return true;
@@ -533,32 +533,32 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
   }
 
   // Now serialize the actual package data:
-  in >= pkg->name
-     >= pkg->version;
-  if (!read_objlist(in, pkg->objects))
+  in >= pkg->name_
+     >= pkg->version_;
+  if (!read_objlist(in, pkg->objects_))
     return false;
-  for (auto &o : pkg->objects)
-    o->owner = pkg;
+  for (auto &o : pkg->objects_)
+    o->owner_ = pkg;
 
   if (hdrver >= 3) {
-    if (!read_stringlist(in, pkg->depends) ||
-        !read_stringlist(in, pkg->optdepends))
+    if (!read_stringlist(in, pkg->depends_) ||
+        !read_stringlist(in, pkg->optdepends_))
     {
       return false;
     }
   }
   if (hdrver >= 4) {
-    if (!read_stringlist(in, pkg->provides) ||
-        !read_stringlist(in, pkg->conflicts) ||
-        !read_stringlist(in, pkg->replaces))
+    if (!read_stringlist(in, pkg->provides_) ||
+        !read_stringlist(in, pkg->conflicts_) ||
+        !read_stringlist(in, pkg->replaces_))
     {
       return false;
     }
   }
-  if (hdrver >= 5 && !read_stringset(in, pkg->groups))
+  if (hdrver >= 5 && !read_stringset(in, pkg->groups_))
     return false;
 
-  if (flags & DBFlags::FileLists && !read_stringlist(in, pkg->filelist))
+  if (flags & DBFlags::FileLists && !read_stringlist(in, pkg->filelist_))
     return false;
 
   return true;
@@ -597,17 +597,17 @@ db_store(DB *db, const std::string& filename)
   hdr.version = 1;
 
   // flags:
-  if (db->ignore_file_rules.size())
+  if (db->ignore_file_rules_.size())
     hdr.flags |= DBFlags::IgnoreRules;
-  if (db->package_library_path.size())
+  if (db->package_library_path_.size())
     hdr.flags |= DBFlags::PackageLDPath;
-  if (db->base_packages.size())
+  if (db->base_packages_.size())
     hdr.flags |= DBFlags::BasePackages;
-  if (db->strict_linking)
+  if (db->strict_linking_)
     hdr.flags |= DBFlags::StrictLinking;
-  if (db->assume_found_rules.size())
+  if (db->assume_found_rules_.size())
     hdr.flags |= DBFlags::AssumeFound;
-  if (db->contains_filelists)
+  if (db->contains_filelists_)
     hdr.flags |= DBFlags::FileLists;
 
   // Figure out which database format version this will be
@@ -615,9 +615,9 @@ db_store(DB *db, const std::string& filename)
     hdr.version = 7;
   else if (hdr.flags & DBFlags::AssumeFound)
     hdr.version = 6;
-  else if (db->contains_groups)
+  else if (db->contains_groups_)
     hdr.version = 5;
-  else if (db->contains_package_depends)
+  else if (db->contains_package_depends_)
     hdr.version = 4;
   else if (hdr.flags)
       hdr.version = 2;
@@ -629,12 +629,12 @@ db_store(DB *db, const std::string& filename)
     hdr.version = 8;
 
   out <= hdr;
-  out <= db->name;
-  if (!write_stringlist(out, db->library_path))
+  out <= db->name_;
+  if (!write_stringlist(out, db->library_path_))
     return false;
 
-  out <= (uint32_t)db->packages.size();
-  for (auto &pkg : db->packages) {
+  out <= (uint32_t)db->packages_.size();
+  for (auto &pkg : db->packages_) {
     if (!write_pkg(out, pkg, hdr.version, hdr.flags))
       return false;
   }
@@ -642,48 +642,48 @@ db_store(DB *db, const std::string& filename)
   uint32_t cnt_found = 0,
            cnt_missing = 0;
   {
-    out <= (uint32_t)db->objects.size();
-    for (auto &obj : db->objects) {
+    out <= (uint32_t)db->objects_.size();
+    for (auto &obj : db->objects_) {
       if (!write_obj(out, obj))
         return false;
-      if (!obj->req_found.empty())
+      if (!obj->req_found_.empty())
         ++cnt_found;
-      if (!obj->req_missing.empty())
+      if (!obj->req_missing_.empty())
         ++cnt_missing;
     }
   }
 
   out <= cnt_found;
-  for (Elf *obj : db->objects) {
-    if (obj->req_found.empty())
+  for (Elf *obj : db->objects_) {
+    if (obj->req_found_.empty())
       continue;
     if (!write_obj(out, obj))
       return false;
-    if (!write_objset(out, obj->req_found))
+    if (!write_objset(out, obj->req_found_))
       return false;
   }
   out <= cnt_missing;
-  for (Elf *obj : db->objects) {
-    if (obj->req_missing.empty())
+  for (Elf *obj : db->objects_) {
+    if (obj->req_missing_.empty())
       continue;
     if (!write_obj(out, obj))
       return false;
-    if (!write_stringset(out, obj->req_missing))
+    if (!write_stringset(out, obj->req_missing_))
       return false;
   }
 
   if (hdr.flags & DBFlags::IgnoreRules) {
-    if (!write_stringset(out, db->ignore_file_rules))
+    if (!write_stringset(out, db->ignore_file_rules_))
       return false;
   }
   if (hdr.flags & DBFlags::AssumeFound) {
-    if (!write_stringset(out, db->assume_found_rules))
+    if (!write_stringset(out, db->assume_found_rules_))
       return false;
   }
 
   if (hdr.flags & DBFlags::PackageLDPath) {
-    out <= (uint32_t)db->package_library_path.size();
-    for (auto iter : db->package_library_path) {
+    out <= (uint32_t)db->package_library_path_.size();
+    for (auto iter : db->package_library_path_) {
       out <= iter.first;
       if (!write_stringlist(out, iter.second))
         return false;
@@ -691,7 +691,7 @@ db_store(DB *db, const std::string& filename)
   }
 
   if (hdr.flags & DBFlags::BasePackages) {
-    if (!write_stringset(out, db->base_packages))
+    if (!write_stringset(out, db->base_packages_))
       return false;
   }
 
@@ -722,7 +722,7 @@ db_read(DB *db, const std::string& filename)
     return false;
   }
 
-  db->loaded_version = hdr.version;
+  db->loaded_version_ = hdr.version;
   // supported versions:
   if (hdr.version > DB::CURRENT)
   {
@@ -736,14 +736,14 @@ db_read(DB *db, const std::string& filename)
     in.ver8_refs = true;
 
   if (hdr.version >= 3)
-    db->contains_package_depends = true;
+    db->contains_package_depends_ = true;
   if (hdr.version >= 5)
-    db->contains_groups = true;
+    db->contains_groups_ = true;
   if (hdr.flags & DBFlags::FileLists)
-    db->contains_filelists = true;
+    db->contains_filelists_ = true;
 
-  in >= db->name;
-  if (!read_stringlist(in, db->library_path)) {
+  in >= db->name_;
+  if (!read_stringlist(in, db->library_path_)) {
     log(Error, "failed reading library paths\n");
     return false;
   }
@@ -751,15 +751,15 @@ db_read(DB *db, const std::string& filename)
   uint32_t len;
 
   in >= len;
-  db->packages.resize(len);
+  db->packages_.resize(len);
   for (uint32_t i = 0; i != len; ++i) {
-    if (!read_pkg(in, db->packages[i], hdr.version, hdr.flags)) {
+    if (!read_pkg(in, db->packages_[i], hdr.version, hdr.flags)) {
       log(Error, "failed reading packages\n");
       return false;
     }
   }
 
-  if (!read_objlist(in, db->objects)) {
+  if (!read_objlist(in, db->objects_)) {
     log(Error, "failed reading object list\n");
     return false;
   }
@@ -768,7 +768,7 @@ db_read(DB *db, const std::string& filename)
   rptr<Elf> obj;
   for (uint32_t i = 0; i != len; ++i) {
     if (!read_obj(in, obj) ||
-        !read_objset(in, obj->req_found))
+        !read_objset(in, obj->req_found_))
     {
       log(Error, "failed reading map of found dependencies\n");
       return false;
@@ -778,7 +778,7 @@ db_read(DB *db, const std::string& filename)
   in >= len;
   for (uint32_t i = 0; i != len; ++i) {
     if (!read_obj(in, obj) ||
-        !read_stringset(in, obj->req_missing))
+        !read_stringset(in, obj->req_missing_))
     {
       log(Error, "failed reading map of missing dependencies\n");
       return false;
@@ -789,11 +789,11 @@ db_read(DB *db, const std::string& filename)
     return true;
 
   if (hdr.flags & DBFlags::IgnoreRules) {
-    if (!read_stringset(in, db->ignore_file_rules))
+    if (!read_stringset(in, db->ignore_file_rules_))
       return false;
   }
   if (hdr.flags & DBFlags::AssumeFound) {
-    if (!read_stringset(in, db->assume_found_rules))
+    if (!read_stringset(in, db->assume_found_rules_))
       return false;
   }
 
@@ -802,13 +802,13 @@ db_read(DB *db, const std::string& filename)
     for (uint32_t i = 0; i != len; ++i) {
       std::string pkg;
       in >= pkg;
-      if (!read_stringlist(in, db->package_library_path[pkg]))
+      if (!read_stringlist(in, db->package_library_path_[pkg]))
         return false;
     }
   }
 
   if (hdr.flags & DBFlags::BasePackages) {
-    if (!read_stringset(in, db->base_packages))
+    if (!read_stringset(in, db->base_packages_))
       return false;
   }
 

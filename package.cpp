@@ -105,12 +105,12 @@ read_info(Package *pkg, struct archive *tar, const size_t size)
   while (pos < size) {
     skipwhite();
     if (isentry("pkgname", sizeof("pkgname")-1)) {
-      if (!getvalue("pkgname", pkg->name))
+      if (!getvalue("pkgname", pkg->name_))
         return false;
       continue;
     }
     if (isentry("pkgver", sizeof("pkgver")-1)) {
-      if (!getvalue("pkgver", pkg->version))
+      if (!getvalue("pkgver", pkg->version_))
         return false;
       continue;
     }
@@ -123,7 +123,7 @@ read_info(Package *pkg, struct archive *tar, const size_t size)
     if (isentry("depend", sizeof("depend")-1)) {
       if (!getvalue("depend", es))
         return false;
-      pkg->depends.push_back(es);
+      pkg->depends_.push_back(es);
       continue;
     }
     if (isentry("optdepend", sizeof("optdepend")-1)) {
@@ -133,31 +133,31 @@ read_info(Package *pkg, struct archive *tar, const size_t size)
       if (c != std::string::npos)
         es.erase(c);
       if (es.length())
-        pkg->optdepends.push_back(es);
+        pkg->optdepends_.push_back(es);
       continue;
     }
     if (isentry("replace", sizeof("replaces")-1)) {
       if (!getvalue("replaces", es))
         return false;
-      pkg->replaces.push_back(es);
+      pkg->replaces_.push_back(es);
       continue;
     }
     if (isentry("conflict", sizeof("conflict")-1)) {
       if (!getvalue("conflict", es))
         return false;
-      pkg->conflicts.push_back(es);
+      pkg->conflicts_.push_back(es);
       continue;
     }
     if (isentry("provides", sizeof("provides")-1)) {
       if (!getvalue("provides", es))
         return false;
-      pkg->provides.push_back(es);
+      pkg->provides_.push_back(es);
       continue;
     }
     if (isentry("group", sizeof("group")-1)) {
       if (!getvalue("group", es))
         return false;
-      pkg->groups.insert(es);
+      pkg->groups_.insert(es);
       continue;
     }
 
@@ -194,7 +194,7 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
   }
 
   bool err = false;
-  rptr<Elf> object(Elf::open(&data[0], data.size(), &err, filename.c_str()));
+  rptr<Elf> object(Elf::Open(&data[0], data.size(), &err, filename.c_str()));
   if (!object.get()) {
     if (err)
       log(Error, "error in: %s\n", filename.c_str());
@@ -202,11 +202,11 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
   }
 
   auto split(std::move(splitpath(filename)));
-  object->dirname  = std::move(std::get<0>(split));
-  object->basename = std::move(std::get<1>(split));
-  object->solve_paths(object->dirname);
+  object->dirname_  = std::move(std::get<0>(split));
+  object->basename_ = std::move(std::get<1>(split));
+  object->solve_paths(object->dirname_);
 
-  pkg->objects.push_back(object);
+  pkg->objects_.push_back(object);
 
   return true;
 }
@@ -221,7 +221,7 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 
   // one less string-copy:
   guard addfile([&filename,pkg]() {
-    pkg->filelist.emplace_back(std::move(filename));
+    pkg->filelist_.emplace_back(std::move(filename));
   });
   if (!opt_package_filelist ||
       isinfo ||
@@ -248,7 +248,7 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
       return false;
     }
     archive_read_data_skip(tar);
-    pkg->load.symlinks[filename] = link;
+    pkg->load_.symlinks[filename] = link;
     return true;
   }
 
@@ -267,8 +267,8 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
 Elf*
 Package::find(const std::string& dirname, const std::string& basename) const
 {
-  for (auto &obj : objects) {
-    if (obj->dirname == dirname && obj->basename == basename)
+  for (auto &obj : objects_) {
+    if (obj->dirname_ == dirname && obj->basename_ == basename)
       return const_cast<Elf*>(obj.get());
   }
   return nullptr;
@@ -305,7 +305,7 @@ Package::guess(const std::string& path)
     to = base.find_first_of("-.", to+1);
   }
 
-  name = base.substr(0, to);
+  name_ = base.substr(0, to);
   if (base[to] != '-' || !(base[to+1] >= '0' && base[to+1] <= '9')) {
     // no version
     return;
@@ -317,7 +317,7 @@ Package::guess(const std::string& path)
 
   if (to == std::string::npos) {
     // we'll take it...
-    version = base.substr(from);
+    version_ = base.substr(from);
     return;
   }
 
@@ -332,7 +332,7 @@ Package::guess(const std::string& path)
     to = base.find_first_of("-.", to+1);
   }
 
-  version = base.substr(from, to-from);
+  version_ = base.substr(from, to-from);
   if (!slack || to == std::string::npos)
     return;
 
@@ -342,13 +342,13 @@ Package::guess(const std::string& path)
     return;
   from = base.find_last_of("-.", to-1);
   if (from && from != std::string::npos) {
-    version.append(1, '-');
-    version.append(base.substr(from+1, to-from-1));
+    version_.append(1, '-');
+    version_.append(base.substr(from+1, to-from-1));
   }
 }
 
 Package*
-Package::open(const std::string& path)
+Package::Open(const std::string& path)
 {
   std::unique_ptr<Package> package(new Package);
 
@@ -368,13 +368,13 @@ Package::open(const std::string& path)
 
   archive_read_free(tar);
 
-  if (!package->name.length() && !package->version.length())
+  if (!package->name_.length() && !package->version_.length())
     package->guess(path);
 
   bool changed;
   do {
     changed = false;
-    for (auto link = package->load.symlinks.begin(); link != package->load.symlinks.end();)
+    for (auto link = package->load_.symlinks.begin(); link != package->load_.symlinks.end();)
     {
       auto linkfrom = splitpath(link->first);
       decltype(linkfrom) linkto;
@@ -401,15 +401,15 @@ Package::open(const std::string& path)
       changed = true;
 
       Elf *copy = new Elf(*obj);
-      copy->dirname  = std::move(std::get<0>(linkfrom));
-      copy->basename = std::move(std::get<1>(linkfrom));
-      copy->solve_paths(obj->dirname);
+      copy->dirname_  = std::move(std::get<0>(linkfrom));
+      copy->basename_ = std::move(std::get<1>(linkfrom));
+      copy->solve_paths(obj->dirname_);
 
-      package->objects.push_back(copy);
-      package->load.symlinks.erase(link++);
+      package->objects_.push_back(copy);
+      package->load_.symlinks.erase(link++);
     }
   } while (changed);
-  package->load.symlinks.clear();
+  package->load_.symlinks.clear();
 
   return package.release();
 }
@@ -417,11 +417,11 @@ Package::open(const std::string& path)
 void
 Package::show_needed()
 {
-  const char *name = this->name.c_str();
-  for (auto &obj : objects) {
-    std::string path = obj->dirname + "/" + obj->basename;
+  const char *name = this->name_.c_str();
+  for (auto &obj : objects_) {
+    std::string path = obj->dirname_ + "/" + obj->basename_;
     const char *objname = path.c_str();
-    for (auto &need : obj->needed) {
+    for (auto &need : obj->needed_) {
       printf("%s: %s NEEDS %s\n", name, objname, need.c_str());
     }
   }
@@ -430,7 +430,7 @@ Package::show_needed()
 bool
 Package::conflicts_with(const Package &other) const
 {
-  for (auto &conf : conflicts) {
+  for (auto &conf : conflicts_) {
 #ifdef WITH_ALPM
     std::string name, op, ver;
     split_depstring(conf, name, op, ver);
@@ -441,9 +441,9 @@ Package::conflicts_with(const Package &other) const
 #else
       std::string &name(conf);
 #endif
-      if (other.name == name)
+      if (other.name_ == name)
         return true;
-      for (auto &prov : other.provides) {
+      for (auto &prov : other.provides_) {
 #ifdef WITH_ALPM
         std::string provname;
         split_depstring(prov, provname, op, ver);

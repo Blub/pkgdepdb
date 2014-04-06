@@ -96,22 +96,22 @@ Match::CreateRegex(std::string &&text, bool icase) {
 }
 #endif
 
-PackageFilter::PackageFilter(bool neg_)
-: negate(neg_)
+PackageFilter::PackageFilter(bool negate)
+: negate_(negate)
 {}
 
 PackageFilter::~PackageFilter()
 {}
 
-ObjectFilter::ObjectFilter(bool neg_)
-: refcount_(0), negate(neg_)
+ObjectFilter::ObjectFilter(bool negate)
+: refcount_(0), negate_(negate)
 {}
 
 ObjectFilter::~ObjectFilter()
 {}
 
-StringFilter::StringFilter(bool neg_)
-: negate(neg_)
+StringFilter::StringFilter(bool negate)
+: negate_(negate)
 {}
 
 StringFilter::~StringFilter()
@@ -251,7 +251,7 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
 unique_ptr<PackageFilter>
 PackageFilter::name(rptr<Match> matcher, bool neg) {
   return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
-    return (*matcher)(pkg.name);
+    return (*matcher)(pkg.name_);
   });
 }
 
@@ -269,7 +269,7 @@ make_pkgfilter(rptr<Match> matcher, bool neg, CONT (Package::*member)) {
 #define MAKE_PKGFILTER(NAME,VAR)                      \
 unique_ptr<PackageFilter>                             \
 PackageFilter::NAME(rptr<Match> matcher, bool neg) {  \
-  return make_pkgfilter(matcher, neg, &Package::VAR); \
+  return make_pkgfilter(matcher, neg, &Package::VAR##_); \
 }
 
 #define MAKE_PKGFILTER1(NAME) MAKE_PKGFILTER(NAME,NAME)
@@ -287,10 +287,10 @@ MAKE_PKGFILTER1(replaces)
 unique_ptr<PackageFilter>
 PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
   return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
-    for (auto &i : pkg.depends)
+    for (auto &i : pkg.depends_)
       if ((*matcher)(i))
         return true;
-    for (auto &i : pkg.optdepends)
+    for (auto &i : pkg.optdepends_)
       if ((*matcher)(i))
         return true;
     return false;
@@ -303,7 +303,7 @@ PackageFilter::pkglibdepends(rptr<Match> matcher, bool neg) {
   if (!libfilter)
     return nullptr;
   return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
-    for (auto &e : pkg.objects)
+    for (auto &e : pkg.objects_)
       if (libfilter->visible(*e))
         return true;
     return false;
@@ -321,14 +321,14 @@ PackageFilter::broken(bool neg) {
 unique_ptr<ObjectFilter>
 ObjectFilter::name(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
-    return (*matcher)(elf.basename);
+    return (*matcher)(elf.basename_);
   });
 }
 
 unique_ptr<ObjectFilter>
 ObjectFilter::path(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
-    std::string p(elf.dirname); p.append(1, '/'); p.append(elf.basename);
+    std::string p(elf.dirname_); p.append(1, '/'); p.append(elf.basename_);
     return (*matcher)(p);
   });
 }
@@ -336,7 +336,7 @@ ObjectFilter::path(rptr<Match> matcher, bool neg) {
 unique_ptr<ObjectFilter>
 ObjectFilter::depends(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
-    for (auto &i : elf.needed)
+    for (auto &i : elf.needed_)
       if ((*matcher)(i))
         return true;
     return false;

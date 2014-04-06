@@ -7,34 +7,30 @@
 #include "endian.h"
 
 Elf::Elf()
-: refcount_(0)
-{
-  ei_class =
-  ei_osabi = 0;
-
-  rpath_set   =
-  runpath_set = false;
-
-  owner = 0;
-}
+: refcount_   (0),
+  ei_class_   (0),
+  ei_osabi_   (0),
+  rpath_set_  (false),
+  runpath_set_(false),
+  owner_      (nullptr)
+{}
 
 Elf::Elf(const Elf& cp)
 : refcount_(0),
-  dirname (cp.dirname),
-  basename(cp.basename),
-  ei_class(cp.ei_class),
-  ei_data (cp.ei_data),
-  ei_osabi(cp.ei_osabi),
-  rpath_set  (cp.rpath_set),
-  runpath_set(cp.runpath_set),
-  rpath  (cp.rpath),
-  runpath(cp.runpath),
-  needed(cp.needed),
-  req_found(cp.req_found),
-  req_missing(cp.req_missing),
-  owner(cp.owner)
-{
-}
+  dirname_    (cp.dirname_),
+  basename_   (cp.basename_),
+  ei_class_   (cp.ei_class_),
+  ei_data_    (cp.ei_data_),
+  ei_osabi_   (cp.ei_osabi_),
+  rpath_set_  (cp.rpath_set_),
+  runpath_set_(cp.runpath_set_),
+  rpath_      (cp.rpath_),
+  runpath_    (cp.runpath_),
+  needed_     (cp.needed_),
+  req_found_  (cp.req_found_),
+  req_missing_(cp.req_missing_),
+  owner_      (cp.owner_)
+{}
 
 template<bool BE, typename HDR, typename SecHDR, typename Dyn>
 Elf*
@@ -153,19 +149,19 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
       case DT_NEEDED:
         if (! (str = get_string(d_ptr)) )
           return 0;
-        object->needed.push_back(str);
+        object->needed_.push_back(str);
         break;
       case DT_RPATH:
-        object->rpath_set = true;
+        object->rpath_set_ = true;
         if (! (str = get_string(d_ptr)) )
           return 0;
-        object->rpath = str;
+        object->rpath_ = str;
         break;
       case DT_RUNPATH:
-        object->runpath_set = true;
+        object->runpath_set_ = true;
         if (! (str = get_string(d_ptr)) )
           return 0;
-        object->runpath = str;
+        object->runpath_ = str;
         break;
       default:
         break;
@@ -181,7 +177,7 @@ static const auto LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Dy
 static const auto LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
 static const auto LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
 
-Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
+Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
 {
   *waserror = false;
   unsigned char *elf_ident = (unsigned char*)data;
@@ -234,9 +230,9 @@ Elf* Elf::open(const char *data, size_t size, bool *waserror, const char *name)
   }
   if (!e)
     return 0;
-  e->ei_class = ei_class;
-  e->ei_data  = ei_data;
-  e->ei_osabi = ei_osabi;
+  e->ei_class_ = ei_class;
+  e->ei_data_  = ei_data;
+  e->ei_osabi_ = ei_osabi;
   return e;
 }
 
@@ -337,16 +333,16 @@ replace_origin(std::string& path, const std::string& origin)
 void
 Elf::solve_paths(const std::string& origin)
 {
-  if (rpath_set)
-    replace_origin(rpath, origin);
-  if (runpath_set)
-    replace_origin(runpath, origin);
+  if (rpath_set_)
+    replace_origin(rpath_, origin);
+  if (runpath_set_)
+    replace_origin(runpath_, origin);
 }
 
 const char*
 Elf::classString() const
 {
-  switch (ei_class) {
+  switch (ei_class_) {
     case ELFCLASSNONE: return "NONE";
     case ELFCLASS32:   return "ELF32";
     case ELFCLASS64:   return "ELF64";
@@ -357,7 +353,7 @@ Elf::classString() const
 const char*
 Elf::dataString() const
 {
-  switch (ei_data) {
+  switch (ei_data_) {
     case ELFDATANONE: return "NONE";
     case ELFDATA2LSB: return "2's complement, little-endian";
     case ELFDATA2MSB: return "2's complement, big-endian";
@@ -368,7 +364,7 @@ Elf::dataString() const
 const char*
 Elf::osabiString() const
 {
-  switch (ei_osabi) {
+  switch (ei_osabi_) {
     case 0:    return "None";
     case 1:    return "HP-UX";
     case 2:    return "NetBSD";
@@ -394,11 +390,11 @@ Elf::osabiString() const
 bool
 Elf::can_use(const Elf &other, bool strict) const
 {
-  if (ei_data  != other.ei_data ||
-      ei_class != other.ei_class)
+  if (ei_data_  != other.ei_data_ ||
+      ei_class_ != other.ei_class_)
   {
     return false;
   }
-  return (ei_osabi == other.ei_osabi) ||
-         (!strict && (!ei_osabi || !other.ei_osabi));
+  return (ei_osabi_ == other.ei_osabi_) ||
+         (!strict && (!ei_osabi_ || !other.ei_osabi_));
 }

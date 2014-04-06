@@ -33,9 +33,9 @@ static void
 print_objname(const Elf *obj)
 {
   putchar('"');
-  json_in_quote(stdout, obj->dirname);
+  json_in_quote(stdout, obj->dirname_);
   putchar('/');
-  json_in_quote(stdout, obj->basename);
+  json_in_quote(stdout, obj->basename_);
   putchar('"');
 }
 
@@ -51,7 +51,7 @@ DB::show_packages_json(bool filter_broken,
   else
     printf("\n\t\"filters\": [],");
 
-  if (!packages.size()) {
+  if (!packages_.size()) {
     printf("\n\t\"packages\": []\n}\n");
     return;
   }
@@ -59,7 +59,7 @@ DB::show_packages_json(bool filter_broken,
   printf("\n\t\"packages\": [");
 
   const char *mainsep = "\n\t\t";
-  for (auto &pkg : packages) {
+  for (auto &pkg : packages_) {
     if (!util::all(pkg_filters, *this, *pkg))
       continue;
     if (filter_broken && !is_broken(pkg))
@@ -68,32 +68,32 @@ DB::show_packages_json(bool filter_broken,
       continue;
     printf("%s{", mainsep); mainsep = ",\n\t\t";
     printf("\n\t\t\t\"name\": ");
-    json_quote(stdout, pkg->name);
+    json_quote(stdout, pkg->name_);
     printf(",\n\t\t\t\"version\": ");
-    json_quote(stdout, pkg->version);
+    json_quote(stdout, pkg->version_);
     if (opt_verbosity >= 1) {
-      if (pkg->groups.size()) {
+      if (pkg->groups_.size()) {
         printf(",\n\t\t\t\"groups\": [");
         const char *sep = "\n\t\t\t\t";
-        for (auto &grp : pkg->groups) {
+        for (auto &grp : pkg->groups_) {
           printf("%s", sep); sep = ",\n\t\t\t\t";
           json_quote(stdout, grp);
         }
         printf("\n\t\t\t]");
       }
-      if (pkg->depends.size()) {
+      if (pkg->depends_.size()) {
         printf(",\n\t\t\t\"depends\": [");
         const char *sep = "\n\t\t\t\t";
-        for (auto &dep : pkg->depends) {
+        for (auto &dep : pkg->depends_) {
           printf("%s", sep); sep = ",\n\t\t\t\t";
           json_quote(stdout, dep);
         }
         printf("\n\t\t\t]");
       }
-      if (pkg->optdepends.size()) {
+      if (pkg->optdepends_.size()) {
         printf(",\n\t\t\t\"optdepends\": [");
         const char *sep = "\n\t\t\t\t";
-        for (auto &dep : pkg->optdepends) {
+        for (auto &dep : pkg->optdepends_) {
           printf("%s", sep); sep = ",\n\t\t\t\t";
           json_quote(stdout, dep);
         }
@@ -102,7 +102,7 @@ DB::show_packages_json(bool filter_broken,
       if (filter_broken) {
         printf(",\n\t\t\t\"broken\": [");
         const char *sep = "\n\t\t\t\t";
-        for (auto &obj : pkg->objects) {
+        for (auto &obj : pkg->objects_) {
           if (!util::all(obj_filters, *this, *obj))
             continue;
           if (!is_broken(obj))
@@ -111,7 +111,7 @@ DB::show_packages_json(bool filter_broken,
             printf("%s{", sep); sep = ",\n\t\t\t\t";
             printf("\n\t\t\t\t\t\"object\": ");
             print_objname(obj);
-            auto& list = obj->req_missing;
+            auto& list = obj->req_missing_;
             if (!list.empty()) {
               printf(",\n\t\t\t\t\t\"misses\": [");
               const char *missep = "\n\t\t\t\t\t\t";
@@ -131,12 +131,12 @@ DB::show_packages_json(bool filter_broken,
         printf("\n\t\t\t]");
       }
       else {
-        if (!pkg->objects.size())
+        if (!pkg->objects_.size())
           printf(",\n\t\t\t\"contains\": []");
         else {
           printf(",\n\t\t\t\"contains\": [");
           const char *sep = "\n\t\t\t\t";
-          for (auto &obj : pkg->objects) {
+          for (auto &obj : pkg->objects_) {
             if (!util::all(obj_filters, *this, *obj))
               continue;
             printf("%s", sep); sep = ",\n\t\t\t\t";
@@ -156,19 +156,19 @@ void
 DB::show_info_json()
 {
   printf("{");
-  printf( "\n\t\"db_version\": %u", (unsigned)loaded_version);
-  printf(",\n\t\"db_name\": "); json_quote(stdout, name);
-  printf(",\n\t\"strict\": %s", (strict_linking ? "true" : "false"));
+  printf( "\n\t\"db_version\": %u", (unsigned)loaded_version_);
+  printf(",\n\t\"db_name\": "); json_quote(stdout, name_);
+  printf(",\n\t\"strict\": %s", (strict_linking_ ? "true" : "false"));
   printf(",\n\t\"library_path\": [");
-  if (!library_path.size()) {
+  if (!library_path_.size()) {
     printf("]\n}\n");
     return;
   }
   size_t i = 0;
-  while (i != library_path.size()) {
+  while (i != library_path_.size()) {
     printf("\n\t\t");
-    json_quote(stdout, library_path[i]);
-    if (++i != library_path.size()) {
+    json_quote(stdout, library_path_[i]);
+    if (++i != library_path_.size()) {
       printf(" // %u", (unsigned)i);
       break;
     }
@@ -177,26 +177,26 @@ DB::show_info_json()
   printf("\n\t]");
 
   unsigned id;
-  if (ignore_file_rules.size()) {
+  if (ignore_file_rules_.size()) {
     printf(",\n\t\"ignore_files\": [");
     id = 0;
-    for (auto &p : ignore_file_rules) {
+    for (auto &p : ignore_file_rules_) {
       printf("\n\t\t");
       json_quote(stdout, p);
-      if (id+1 == ignore_file_rules.size())
+      if (id+1 == ignore_file_rules_.size())
         printf(" // %u", id++);
       else
         printf(", // %u", id++);
     }
     printf("\n\t]");
   }
-  if (assume_found_rules.size()) {
+  if (assume_found_rules_.size()) {
     printf(",\n\t\"assume_found\": [");
     id = 0;
-    for (auto &p : assume_found_rules) {
+    for (auto &p : assume_found_rules_) {
       printf("\n\t\t");
       json_quote(stdout, p);
-      if (id+1 == assume_found_rules.size())
+      if (id+1 == assume_found_rules_.size())
         printf(" // %u", id++);
       else
         printf(", // %u", id++);
@@ -204,10 +204,10 @@ DB::show_info_json()
     printf("\n\t]");
   }
   const char *sep;
-  if (package_library_path.size()) {
+  if (package_library_path_.size()) {
     printf(",\n\t\"package_libray_paths\": {");
     sep = "\n\t\t";
-    for (auto &iter : package_library_path) {
+    for (auto &iter : package_library_path_) {
       printf("%s", sep); sep = ",\n\t\t";
       json_quote(stdout, iter.first);
       printf(": [");
@@ -220,13 +220,13 @@ DB::show_info_json()
     }
     printf("\n\t}");
   }
-  if (base_packages.size()) {
+  if (base_packages_.size()) {
     printf(",\n\t\"base_packages\": [");
     id = 0;
-    for (auto &p : base_packages) {
+    for (auto &p : base_packages_) {
       printf("\n\t\t");
       json_quote(stdout, p);
-      if (id+1 == base_packages.size())
+      if (id+1 == base_packages_.size())
         printf(" // %u", id++);
       else
         printf(", // %u", id++);
@@ -240,17 +240,17 @@ DB::show_info_json()
 void
 DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
 {
-  if (!objects.size()) {
+  if (!objects_.size()) {
     printf("{ \"objects\": [] }\n");
     return;
   }
 
   printf("{ \"objects\": [");
   const char *mainsep = "\n\t";
-  for (auto &obj : objects) {
+  for (auto &obj : objects_) {
     if (!util::all(obj_filters, *this, *obj))
       continue;
-    if (pkg_filters.size() && (!obj->owner || !util::all(pkg_filters, *this, *obj->owner)))
+    if (pkg_filters.size() && (!obj->owner_ || !util::all(pkg_filters, *this, *obj->owner_)))
       continue;
     printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
     print_objname(obj);
@@ -259,26 +259,26 @@ DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fi
       continue;
     }
     do {
-      printf("\n\t\t\"class\": %u, // %s", (unsigned)obj->ei_class, obj->classString());
-      printf("\n\t\t\"data\":  %u, // %s", (unsigned)obj->ei_data,  obj->dataString());
-      if (opt_verbosity >= 2 || obj->rpath_set || obj->runpath_set)
-        printf("\n\t\t\"osabi\": %u, // %s", (unsigned)obj->ei_osabi, obj->osabiString());
+      printf("\n\t\t\"class\": %u, // %s", (unsigned)obj->ei_class_, obj->classString());
+      printf("\n\t\t\"data\":  %u, // %s", (unsigned)obj->ei_data_,  obj->dataString());
+      if (opt_verbosity >= 2 || obj->rpath_set_ || obj->runpath_set_)
+        printf("\n\t\t\"osabi\": %u, // %s", (unsigned)obj->ei_osabi_, obj->osabiString());
       else
-        printf("\n\t\t\"osabi\": %u  // %s", (unsigned)obj->ei_osabi, obj->osabiString());
-      if (obj->rpath_set) {
+        printf("\n\t\t\"osabi\": %u  // %s", (unsigned)obj->ei_osabi_, obj->osabiString());
+      if (obj->rpath_set_) {
         printf(",\n\t\t\"rpath\": ");
-        json_quote(stdout, obj->rpath);
+        json_quote(stdout, obj->rpath_);
       }
-      if (obj->runpath_set) {
+      if (obj->runpath_set_) {
         printf(",\n\t\t\"runpath\": ");
-        json_quote(stdout, obj->runpath);
+        json_quote(stdout, obj->runpath_);
       }
       if (opt_verbosity < 2) {
         printf("\n\t}");
         break;
       }
       printf(",\n\t\t\"finds\": ["); {
-        auto &set = obj->req_found;
+        auto &set = obj->req_found_;
         const char *sep = "\n\t\t\t";
         for (auto &found : set) {
           printf("%s", sep); sep = ",\n\t\t\t";
@@ -286,7 +286,7 @@ DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fi
         }
       }
       printf("\n\t\t],\n\t\t\"misses\": ["); {
-        auto &set = obj->req_missing;
+        auto &set = obj->req_missing_;
         const char *sep = "\n\t\t\t";
         for (auto &miss : set) {
           printf("%s", sep); sep = ",\n\t\t\t";
@@ -305,17 +305,17 @@ DB::show_found_json()
 {
   printf("{ \"found_objects\": {");
   const char *mainsep = "\n\t";
-  for (const Elf *obj : objects) {
-    if (obj->req_found.empty())
+  for (const Elf *obj : objects_) {
+    if (obj->req_found_.empty())
       continue;
     printf("%s", mainsep); mainsep = ",\n\t";
     print_objname(obj);
     printf(": [");
 
     const char *sep = "\n\t\t";
-    for (auto &s : obj->req_found) {
+    for (auto &s : obj->req_found_) {
       printf("%s", sep); sep = ",\n\t\t";
-      json_quote(stdout, s->basename);
+      json_quote(stdout, s->basename_);
     }
     printf("\n\t]");
   }
@@ -328,17 +328,17 @@ DB::show_filelist_json(const FilterList &pkg_filters,
 {
   printf("{ \"filelist\": [");
   const char *mainsep = "\n\t";
-  for (auto &pkg : packages) {
+  for (auto &pkg : packages_) {
     if (!util::all(pkg_filters, *this, *pkg))
       continue;
     if (!opt_quiet) {
       printf("%s", mainsep); mainsep = ",\n\t";
-      json_quote(stdout, pkg->name);
+      json_quote(stdout, pkg->name_);
       printf(": [");
     }
 
     const char *sep = "\n\t\t";
-    for (auto &file : pkg->filelist) {
+    for (auto &file : pkg->filelist_) {
       if (!util::all(str_filters, file))
         continue;
       if (!opt_quiet) {
@@ -360,15 +360,15 @@ DB::show_missing_json()
 {
   printf("{ \"missing_objects\": {");
   const char *mainsep = "\n\t";
-  for (const Elf *obj : objects) {
-    if (obj->req_missing.empty())
+  for (const Elf *obj : objects_) {
+    if (obj->req_missing_.empty())
       continue;
     printf("%s", mainsep); mainsep = ",\n\t";
     print_objname(obj);
     printf(": [");
 
     const char *sep = "\n\t\t";
-    for (auto &s : obj->req_missing) {
+    for (auto &s : obj->req_missing_) {
       printf("%s", sep); sep = ",\n\t\t";
       json_quote(stdout, s);
     }
@@ -384,24 +384,24 @@ json_obj(size_t id, FILE *out, const Elf *obj)
                "\t\t\t\"id\": %lu", (unsigned long)id);
 
   fprintf(out, ",\n\t\t\t\"dirname\": ");
-  json_quote(out, obj->dirname);
+  json_quote(out, obj->dirname_);
   fprintf(out, ",\n\t\t\t\"basename\": ");
-  json_quote(out, obj->basename);
-  fprintf(out, ",\n\t\t\t\"ei_class\": %u", (unsigned)obj->ei_class);
-  fprintf(out, ",\n\t\t\t\"ei_data\":  %u", (unsigned)obj->ei_data);
-  fprintf(out, ",\n\t\t\t\"ei_osabi\": %u", (unsigned)obj->ei_osabi);
-  if (obj->rpath_set) {
+  json_quote(out, obj->basename_);
+  fprintf(out, ",\n\t\t\t\"ei_class\": %u", (unsigned)obj->ei_class_);
+  fprintf(out, ",\n\t\t\t\"ei_data\":  %u", (unsigned)obj->ei_data_);
+  fprintf(out, ",\n\t\t\t\"ei_osabi\": %u", (unsigned)obj->ei_osabi_);
+  if (obj->rpath_set_) {
     fprintf(out, ",\n\t\t\t\"rpath\": ");
-    json_quote(out, obj->rpath);
+    json_quote(out, obj->rpath_);
   }
-  if (obj->runpath_set) {
+  if (obj->runpath_set_) {
     fprintf(out, ",\n\t\t\t\"runpath\": ");
-    json_quote(out, obj->runpath);
+    json_quote(out, obj->runpath_);
   }
-  if (obj->needed.size()) {
+  if (obj->needed_.size()) {
     fprintf(out, ",\n\t\t\t\"needed\": [");
     bool comma = false;
-    for (auto &need : obj->needed) {
+    for (auto &need : obj->needed_) {
       if (comma) fputc(',', out);
       comma = true;
       fprintf(out, "\n\t\t\t\t");
@@ -426,11 +426,11 @@ json_objlist(FILE *out, const OBJLIST &list)
   for (; i != count; ++i, ++iter) {
     if ((i & 0xF) == 0)
       fprintf(out, "\n\t\t\t\t");
-    fprintf(out, "%lu, ", (*iter)->json.id);
+    fprintf(out, "%lu, ", (*iter)->json_.id);
   }
   if ((i & 0xF) == 0)
     fprintf(out, "%s\n\t\t\t\t", (i ? "" : ","));
-  fprintf(out, "%lu", (*iter)->json.id);
+  fprintf(out, "%lu", (*iter)->json_.id);
 }
 
 template<class STRLIST>
@@ -451,19 +451,19 @@ json_pkg(FILE *out, const Package *pkg)
 {
   fprintf(out, "\n\t\t{");
   const char *sep = "\n";
-  if (pkg->name.size()) {
+  if (pkg->name_.size()) {
     fprintf(out, "%s\t\t\t\"name\": ", sep);
-    json_quote(out, pkg->name);
+    json_quote(out, pkg->name_);
     sep = ",\n";
   }
-  if (pkg->version.size()) {
+  if (pkg->version_.size()) {
     fprintf(out, "%s\t\t\t\"version\": ", sep);
-    json_quote(out, pkg->version);
+    json_quote(out, pkg->version_);
     sep = ",\n";
   }
-  if (pkg->objects.size()) {
+  if (pkg->objects_.size()) {
     fprintf(out, "%s\t\t\t\"objects\": [", sep);
-    json_objlist(out, pkg->objects);
+    json_objlist(out, pkg->objects_);
     fprintf(out, "\n\t\t\t]");
     sep = ",\n";
   }
@@ -478,7 +478,7 @@ json_obj_found(FILE *out, const Elf *obj, const ObjectSet &found)
   fprintf(out, "\n\t\t{"
                "\n\t\t\t\"obj\": %lu"
                "\n\t\t\t\"found\": [",
-          (unsigned long)obj->json.id);
+          (unsigned long)obj->json_.id);
   json_objlist(out, found);
   fprintf(out, "\n\t\t\t]"
                "\n\t\t}");
@@ -490,7 +490,7 @@ json_obj_missing(FILE *out, const Elf *obj, const StringSet &missing)
   fprintf(out, "\n\t\t{"
                "\n\t\t\t\"obj\": %lu"
                "\n\t\t\t\"missing\": [",
-          (unsigned long)obj->json.id);
+          (unsigned long)obj->json_.id);
   json_strlist(out, missing);
   fprintf(out, "\n\t\t\t]"
                "\n\t\t}");
@@ -515,10 +515,10 @@ db_store_json(DB *db, const std::string& filename)
   fprintf(out, "{\n"
                "\t\"objects\": [");
   bool comma = false;
-  for (auto &obj : db->objects) {
+  for (auto &obj : db->objects_) {
     if (comma) fputc(',', out);
     comma = true;
-    obj->json.id = id;
+    obj->json_.id = id;
     json_obj(id, out, obj);
     ++id;
   }
@@ -528,7 +528,7 @@ db_store_json(DB *db, const std::string& filename)
   // packages have a list of objects
   // above we numbered them with IDs to reuse here now
   comma = false;
-  for (auto &pkg : db->packages) {
+  for (auto &pkg : db->packages_) {
     if (comma) fputc(',', out);
     comma = true;
     json_pkg(out, pkg);

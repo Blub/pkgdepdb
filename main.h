@@ -81,26 +81,26 @@ class Elf {
 public:
   Elf();
   Elf(const Elf& cp);
-  static Elf* open(const char *data, size_t size, bool *waserror, const char *name);
+  static Elf* Open(const char* data, size_t size, bool *err, const char *name);
 
 public:
   size_t refcount_;
 
   // path + name separated
-  std::string dirname;
-  std::string basename;
+  std::string dirname_;
+  std::string basename_;
 
   // classification:
-  unsigned char ei_class; // 32/64 bit
-  unsigned char ei_data;  // endianess
-  unsigned char ei_osabi; // freebsd/linux/...
+  unsigned char ei_class_; // 32/64 bit
+  unsigned char ei_data_;  // endianess
+  unsigned char ei_osabi_; // freebsd/linux/...
 
   // requirements:
-  bool                     rpath_set;
-  bool                     runpath_set;
-  std::string              rpath;
-  std::string              runpath;
-  std::vector<std::string> needed;
+  bool                     rpath_set_;
+  bool                     runpath_set_;
+  std::string              rpath_;
+  std::string              runpath_;
+  std::vector<std::string> needed_;
 
 public: // utility functions while loading
   void solve_paths(const std::string& origin);
@@ -113,15 +113,15 @@ public: // utility functions for printing stuff
 
 public: // NOT serialized INSIDE the object, but as part of the DB
         // (for compatibility with older database dumps)
-  ObjectSet req_found;
-  StringSet req_missing;
+  ObjectSet req_found_;
+  StringSet req_missing_;
 
 public: // NOT SERIALIZED:
   struct {
     size_t id;
-  } json;
+  } json_;
 
-  Package *owner;
+  Package *owner_;
 };
 
 /// Package class
@@ -137,23 +137,23 @@ package_satisfies(const Package *other,
 #endif
 class Package {
 public:
-  static Package* open(const std::string& path);
+  static Package* Open(const std::string& path);
 
-  std::string             name;
-  std::string             version;
-  std::vector<rptr<Elf> > objects;
+  std::string             name_;
+  std::string             version_;
+  std::vector<rptr<Elf> > objects_;
 
   // DB version 3:
-  StringList              depends;
-  StringList              optdepends;
-  StringList              provides;
-  StringList              conflicts;
-  StringList              replaces;
+  StringList              depends_;
+  StringList              optdepends_;
+  StringList              provides_;
+  StringList              conflicts_;
+  StringList              replaces_;
   // DB version 5:
-  StringSet               groups;
+  StringSet               groups_;
   // DB version 6:
   // the filelist includes object files in v6 - makes things easier
-  StringList              filelist;
+  StringList              filelist_;
 
   void show_needed();
   Elf* find(const std::string &dirname, const std::string &basename) const;
@@ -166,7 +166,7 @@ public: // NOT SERIALIZED:
   // used only while loading an archive
   struct {
     std::map<std::string, std::string> symlinks;
-  } load;
+  } load_;
 };
 
 void fixpath(std::string& path);
@@ -199,19 +199,19 @@ public:
   ~DB();
   DB(bool wiped, const DB& copy);
 
-  uint16_t    loaded_version;
-  bool        strict_linking; // stored as flag bit
+  uint16_t    loaded_version_;
+  bool        strict_linking_; // stored as flag bit
 
-  std::string name;
-  StringList  library_path;
+  std::string name_;
+  StringList  library_path_;
 
-  PackageList packages;
-  ObjectList  objects;
+  PackageList packages_;
+  ObjectList  objects_;
 
-  StringSet                         ignore_file_rules;
-  std::map<std::string, StringList> package_library_path;
-  StringSet                         base_packages;
-  StringSet                         assume_found_rules;
+  StringSet                         ignore_file_rules_;
+  std::map<std::string, StringList> package_library_path_;
+  StringSet                         base_packages_;
+  StringSet                         assume_found_rules_;
 
 public:
   bool install_package(Package* &&pkg);
@@ -295,9 +295,9 @@ public:
   bool is_empty (const Package *elf, const ObjFilterList &filters) const;
 
 public: // NOT SERIALIZED:
-  bool contains_package_depends;
-  bool contains_groups;
-  bool contains_filelists;
+  bool contains_package_depends_;
+  bool contains_groups_;
+  bool contains_filelists_;
 };
 
 namespace filter {
@@ -321,7 +321,7 @@ protected:
 public:
   PackageFilter() = delete;
 
-  bool negate;
+  bool negate_;
   virtual ~PackageFilter();
   virtual bool visible(const Package &pkg) const {
     (void)pkg; return true;
@@ -330,7 +330,7 @@ public:
     (void)db; return visible(pkg);
   }
   inline bool operator()(const DB& db, const Package &pkg) const {
-    return visible(db, pkg) != negate;
+    return visible(db, pkg) != negate_;
   }
 
   static unique_ptr<PackageFilter> name         (rptr<Match>, bool neg);
@@ -353,7 +353,7 @@ public:
   ObjectFilter() = delete;
 
   size_t refcount_;
-  bool   negate;
+  bool   negate_;
 
   virtual ~ObjectFilter();
   virtual bool visible(const Elf &elf) const {
@@ -363,7 +363,7 @@ public:
     (void)db; return visible(elf);
   }
   inline bool operator()(const DB& db, const Elf &elf) const {
-    return visible(db, elf) != negate;
+    return visible(db, elf) != negate_;
   }
 
   static unique_ptr<ObjectFilter> name   (rptr<Match>, bool neg);
@@ -377,14 +377,14 @@ protected:
 public:
   StringFilter() = delete;
 
-  bool negate;
+  bool negate_;
   virtual ~StringFilter();
 
   virtual bool visible(const std::string& str) const {
     (void)str; return true;
   }
   inline bool operator()(const std::string &str) const {
-    return visible(str) != negate;
+    return visible(str) != negate_;
   }
 
   static unique_ptr<StringFilter> filter(rptr<Match>, bool neg);

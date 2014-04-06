@@ -433,7 +433,7 @@ main(int argc, char **argv)
     if (optind >= argc)
       help(1);
     while (optind < argc) {
-      Package *package = Package::open(argv[optind++]);
+      Package *package = Package::Open(argv[optind++]);
       package->show_needed();
       delete package;
     }
@@ -459,7 +459,7 @@ main(int argc, char **argv)
     while (optind < argc) {
       if (do_install)
         log(Print, "  %s\n", argv[optind]);
-      Package *package = Package::open(argv[optind]);
+      Package *package = Package::Open(argv[optind]);
       if (!package)
         log(Error, "error reading package %s\n", argv[optind]);
       else {
@@ -487,7 +487,7 @@ main(int argc, char **argv)
 
   if (do_rename) {
     modified = true;
-    db->name = newname;
+    db->name_ = newname;
   }
 
   if (rulemod) {
@@ -528,7 +528,7 @@ main(int argc, char **argv)
     for (auto pkg : packages) {
       modified = true;
       if (!db->install_package(std::move(pkg))) {
-        printf("failed to commit package %s to database\n", pkg->name.c_str());
+        printf("failed to commit package %s to database\n", pkg->name_.c_str());
         break;
       }
     }
@@ -617,9 +617,9 @@ parse_rule(DB *db, const std::string& rule)
     })
     || try_rule(rule, "strict:", "BOOL", &ret,
     [db](const std::string &cmd) {
-      bool old = db->strict_linking;
-      db->strict_linking = CfgStrToBool(cmd);
-      return old == db->strict_linking;
+      bool old = db->strict_linking_;
+      db->strict_linking_ = CfgStrToBool(cmd);
+      return old == db->strict_linking_;
     })
     || try_rule(rule, "unignore:", "FILENAME", &ret,
     [db](const std::string &cmd) {
@@ -654,7 +654,7 @@ parse_rule(DB *db, const std::string& rule)
         return false;
       }
       std::string pkg(cmd.substr(0, s));
-      StringList &lst(db->package_library_path[pkg]);
+      StringList &lst(db->package_library_path_[pkg]);
       return db->pkg_ld_insert(pkg, cmd.substr(s+1), lst.size());
     })
     || try_rule(rule, "pkg-ld-prepend:", "PKG:PATH", &ret,
