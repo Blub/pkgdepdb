@@ -21,14 +21,14 @@ Match::Match() {}
 Match::~Match() {}
 
 class ExactMatch : public Match {
-public:
+ public:
   std::string text_;
   ExactMatch(std::string&&);
   bool operator()(const std::string&) const override;
 };
 
 class GlobMatch : public Match {
-public:
+ public:
   std::string glob_;
   GlobMatch(std::string&&);
   bool operator()(const std::string&) const override;
@@ -40,19 +40,17 @@ ExactMatch::ExactMatch(std::string &&text)
 GlobMatch::GlobMatch(std::string &&glob)
 : glob_(move(glob)) {}
 
-rptr<Match>
-Match::CreateExact(std::string &&text) {
+rptr<Match> Match::CreateExact(std::string &&text) {
   return new ExactMatch(move(text));
 }
 
-rptr<Match>
-Match::CreateGlob (std::string &&text) {
+rptr<Match> Match::CreateGlob (std::string &&text) {
   return new GlobMatch(move(text));
 }
 
 #ifdef WITH_REGEX
 class RegexMatch : public Match {
-public:
+ public:
   std::string pattern_;
   bool        icase_;
   regex_t     regex_;
@@ -87,8 +85,7 @@ RegexMatch::~RegexMatch() {
   regfree(&regex_);
 }
 
-rptr<Match>
-Match::CreateRegex(std::string &&text, bool icase) {
+rptr<Match> Match::CreateRegex(std::string &&text, bool icase) {
   auto match = mk_rptr<RegexMatch>(move(text), icase);
   if (!match->compiled_)
     return nullptr;
@@ -119,7 +116,7 @@ StringFilter::~StringFilter()
 
 // general purpose package filter
 class PkgFilt : public PackageFilter {
-public:
+ public:
   std::function<bool(const DB&, const Package&)> func;
 
   PkgFilt(bool neg, std::function<bool(const DB&, const Package&)> &&fn)
@@ -138,7 +135,7 @@ public:
 
 // general purpose object filter
 class ObjFilt : public ObjectFilter {
-public:
+ public:
   std::function<bool(const Elf&)> func;
 
   ObjFilt(bool neg, std::function<bool(const Elf&)> &&fn)
@@ -151,7 +148,7 @@ public:
 
 // general purpose string filter
 class StrFilt : public StringFilter {
-public:
+ public:
   std::function<bool(const std::string&)> func;
 
   StrFilt(bool neg, std::function<bool(const std::string&)> &&fn)
@@ -164,8 +161,9 @@ public:
 
 // Utility functions:
 
-static bool /* tail recursive */
-match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
+static bool match_glob(const std::string &glob, size_t g,
+                       const std::string &str,  size_t s)
+// tail recursive
 {
   size_t from, to;
   bool neg = false;
@@ -248,8 +246,7 @@ match_glob(const std::string &glob, size_t g, const std::string &str, size_t s)
   }
 }
 
-unique_ptr<PackageFilter>
-PackageFilter::name(rptr<Match> matcher, bool neg) {
+unique_ptr<PackageFilter> PackageFilter::name(rptr<Match> matcher, bool neg) {
   return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
     return (*matcher)(pkg.name_);
   });
@@ -299,7 +296,10 @@ PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
 
 unique_ptr<PackageFilter>
 PackageFilter::pkglibdepends(rptr<Match> matcher, bool neg) {
-  rptr<ObjectFilter> libfilter(ObjectFilter::depends(matcher, false).release());
+  auto depfilter = ObjectFilter::depends(matcher, false);
+  if (!depfilter)
+    return nullptr;
+  rptr<ObjectFilter> libfilter(depfilter.release());
   if (!libfilter)
     return nullptr;
   return mk_unique<PkgFilt>(neg, [libfilter](const Package &pkg) {
@@ -310,31 +310,27 @@ PackageFilter::pkglibdepends(rptr<Match> matcher, bool neg) {
   });
 }
 
-unique_ptr<PackageFilter>
-PackageFilter::broken(bool neg) {
+unique_ptr<PackageFilter> PackageFilter::broken(bool neg) {
   return mk_unique<PkgFilt>(neg, [](const DB &db, const Package &pkg) {
     return db.IsBroken(&pkg);
   });
 }
 
 // general purpose object filter
-unique_ptr<ObjectFilter>
-ObjectFilter::name(rptr<Match> matcher, bool neg) {
+unique_ptr<ObjectFilter> ObjectFilter::name(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     return (*matcher)(elf.basename_);
   });
 }
 
-unique_ptr<ObjectFilter>
-ObjectFilter::path(rptr<Match> matcher, bool neg) {
+unique_ptr<ObjectFilter> ObjectFilter::path(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     std::string p(elf.dirname_); p.append(1, '/'); p.append(elf.basename_);
     return (*matcher)(p);
   });
 }
 
-unique_ptr<ObjectFilter>
-ObjectFilter::depends(rptr<Match> matcher, bool neg) {
+unique_ptr<ObjectFilter> ObjectFilter::depends(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     for (auto &i : elf.needed_)
       if ((*matcher)(i))
@@ -344,8 +340,7 @@ ObjectFilter::depends(rptr<Match> matcher, bool neg) {
 }
 
 // string filter
-unique_ptr<StringFilter>
-StringFilter::filter(rptr<Match> matcher, bool neg) {
+unique_ptr<StringFilter> StringFilter::filter(rptr<Match> matcher, bool neg) {
   return mk_unique<StrFilt>(neg, [matcher](const std::string &str) {
     return (*matcher)(str);
   });
@@ -377,7 +372,8 @@ int main() {
 
   auto tryglob = [&](const char *c, bool expect) {
     if (match_glob(c, 0, text, 0) != expect) {
-      std::cout << "FAIL: " << c << ": " << (expect ? "TRUE" : "FALSE") << " expected." << std::endl;
+      std::cout << "FAIL: " << c << ": "
+                << (expect ? "TRUE" : "FALSE") << " expected." << std::endl;
       r=1;
     } else {
       std::cout << "PASS: " << c << std::endl;

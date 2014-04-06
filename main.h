@@ -78,12 +78,12 @@ using ObjectSet   = std::set<rptr<Elf>>;
 using StringSet   = std::set<std::string>;
 
 class Elf {
-public:
+ public:
   Elf();
   Elf(const Elf& cp);
   static Elf* Open(const char* data, size_t size, bool *err, const char *name);
 
-public:
+ public:
   size_t refcount_;
 
   // path + name separated
@@ -102,21 +102,21 @@ public:
   std::string              runpath_;
   std::vector<std::string> needed_;
 
-public: // utility functions while loading
+ public: // utility functions while loading
   void SolvePaths(const std::string& origin);
   bool CanUse(const Elf &other, bool strict) const;
 
-public: // utility functions for printing stuff
+ public: // utility functions for printing stuff
   const char *classString() const;
   const char *dataString()  const;
   const char *osabiString() const;
 
-public: // NOT serialized INSIDE the object, but as part of the DB
+ public: // NOT serialized INSIDE the object, but as part of the DB
         // (for compatibility with older database dumps)
   ObjectSet req_found_;
   StringSet req_missing_;
 
-public: // NOT SERIALIZED:
+ public: // NOT SERIALIZED:
   struct {
     size_t id;
   } json_;
@@ -127,16 +127,15 @@ public: // NOT SERIALIZED:
 /// Package class
 /// reads a package archive, extracts information
 #ifdef WITH_ALPM
-bool split_depstring(const std::string &str,
-                     std::string &name, std::string &op, std::string &ver);
-bool
-package_satisfies(const Package *other,
-                  const std::string &dep,
-                  const std::string &op,
-                  const std::string &ver);
+bool split_depstring  (const std::string &str,
+                       std::string &name, std::string &op, std::string &ver);
+bool package_satisfies(const Package *other,
+                       const std::string &dep,
+                       const std::string &op,
+                       const std::string &ver);
 #endif
 class Package {
-public:
+ public:
   static Package* Open(const std::string& path);
 
   std::string             name_;
@@ -158,11 +157,11 @@ public:
   void ShowNeeded();
   Elf* Find(const std::string &dirname, const std::string &basename) const;
 
-public: // loading utiltiy functions
+ public: // loading utiltiy functions
   void Guess(const std::string& name);
   bool ConflictsWith(const Package&) const;
 
-public: // NOT SERIALIZED:
+ public: // NOT SERIALIZED:
   // used only while loading an archive
   struct {
     std::map<std::string, std::string> symlinks;
@@ -186,7 +185,7 @@ using ObjFilterList = std::vector<std::unique_ptr<filter::ObjectFilter>>;
 using StrFilterList = std::vector<std::unique_ptr<filter::StringFilter>>;
 
 class DB {
-public:
+ public:
   static uint16_t CURRENT;
 
   using IgnoreMissingRule = struct {
@@ -213,11 +212,13 @@ public:
   StringSet                         base_packages_;
   StringSet                         assume_found_rules_;
 
-public:
+ public:
   bool InstallPackage(Package* &&pkg);
   bool DeletePackage (const std::string& name);
-  Elf *FindFor       (const Elf*, const std::string& lib, const StringList *extrapath) const;
-  void LinkObject    (Elf*, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const;
+  Elf *FindFor       (const Elf*, const std::string& lib,
+                      const StringList *extrapath) const;
+  void LinkObject    (Elf*, const Package *owner,
+                      ObjectSet &req_found, StringSet &req_missing) const;
   void LinkObject_do (Elf*, const Package *owner);
   void RelinkAll     ();
   void FixPaths      ();
@@ -281,23 +282,24 @@ public:
   bool BasePackages_Delete(const std::string& name);
   bool BasePackages_Delete(size_t id);
 
-  bool PKG_LD_Insert(const std::string& package, const std::string& path, size_t i);
-  bool PKG_LD_Delete(const std::string& package, const std::string& path);
-  bool PKG_LD_Delete(const std::string& package, size_t i);
-  bool PKG_LD_Clear (const std::string& package);
+  bool PKG_LD_Insert(const std::string& pkg, const std::string& path, size_t);
+  bool PKG_LD_Delete(const std::string& pkg, const std::string& path);
+  bool PKG_LD_Delete(const std::string& pkg, size_t i);
+  bool PKG_LD_Clear (const std::string& pkg);
 
-private:
-  bool ElfFinds(const Elf*, const std::string& lib, const StringList *extrapath) const;
+ private:
+  bool ElfFinds(const Elf*, const std::string& lib,
+                const StringList *extrapath) const;
 
   const StringList* GetObjectLibPath(const Elf*) const;
   const StringList* GetPackageLibPath(const Package*) const;
 
-public:
+ public:
   bool IsBroken(const Package *pkg) const;
   bool IsBroken(const Elf *elf) const;
   bool IsEmpty (const Package *elf, const ObjFilterList &filters) const;
 
-public: // NOT SERIALIZED:
+ public: // NOT SERIALIZED:
   bool contains_package_depends_;
   bool contains_groups_;
   bool contains_filelists_;
@@ -305,7 +307,7 @@ public: // NOT SERIALIZED:
 
 namespace filter {
 class Match {
-public:
+ public:
   size_t refcount_; // make it a capturable rptr
   Match();
   virtual ~Match();
@@ -319,9 +321,9 @@ public:
 };
 
 class PackageFilter {
-protected:
+ protected:
   PackageFilter(bool);
-public:
+ public:
   PackageFilter() = delete;
 
   bool negate_;
@@ -350,9 +352,9 @@ public:
 };
 
 class ObjectFilter {
-protected:
+ protected:
   ObjectFilter(bool);
-public:
+ public:
   ObjectFilter() = delete;
 
   size_t refcount_;
@@ -375,9 +377,9 @@ public:
 };
 
 class StringFilter {
-protected:
+ protected:
   StringFilter(bool);
-public:
+ public:
   StringFilter() = delete;
 
   bool negate_;

@@ -54,77 +54,71 @@ enum class ObjRef : uint8_t {
 };
 
 class SerialFile : public SerialStream {
-public:
-  int  fd;
-  bool err;
-  size_t ppos, gpos;
+ public:
+  int    fd_;
+  bool   err_;
+  size_t ppos_,
+         gpos_;
 
   SerialFile(const std::string& file, InOut dir)
-  : ppos(0), gpos(0)
+  : ppos_(0), gpos_(0)
   {
     int locktype;
     if (dir == SerialStream::out) {
-      fd = ::open(file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      fd_ = ::open(file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
       locktype = LOCK_EX;
     }
     else {
-      fd = ::open(file.c_str(), O_RDONLY);
+      fd_ = ::open(file.c_str(), O_RDONLY);
       locktype = LOCK_SH;
     }
-    if (fd < 0) {
-      err = true;
+    if (fd_ < 0) {
+      err_ = true;
       return;
     }
-    err = (::flock(fd, locktype) != 0);
-    if (err) {
-      ::close(fd);
+    err_ = (::flock(fd_, locktype) != 0);
+    if (err_) {
+      ::close(fd_);
     }
   }
 
-  ~SerialFile()
-  {
-    if (fd >= 0)
-      ::close(fd);
+  ~SerialFile() {
+    if (fd_ >= 0)
+      ::close(fd_);
   }
 
-  virtual operator bool() const {
-    return fd >= 0 && !err;
+  virtual operator bool() const { return fd_ >= 0 && !err_;
   }
 
-  virtual ssize_t
-  write(const void *buf, size_t bytes)
-  {
-    auto r = ::write(fd, buf, bytes);
-    ppos += r;
+  virtual ssize_t Write(const void *buf, size_t bytes) {
+    auto r = ::write(fd_, buf, bytes);
+    ppos_ += r;
     return r;
   }
 
-  virtual ssize_t
-  read(void *buf, size_t bytes)
-  {
-    auto r = ::read(fd, buf, bytes);
-    gpos += r;
+  virtual ssize_t Read(void *buf, size_t bytes) {
+    auto r = ::read(fd_, buf, bytes);
+    gpos_ += r;
     return r;
   }
 
-  virtual size_t tellp() const {
-    return ppos;
+  virtual size_t TellP() const {
+    return ppos_;
   }
-  virtual size_t tellg() const {
-    return gpos;
+  virtual size_t TellG() const {
+    return gpos_;
   }
 };
 
 class SerialGZ : public SerialStream {
 public:
-  gzFile out;
-  bool   err;
+  gzFile out_;
+  bool   err_;
 
-  SerialGZ(const std::string& file, InOut dir)
-  {
+  SerialGZ(const std::string& file, InOut dir) {
     int fd;
     int locktype;
-    out = 0;
+    out_ = 0;
     if (dir == SerialStream::out) {
       fd = ::open(file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
       locktype = LOCK_EX;
@@ -134,65 +128,61 @@ public:
       locktype = LOCK_SH;
     }
     if (fd < 0) {
-      err = true;
+      err_ = true;
       return;
     }
-    err = (::flock(fd, locktype) != 0);
-    if (err) {
+    err_ = (::flock(fd, locktype) != 0);
+    if (err_) {
       ::close(fd);
-      err = true;
+      err_ = true;
       return;
     }
-    out = gzdopen(fd, (dir == SerialStream::out ? "wb" : "rb"));
-    if (!out) {
-      err = true;
+    out_ = gzdopen(fd, (dir == SerialStream::out ? "wb" : "rb"));
+    if (!out_) {
+      err_ = true;
       ::close(fd);
     }
   }
 
-  ~SerialGZ()
-  {
-    if (out)
-      gzclose(out);
+  ~SerialGZ() {
+    if (out_)
+      gzclose(out_);
   }
 
   virtual operator bool() const {
-    return out && !err;
+    return out_ && !err_;
   }
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wshorten-64-to-32"
-  virtual ssize_t
-  write(const void *buf, size_t bytes)
-  {
-    return gzwrite(out, buf, bytes);
+  virtual ssize_t Write(const void *buf, size_t bytes) {
+    return gzwrite(out_, buf, bytes);
   }
 
-  virtual ssize_t
-  read(void *buf, size_t bytes)
-  {
-    return gzread(out, buf, bytes);
+  virtual ssize_t Read(void *buf, size_t bytes) {
+    return gzread(out_, buf, bytes);
   }
 #pragma clang diagnostic pop
 
-  virtual size_t tellp() const {
-    return gztell(out);
+  virtual size_t TellP() const {
+    return gztell(out_);
   }
-  virtual size_t tellg() const {
-    return gztell(out);
+  virtual size_t TellG() const {
+    return gztell(out_);
   }
 };
 
-SerialIn::SerialIn(DB *db_, SerialStream *in__)
-: db(db_), in(*in__), in_(in__), ver8_refs(false)
+SerialIn::SerialIn(DB *db, SerialStream *in)
+: db_(db), in_(*in), in_owning_(in), ver8_refs_(false)
 { }
 
-SerialIn*
-SerialIn::open(DB *db, const std::string& file, bool gz)
-{
-  SerialStream *in = gz ? (SerialStream*)new SerialGZ(file, SerialStream::in)
-                        : (SerialStream*)new SerialFile(file, SerialStream::in);
-  if (!in) return 0;
+SerialIn* SerialIn::Open(DB *db, const std::string& file, bool gz) {
+  SerialStream*
+    in = gz ? (SerialStream*)new SerialGZ  (file, SerialStream::in)
+            : (SerialStream*)new SerialFile(file, SerialStream::in);
+
+  if (!in)
+    return 0;
   if (!*in) {
     delete in;
     return 0;
@@ -202,16 +192,18 @@ SerialIn::open(DB *db, const std::string& file, bool gz)
   return s;
 }
 
-SerialOut::SerialOut(DB *db_, SerialStream *out__)
-: db(db_), out(*out__), out_(out__)
+SerialOut::SerialOut(DB *db, SerialStream *out)
+: db_(db), out_(*out), out_owning_(out)
 { }
 
-SerialOut*
-SerialOut::open(DB *db, const std::string& file, bool gz)
+SerialOut* SerialOut::Open(DB *db, const std::string& file, bool gz)
 {
-  SerialStream *out = gz ? (SerialStream*)new SerialGZ(file, SerialStream::out)
-                         : (SerialStream*)new SerialFile(file, SerialStream::out);
-  if (!out) return 0;
+  SerialStream*
+    out = gz ? (SerialStream*)new SerialGZ  (file, SerialStream::out)
+             : (SerialStream*)new SerialFile(file, SerialStream::out);
+
+  if (!out) 
+    return 0;
   if (!*out) {
     delete out;
     return 0;
@@ -222,43 +214,39 @@ SerialOut::open(DB *db, const std::string& file, bool gz)
 }
 
 bool SerialOut::GetObjRef(const Elf *e, size_t *out) {
-  auto exists = objref.find(e);
-  if (exists != objref.end()) {
+  auto exists = objref_.find(e);
+  if (exists != objref_.end()) {
     *out = exists->second;
     return true;
   }
-  objref[e] = *out = objref.size();
+  objref_[e] = *out = objref_.size();
   return false;
 }
 
 bool SerialOut::GetPkgRef(const Package *p, size_t *out) {
-  auto exists = pkgref.find(p);
-  if (exists != pkgref.end()) {
+  auto exists = pkgref_.find(p);
+  if (exists != pkgref_.end()) {
     *out = exists->second;
     return true;
   }
-  pkgref[p] = *out = pkgref.size();
+  pkgref_[p] = *out = pkgref_.size();
   return false;
 }
 
 static bool write_obj(SerialOut &out, const Elf *obj);
 static bool read_obj (SerialIn  &in,  rptr<Elf> &obj);
 
-bool
-write_objlist(SerialOut &out, const ObjectList& list)
-{
+bool write_objlist(SerialOut &out, const ObjectList& list) {
   auto len = static_cast<uint32_t>(list.size());
-  out.out.write((const char*)&len, sizeof(len));
+  out.out_.Write((const char*)&len, sizeof(len));
   for (auto &obj : list) {
     if (!write_obj(out, obj))
       return false;
   }
-  return out.out;
+  return out.out_;
 }
 
-bool
-read_objlist(SerialIn &in, ObjectList& list)
-{
+bool read_objlist(SerialIn &in, ObjectList& list) {
   uint32_t len;
   in >= len;
   list.resize(len);
@@ -266,24 +254,20 @@ read_objlist(SerialIn &in, ObjectList& list)
     if (!read_obj(in, list[i]))
       return false;
   }
-  return in.in;
+  return in.in_;
 }
 
-bool
-write_objset(SerialOut &out, const ObjectSet& list)
-{
+bool write_objset(SerialOut &out, const ObjectSet& list) {
   auto len = static_cast<uint32_t>(list.size());
-  out.out.write((const char*)&len, sizeof(len));
+  out.out_.Write((const char*)&len, sizeof(len));
   for (auto &obj : list) {
     if (!write_obj(out, obj))
       return false;
   }
-  return out.out;
+  return out.out_;
 }
 
-bool
-read_objset(SerialIn &in, ObjectSet& list)
-{
+bool read_objset(SerialIn &in, ObjectSet& list) {
 #if 0
   ObjectList lst;
   if (!read_objlist(in, lst))
@@ -300,22 +284,18 @@ read_objset(SerialIn &in, ObjectSet& list)
     list.insert(obj);
   }
 #endif
-  return in.in;
+  return in.in_;
 }
 
-bool
-write_stringlist(SerialOut &out, const std::vector<std::string> &list)
-{
+bool write_stringlist(SerialOut &out, const std::vector<std::string> &list) {
   auto len = static_cast<uint32_t>(list.size());
-  out.out.write((const char*)&len, sizeof(len));
+  out.out_.Write((const char*)&len, sizeof(len));
   for (auto &s : list)
     out <= s;
-  return out.out;
+  return out.out_;
 }
 
-bool
-read_stringlist(SerialIn &in, std::vector<std::string> &list)
-{
+bool read_stringlist(SerialIn &in, std::vector<std::string> &list) {
   static std::string s;
   uint32_t len;
   in >= len;
@@ -324,22 +304,18 @@ read_stringlist(SerialIn &in, std::vector<std::string> &list)
     in >= s;
     list.emplace_back(std::move(s));
   }
-  return in.in;
+  return in.in_;
 }
 
-bool
-write_stringset(SerialOut &out, const StringSet &list)
-{
+bool write_stringset(SerialOut &out, const StringSet &list) {
   auto len = static_cast<uint32_t>(list.size());
-  out.out.write((const char*)&len, sizeof(len));
+  out.out_.Write((const char*)&len, sizeof(len));
   for (auto &s : list)
     out <= s;
-  return out.out;
+  return out.out_;
 }
 
-bool
-read_stringset(SerialIn &in, StringSet &list)
-{
+bool read_stringset(SerialIn &in, StringSet &list) {
 #if 1
   StringList lst;
   if (!read_stringlist(in, lst))
@@ -357,12 +333,10 @@ read_stringset(SerialIn &in, StringSet &list)
     hint = list.emplace_hint(hint, std::move(str));
   }
 #endif
-  return in.in;
+  return in.in_;
 }
 
-static bool
-write_obj(SerialOut &out, const Elf *obj)
-{
+static bool write_obj(SerialOut &out, const Elf *obj) {
   // check if the object has already been serialized
 
   size_t ref = (size_t)-1;
@@ -391,24 +365,22 @@ write_obj(SerialOut &out, const Elf *obj)
   return true;
 }
 
-static bool
-read_obj(SerialIn &in, rptr<Elf> &obj)
-{
+static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
   ObjRef r;
   in >= r;
   size_t ref;
   if (r == ObjRef::OBJREF) {
     in >= ref;
-    if (in.ver8_refs) {
-      if (ref >= in.objref.size()) {
+    if (in.ver8_refs_) {
+      if (ref >= in.objref_.size()) {
         log(Error, "db error: objref out of range\n");
         return false;
       }
-      obj = in.objref[ref];
+      obj = in.objref_[ref];
     } else {
-      auto existing = in.old_objref.find(ref);
-      if (existing == in.old_objref.end()) {
-        log(Error, "db error: failed to find previously deserialized object\n");
+      auto existing = in.old_objref_.find(ref);
+      if (existing == in.old_objref_.end()) {
+        log(Error, "db error: failed to find deserialized object\n");
         return false;
       }
       obj = existing->second;
@@ -422,11 +394,11 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
 
   // Remember the one we're constructing now:
   obj = new Elf;
-  if (in.ver8_refs)
-    in.objref.push_back(obj.get());
+  if (in.ver8_refs_)
+    in.objref_.push_back(obj.get());
   else {
-    ref = in.in.tellg();
-    in.old_objref[ref] = obj.get();
+    ref = in.in_.TellG();
+    in.old_objref_[ref] = obj.get();
   }
 
   // Read out the object data
@@ -451,8 +423,8 @@ read_obj(SerialIn &in, rptr<Elf> &obj)
   return true;
 }
 
-static bool
-write_pkg(SerialOut &out, Package *pkg, unsigned hdrver, HdrFlags flags)
+static bool write_pkg(SerialOut &out,    Package  *pkg,
+                      unsigned   hdrver, HdrFlags  flags)
 {
   // check if the package has already been serialized
   size_t ref = (size_t)-1;
@@ -494,24 +466,24 @@ write_pkg(SerialOut &out, Package *pkg, unsigned hdrver, HdrFlags flags)
   return true;
 }
 
-static bool
-read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
+static bool read_pkg(SerialIn &in,     Package  *&pkg,
+                     unsigned  hdrver, HdrFlags  flags)
 {
   ObjRef r;
   in >= r;
   size_t ref;
   if (r == ObjRef::PKGREF) {
     in >= ref;
-    if (in.ver8_refs) {
-      if (ref >= in.pkgref.size()) {
+    if (in.ver8_refs_) {
+      if (ref >= in.pkgref_.size()) {
         log(Error, "db error: pkgref out of range\n");
         return false;
       }
-      pkg = in.pkgref[ref];
+      pkg = in.pkgref_[ref];
     } else {
-      auto existing = in.old_pkgref.find(ref);
-      if (existing == in.old_pkgref.end()) {
-        log(Error, "db error: failed to find previously deserialized package\n");
+      auto existing = in.old_pkgref_.find(ref);
+      if (existing == in.old_pkgref_.end()) {
+        log(Error, "db error: failed to find deserialized package\n");
         return false;
       }
       pkg = existing->second;
@@ -525,11 +497,11 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
 
   // Remember the one we're constructing now:
   pkg = new Package;
-  if (in.ver8_refs)
-    in.pkgref.push_back(pkg);
+  if (in.ver8_refs_)
+    in.pkgref_.push_back(pkg);
   else {
-    ref = in.in.tellg();
-    in.old_pkgref[ref] = pkg;
+    ref = in.in_.TellG();
+    in.old_pkgref_[ref] = pkg;
   }
 
   // Now serialize the actual package data:
@@ -564,19 +536,15 @@ read_pkg(SerialIn &in, Package *&pkg, unsigned hdrver, HdrFlags flags)
   return true;
 }
 
-static inline bool
-ends_with_gz(const std::string& str)
-{
+static inline bool ends_with_gz(const std::string& str) {
   size_t pos = str.find_last_of('.');
   return (pos == str.length()-3 &&
           str.compare(pos, 3, ".gz") == 0);
 }
 
-static bool
-db_store(DB *db, const std::string& filename)
-{
+static bool db_store(DB *db, const std::string& filename) {
   bool mkgzip = ends_with_gz(filename);
-  std::unique_ptr<SerialOut> sout(SerialOut::open(db, filename, mkgzip));
+  std::unique_ptr<SerialOut> sout(SerialOut::Open(db, filename, mkgzip));
 
   if (mkgzip)
     log(Message, "writing compressed database\n");
@@ -585,8 +553,8 @@ db_store(DB *db, const std::string& filename)
 
   SerialOut &out(*sout);
 
-  if (!sout || !out.out) {
-    log(Error, "failed to open output file %s for writing\n", filename.c_str());
+  if (!sout || !out.out_) {
+    log(Error, "failed to open file %s for writing\n", filename.c_str());
     return false;
   }
 
@@ -695,14 +663,12 @@ db_store(DB *db, const std::string& filename)
       return false;
   }
 
-  return out.out;
+  return out.out_;
 }
 
-static bool
-db_read(DB *db, const std::string& filename)
-{
+static bool db_read(DB *db, const std::string& filename) {
   bool gzip = ends_with_gz(filename);
-  std::unique_ptr<SerialIn> sin(SerialIn::open(db, filename, gzip));
+  std::unique_ptr<SerialIn> sin(SerialIn::Open(db, filename, gzip));
 
   if (gzip)
     log(Message, "reading compressed database\n");
@@ -710,8 +676,8 @@ db_read(DB *db, const std::string& filename)
     log(Message, "reading database\n");
 
   SerialIn &in(*sin);
-  if (!sin || !in.in) {
-    //log(Error, "failed to open input file %s for reading\n", filename.c_str());
+  if (!sin || !in.in_) {
+    //log(Error, "failed to open file %s for reading\n", filename.c_str());
     return true; // might not exist...
   }
 
@@ -733,7 +699,7 @@ db_read(DB *db, const std::string& filename)
   }
 
   if (hdr.version >= 8)
-    in.ver8_refs = true;
+    in.ver8_refs_ = true;
 
   if (hdr.version >= 3)
     db->contains_package_depends_ = true;
@@ -818,15 +784,11 @@ db_read(DB *db, const std::string& filename)
 
 // There we go:
 
-bool
-DB::Store(const std::string& filename)
-{
+bool DB::Store(const std::string& filename) {
   return db_store(this, filename);
 }
 
-bool
-DB::Read(const std::string& filename)
-{
+bool DB::Read(const std::string& filename) {
   if (!Empty()) {
     log(Error, "internal usage error: DB::read on a non-empty db!\n");
     return false;

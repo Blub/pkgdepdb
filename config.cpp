@@ -7,9 +7,7 @@
 
 #include "main.h"
 
-static void
-clearpath(std::string &path)
-{
+static void clearpath(std::string &path) {
   // mhh, could strip whitespace at the end and allow
   // backslash escaping
   // or we just say screw you to people who use trailing
@@ -27,26 +25,21 @@ clearpath(std::string &path)
   }
 }
 
-static bool
-cfg_database(std::string &line)
-{
+static bool cfg_database(std::string &line) {
   clearpath(line);
   opt_default_db = line;
   return true;
 }
 
 template<typename T>
-static std::function<bool(std::string&)>
-cfg_numeric(T &ref) {
+static std::function<bool(std::string&)> cfg_numeric(T &ref) {
   return [&ref](std::string &line) -> bool {
     ref = static_cast<T>(strtoul(line.c_str(), nullptr, 0));
     return true;
   };
 }
 
-bool
-CfgStrToBool(const std::string& line)
-{
+bool CfgStrToBool(const std::string& line) {
   return (line == "true" ||
           line == "TRUE" ||
           line == "True" ||
@@ -59,26 +52,21 @@ CfgStrToBool(const std::string& line)
           line == "1");
 }
 
-static bool
-line_to_bool(std::string& line)
-{
+static bool line_to_bool(std::string& line) {
   size_t n = line.find_first_of(" \t\r\n");
   if (n != std::string::npos)
     line = std::move(line.substr(0, n));
   return CfgStrToBool(line);
 }
 
-static std::function<bool(std::string&)>
-cfg_bool(bool &ref) {
+static std::function<bool(std::string&)> cfg_bool(bool &ref) {
   return [&ref](std::string &line) -> bool {
     ref = line_to_bool(line);
     return true;
   };
 }
 
-bool
-CfgParseJSONBit(const char *bit)
-{
+bool CfgParseJSONBit(const char *bit) {
   if (!*bit)
     return true;
   int mode = 0;
@@ -139,16 +127,12 @@ CfgParseJSONBit(const char *bit)
   return false;
 }
 
-static bool
-cfg_json(std::string &line)
-{
+static bool cfg_json(std::string &line) {
   (void)CfgParseJSONBit(line.c_str());
   return true;
 }
 
-static bool
-ReadConfig(std::istream &in, const char *path)
-{
+static bool ReadConfig(std::istream &in, const char *path) {
   std::string line;
 
   size_t lineno = 0;
@@ -184,11 +168,13 @@ ReadConfig(std::istream &in, const char *path)
       if (line.compare(start, name.length(), name) == 0) {
         size_t eq = line.find_first_not_of(" \t\n\r", start+name.length());
         if (eq == std::string::npos) {
-          log(Warn, "%s:%lu: invalid config entry\n", path, (unsigned long)lineno);
+          log(Warn, "%s:%lu: invalid config entry\n",
+              path, (unsigned long)lineno);
           break;
         }
         if (line[eq] != '=') {
-          log(Warn, "%s:%lu: missing `=` in config entry\n", path, (unsigned long)lineno);
+          log(Warn, "%s:%lu: missing `=` in config entry\n",
+              path, (unsigned long)lineno);
           break;
         }
         start = line.find_first_not_of(" \t\n\r", eq+1);
@@ -202,9 +188,7 @@ ReadConfig(std::istream &in, const char *path)
   return true;
 }
 
-bool
-ReadConfig()
-{
+bool ReadConfig() {
   std::string home(getenv("HOME"));
   std::string etcdir(PKGDEPDB_ETC);
 

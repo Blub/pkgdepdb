@@ -9,12 +9,12 @@ using PkgInMap  = std::map<size_t,   Package*>;
 using ObjInMap  = std::map<size_t,   Elf*>;
 
 class SerialStream {
-public:
+ public:
   virtual ~SerialStream() {}
-  virtual ssize_t write(const void *buf, size_t bytes) = 0;
-  virtual ssize_t read (void *buf,       size_t bytes) = 0;
-  virtual size_t  tellp() const = 0;
-  virtual size_t  tellg() const = 0;
+  virtual ssize_t Write(const void *buf, size_t bytes) = 0;
+  virtual ssize_t Read (void *buf,       size_t bytes) = 0;
+  virtual size_t  TellP() const = 0;
+  virtual size_t  TellG() const = 0;
 
   virtual operator bool() const = 0;
 
@@ -24,76 +24,69 @@ public:
 };
 
 class SerialIn {
-public:
-  DB                           *db;
-  SerialStream                 &in;
-  std::unique_ptr<SerialStream> in_;
-  PkgInMap                      old_pkgref;
-  ObjInMap                      old_objref;
+ public:
+  DB                           *db_;
+  SerialStream                 &in_;
+  std::unique_ptr<SerialStream> in_owning_;
+  PkgInMap                      old_pkgref_;
+  ObjInMap                      old_objref_;
 
-  std::vector<Elf*>             objref;
-  std::vector<Package*>         pkgref;
-  bool                          ver8_refs; // whether objref and pkgref are used
+  std::vector<Elf*>             objref_;
+  std::vector<Package*>         pkgref_;
+  // whether objref and pkgref are used
+  bool                          ver8_refs_;
 
-private:
+ private:
   SerialIn(DB*, SerialStream*);
 
-public:
-  static SerialIn* open(DB *db, const std::string& file, bool gz);
+ public:
+  static SerialIn* Open(DB *db, const std::string& file, bool gz);
 };
 
 class SerialOut {
-public:
-  DB                           *db;
-  SerialStream                 &out;
-  std::unique_ptr<SerialStream> out_;
+ public:
+  DB                           *db_;
+  SerialStream                 &out_;
+  std::unique_ptr<SerialStream> out_owning_;
 
-  std::map<const Elf*,    size_t> objref;
-  std::map<const Package*,size_t> pkgref;
+  std::map<const Elf*,    size_t> objref_;
+  std::map<const Package*,size_t> pkgref_;
 
   bool GetObjRef(const Elf*,     size_t *out);
   bool GetPkgRef(const Package*, size_t *out);
 
-private:
+ private:
   SerialOut(DB*, SerialStream*);
 
-public:
-  static SerialOut* open(DB *db, const std::string& file, bool gz);
+ public:
+  static SerialOut* Open(DB *db, const std::string& file, bool gz);
 };
 
 template<typename T>
-static inline SerialOut&
-operator<=(SerialOut &out, const T& r)
-{
-  out.out.write((const char*)&r, sizeof(r));
+static inline SerialOut& operator<=(SerialOut &out, const T& r) {
+  out.out_.Write((const char*)&r, sizeof(r));
   return out;
 }
 
 template<typename T>
-static inline SerialIn&
-operator>=(SerialIn &in, T& r)
-{
-  in.in.read((char*)&r, sizeof(r));
+static inline SerialIn& operator>=(SerialIn &in, T& r) {
+  in.in_.Read((char*)&r, sizeof(r));
   return in;
 }
 
 // special for strings:
-static inline SerialOut&
-operator<=(SerialOut &out, const std::string& r)
-{
+static inline SerialOut& operator<=(SerialOut &out, const std::string& r) {
   auto len = static_cast<uint32_t>(r.length());
-  out.out.write((const char*)&len, sizeof(len));
-  out.out.write(r.c_str(), len);
+  out.out_.Write((const char*)&len, sizeof(len));
+  out.out_.Write(r.c_str(), len);
   return out;
 }
 
-static inline SerialIn&
-operator>=(SerialIn &in, std::string& r)
-{
+static inline SerialIn& operator>=(SerialIn &in, std::string& r) {
   uint32_t len;
   in >= len;
   r.resize(len);
-  in.in.read(&r[0], len);
+  in.in_.Read(&r[0], len);
   return in;
 }
 

@@ -5,9 +5,7 @@
 
 #include "main.h"
 
-static bool
-care_about(struct archive_entry *entry, mode_t mode)
-{
+static bool care_about(struct archive_entry *entry, mode_t mode) {
 #if 0
   if (AE_IFLNK == (mode & AE_IFLNK)) {
     // ignoring symlinks for now
@@ -29,15 +27,13 @@ care_about(struct archive_entry *entry, mode_t mode)
 }
 
 // because isspace(3) is locale dependent
-static bool
-c_isspace(const char c) {
+static bool c_isspace(const char c) {
   return (c == ' '  || c == '\t' ||
           c == '\n' || c == '\r' ||
           c == '\v' || c == '\f');
 }
 
-static bool
-ends_word(const char c) {
+static bool ends_word(const char c) {
   return c_isspace(c) || c == '=';
 }
 
@@ -45,9 +41,7 @@ ends_word(const char c) {
 // Judgding from pacman/libalpm source code this function
 // is way less strict about the formatting, as we skip whitespace
 // between every word, whereas pacman matches /^(\w+) = (.*)$/ exactly.
-static bool
-read_info(Package *pkg, struct archive *tar, const size_t size)
-{
+static bool read_info(Package *pkg, struct archive *tar, const size_t size) {
   std::vector<char> data(size);
   ssize_t rc = archive_read_data(tar, &data[0], size);
   if ((size_t)rc != size) {
@@ -166,19 +160,22 @@ read_info(Package *pkg, struct archive *tar, const size_t size)
   return true;
 }
 
-static inline std::tuple<std::string, std::string>
-splitpath(const std::string& path)
+static inline
+std::tuple<std::string, std::string> splitpath(const std::string& path)
 {
   size_t slash = path.find_last_of('/');
   if (slash == std::string::npos)
     return std::make_tuple("/", path);
   if (path[0] != '/')
-    return std::make_tuple(std::move(std::string("/") + path.substr(0, slash)), path.substr(slash+1));
+    return std::make_tuple(std::move(std::string("/") + path.substr(0, slash)),
+                           path.substr(slash+1));
   return std::make_tuple(path.substr(0, slash), path.substr(slash+1));
 }
 
-static bool
-read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t size)
+static bool read_object(Package         *pkg,
+                        struct archive  *tar,
+                        std::string    &&filename,
+                        size_t           size)
 {
   std::vector<char> data;
   data.resize(size);
@@ -211,8 +208,9 @@ read_object(Package *pkg, struct archive *tar, std::string &&filename, size_t si
   return true;
 }
 
-static bool
-add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
+static bool add_entry(Package              *pkg,
+                      struct archive       *tar,
+                      struct archive_entry *entry)
 {
   std::string filename(archive_entry_pathname(entry));
   bool isinfo = filename == ".PKGINFO";
@@ -264,8 +262,8 @@ add_entry(Package *pkg, struct archive *tar, struct archive_entry *entry)
   return read_object(pkg, tar, std::move(filename), size);
 }
 
-Elf*
-Package::Find(const std::string& dirname, const std::string& basename) const
+Elf* Package::Find(const std::string& dirname,
+                   const std::string& basename) const
 {
   for (auto &obj : objects_) {
     if (obj->dirname_ == dirname && obj->basename_ == basename)
@@ -274,9 +272,7 @@ Package::Find(const std::string& dirname, const std::string& basename) const
   return nullptr;
 }
 
-void
-Package::Guess(const std::string& path)
-{
+void Package::Guess(const std::string& path) {
   // extract the basename:
   size_t at = path.find_last_of('/');
   std::string base(at == std::string::npos ? path : path.substr(at+1));
@@ -347,9 +343,7 @@ Package::Guess(const std::string& path)
   }
 }
 
-Package*
-Package::Open(const std::string& path)
-{
+Package* Package::Open(const std::string& path) {
   std::unique_ptr<Package> package(new Package);
 
   struct archive *tar = archive_read_new();
@@ -414,9 +408,7 @@ Package::Open(const std::string& path)
   return package.release();
 }
 
-void
-Package::ShowNeeded()
-{
+void Package::ShowNeeded() {
   const char *name = this->name_.c_str();
   for (auto &obj : objects_) {
     std::string path = obj->dirname_ + "/" + obj->basename_;
@@ -427,9 +419,7 @@ Package::ShowNeeded()
   }
 }
 
-bool
-Package::ConflictsWith(const Package &other) const
-{
+bool Package::ConflictsWith(const Package &other) const {
   for (auto &conf : conflicts_) {
 #ifdef WITH_ALPM
     std::string name, op, ver;

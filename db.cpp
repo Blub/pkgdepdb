@@ -17,13 +17,14 @@
 
 using ObjClass = uint32_t;
 
-static inline ObjClass
-getObjClass(unsigned char ei_class, unsigned char ei_data, unsigned char ei_osabi) {
+static inline ObjClass getObjClass(unsigned char ei_class,
+                                   unsigned char ei_data,
+                                   unsigned char ei_osabi)
+{
   return static_cast<ObjClass>((ei_data << 16) | (ei_class << 8) | ei_osabi);
 }
 
-static inline ObjClass
-getObjClass(Elf *elf) {
+static inline ObjClass getObjClass(Elf *elf) {
   return getObjClass(elf->ei_class_, elf->ei_data_, elf->ei_osabi_);
 }
 
@@ -41,8 +42,7 @@ DB::~DB() {
 }
 
 template<typename T>
-static void stdreplace(T &what, const T &with)
-{
+static void stdreplace(T &what, const T &with) {
   what.~T();
   new (&what) T(with);
 }
@@ -62,23 +62,17 @@ DB::DB(bool wiped, const DB &copy)
   }
 }
 
-PackageList::const_iterator
-DB::FindPkg_i(const std::string& name) const
-{
+PackageList::const_iterator DB::FindPkg_i(const std::string& name) const {
   return std::find_if(packages_.begin(), packages_.end(),
     [&name](const Package *pkg) { return pkg->name_ == name; });
 }
 
-Package*
-DB::FindPkg(const std::string& name) const
-{
+Package* DB::FindPkg(const std::string& name) const {
   auto pkg = FindPkg_i(name);
   return (pkg != packages_.end()) ? *pkg : nullptr;
 }
 
-bool
-DB::WipePackages()
-{
+bool DB::WipePackages() {
   if (Empty())
     return false;
   objects_.clear();
@@ -86,9 +80,7 @@ DB::WipePackages()
   return true;
 }
 
-bool
-DB::WipeFilelists()
-{
+bool DB::WipeFilelists() {
   bool hadfiles = contains_filelists_;
   for (auto &pkg : packages_) {
     if (!pkg->filelist_.empty()) {
@@ -100,13 +92,11 @@ DB::WipeFilelists()
   return hadfiles;
 }
 
-const StringList*
-DB::GetObjectLibPath(const Elf *elf) const {
+const StringList* DB::GetObjectLibPath(const Elf *elf) const {
   return elf->owner_ ? GetPackageLibPath(elf->owner_) : nullptr;
 }
 
-const StringList*
-DB::GetPackageLibPath(const Package *pkg) const {
+const StringList* DB::GetPackageLibPath(const Package *pkg) const {
   if (!package_library_path_.size())
     return nullptr;
 
@@ -116,8 +106,7 @@ DB::GetPackageLibPath(const Package *pkg) const {
   return nullptr;
 }
 
-bool
-DB::DeletePackage(const std::string& name)
+bool DB::DeletePackage(const std::string& name)
 {
   const Package *old; {
     auto pkgiter = FindPkg_i(name);
@@ -137,8 +126,9 @@ DB::DeletePackage(const std::string& name)
 
   for (auto &seeker : objects_) {
     for (auto &elfsp : old->objects_) {
-    Elf *elf = elfsp.get();
-    // for each object which depends on this object, search for a replacing object
+      Elf *elf = elfsp.get();
+      // for each object which depends on this object,
+      // search for a replacing object
       auto ref = std::find(seeker->req_found_.begin(),
                            seeker->req_found_.end(),
                            elf);
@@ -164,8 +154,7 @@ DB::DeletePackage(const std::string& name)
   return true;
 }
 
-static bool
-pathlist_contains(const std::string& list, const std::string& path)
+static bool pathlist_contains(const std::string& list, const std::string& path)
 {
   size_t at = 0;
   size_t to = list.find_first_of(':', 0);
@@ -180,8 +169,8 @@ pathlist_contains(const std::string& list, const std::string& path)
   return false;
 }
 
-bool
-DB::ElfFinds(const Elf *elf, const std::string& path, const StringList *extrapaths) const
+bool DB::ElfFinds(const Elf *elf, const std::string& path,
+                  const StringList *extrapaths) const
 {
   // DT_RPATH first
   if (elf->rpath_set_ && pathlist_contains(elf->rpath_, path))
@@ -200,20 +189,24 @@ DB::ElfFinds(const Elf *elf, const std::string& path, const StringList *extrapat
     return true;
   }
 
-  if (std::find(library_path_.begin(), library_path_.end(), path) != library_path_.end())
+  if (std::find(library_path_.begin(), library_path_.end(), path)
+      != library_path_.end())
+  {
     return true;
+  }
 
   if (extrapaths) {
-    if (std::find(extrapaths->begin(), extrapaths->end(), path) != extrapaths->end())
+    if (std::find(extrapaths->begin(), extrapaths->end(), path)
+        != extrapaths->end())
+    {
       return true;
+    }
   }
 
   return false;
 }
 
-bool
-DB::InstallPackage(Package* &&pkg)
-{
+bool DB::InstallPackage(Package* &&pkg) {
   if (!DeletePackage(pkg->name_))
     return false;
 
@@ -255,21 +248,25 @@ DB::InstallPackage(Package* &&pkg)
   return true;
 }
 
-Elf*
-DB::FindFor(const Elf *obj, const std::string& needed, const StringList *extrapath) const
+Elf* DB::FindFor(const Elf *obj, const std::string& needed,
+                 const StringList *extrapath) const
 {
-  log(Debug, "dependency of %s/%s   :  %s\n", obj->dirname_.c_str(), obj->basename_.c_str(), needed.c_str());
+  log(Debug, "dependency of %s/%s   :  %s\n",
+      obj->dirname_.c_str(), obj->basename_.c_str(), needed.c_str());
   for (auto &lib : objects_) {
     if (!obj->CanUse(*lib, strict_linking_)) {
-      log(Debug, "  skipping %s/%s (objclass)\n", lib->dirname_.c_str(), lib->basename_.c_str());
+      log(Debug, "  skipping %s/%s (objclass)\n",
+          lib->dirname_.c_str(), lib->basename_.c_str());
       continue;
     }
     if (lib->basename_    != needed) {
-      log(Debug, "  skipping %s/%s (wrong name)\n", lib->dirname_.c_str(), lib->basename_.c_str());
+      log(Debug, "  skipping %s/%s (wrong name)\n",
+          lib->dirname_.c_str(), lib->basename_.c_str());
       continue;
     }
     if (!ElfFinds(obj, lib->dirname_, extrapath)) {
-      log(Debug, "  skipping %s/%s (not visible)\n", lib->dirname_.c_str(), lib->basename_.c_str());
+      log(Debug, "  skipping %s/%s (not visible)\n",
+          lib->dirname_.c_str(), lib->basename_.c_str());
       continue;
     }
     // same class, same name, and visible...
@@ -278,16 +275,14 @@ DB::FindFor(const Elf *obj, const std::string& needed, const StringList *extrapa
   return 0;
 }
 
-void
-DB::LinkObject_do(Elf *obj, const Package *owner)
-{
+void DB::LinkObject_do(Elf *obj, const Package *owner) {
   obj->req_found_.clear();
   obj->req_missing_.clear();
   LinkObject(obj, owner, obj->req_found_, obj->req_missing_);
 }
 
-void
-DB::LinkObject(Elf *obj, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const
+void DB::LinkObject(Elf *obj, const Package *owner,
+                    ObjectSet &req_found, StringSet &req_missing) const
 {
   if (ignore_file_rules_.size()) {
     std::string full = obj->dirname_ + "/" + obj->basename_;
@@ -308,6 +303,7 @@ DB::LinkObject(Elf *obj, const Package *owner, ObjectSet &req_found, StringSet &
 
 #ifdef ENABLE_THREADS
 namespace thread {
+
   static unsigned int ncpus_init() {
     long v = sysconf(_SC_NPROCESSORS_CONF);
     return (v <= 0 ? 1 : (unsigned int)v);
@@ -315,18 +311,21 @@ namespace thread {
 
   static unsigned int ncpus = ncpus_init();
 
+  using status_printer_func_t =
+    void (unsigned long at, unsigned long count, unsigned long threads);
+
   template<typename PerThread>
-  void
-  work(unsigned long  Count,
-       std::function<void(unsigned long at, unsigned long cnt, unsigned long threads)>
-                      StatusPrinter,
-       std::function<void(std::atomic_ulong*,
-                          size_t from,
-                          size_t to,
-                          PerThread&)>
-                      Worker,
-       std::function<void(std::vector<PerThread>&&)>
-                      Merger)
+  using worker_func_t =
+    void(std::atomic_ulong*, size_t from, size_t to, PerThread&);
+
+  template<typename PerThread>
+  using merger_func_t = void(std::vector<PerThread>&&);
+
+  template<typename PerThread>
+  void work(unsigned long                           Count,
+            std::function<status_printer_func_t>    StatusPrinter,
+            std::function<worker_func_t<PerThread>> Worker,
+            std::function<merger_func_t<PerThread>> Merger)
   {
     unsigned long threadcount = thread::ncpus;
     if (opt_max_jobs >= 1 && opt_max_jobs < threadcount)
@@ -384,15 +383,15 @@ namespace thread {
     if (!opt_quiet)
       StatusPrinter(Count, Count, threadcount);
   }
-}
 
-void
-DB::RelinkAll_Threaded()
-{
+} // namespace thread
+
+void DB::RelinkAll_Threaded() {
   //using FoundMap   = std::map<Elf*, ObjectSet>;
   //using MissingMap = std::map<Elf*, StringSet>;
   //using Tuple      = std::tuple<FoundMap, MissingMap>;
-  auto worker = [this](std::atomic_ulong *count, size_t from, size_t to, int&) {
+  auto worker = [this](std::atomic_ulong *count, size_t from, size_t to, int&)
+  {
     //FoundMap   *f = &std::get<0>(tup);
     //MissingMap *m = &std::get<1>(tup);
     for (size_t i = from; i != to; ++i) {
@@ -423,7 +422,9 @@ DB::RelinkAll_Threaded()
   };
   double fac = 100.0 / double(packages_.size());
   unsigned int pc = 1000;
-  auto status = [fac, &pc](unsigned long at, unsigned long cnt, unsigned long threadcount) {
+  auto status = [fac, &pc](unsigned long at, unsigned long cnt,
+                           unsigned long threadcount)
+  {
     auto newpc = (unsigned int)(fac * double(at));
     if (newpc == pc)
       return;
@@ -438,9 +439,7 @@ DB::RelinkAll_Threaded()
 }
 #endif
 
-void
-DB::RelinkAll()
-{
+void DB::RelinkAll() {
   if (!packages_.size())
     return;
 
@@ -483,25 +482,19 @@ DB::RelinkAll()
   }
 }
 
-void
-DB::FixPaths()
-{
+void DB::FixPaths() {
   for (auto &obj : objects_) {
     fixpathlist(obj->rpath_);
     fixpathlist(obj->runpath_);
   }
 }
 
-bool
-DB::Empty() const
-{
+bool DB::Empty() const {
   return packages_.size() == 0 &&
          objects_.size()  == 0;
 }
 
-bool
-DB::LD_Clear()
-{
+bool DB::LD_Clear() {
   if (library_path_.size()) {
     library_path_.clear();
     return true;
@@ -509,38 +502,28 @@ DB::LD_Clear()
   return false;
 }
 
-static std::string
-fixcpath(const std::string& dir)
-{
+static std::string fixcpath(const std::string& dir) {
   std::string s(dir);
   fixpath(s);
   return std::move(dir);
 }
 
-bool
-DB::LD_Append(const std::string& dir)
-{
+bool DB::LD_Append(const std::string& dir) {
   return LD_Insert(fixcpath(dir), library_path_.size());
 }
 
-bool
-DB::LD_Prepend(const std::string& dir)
-{
+bool DB::LD_Prepend(const std::string& dir) {
   return LD_Insert(fixcpath(dir), 0);
 }
 
-bool
-DB::LD_Delete(size_t i)
-{
+bool DB::LD_Delete(size_t i) {
   if (!library_path_.size() || i >= library_path_.size())
     return false;
   library_path_.erase(library_path_.begin() + i);
   return true;
 }
 
-bool
-DB::LD_Delete(const std::string& dir_)
-{
+bool DB::LD_Delete(const std::string& dir_) {
   if (!dir_.length())
     return false;
   if (dir_[0] >= '0' && dir_[0] <= '9') {
@@ -556,9 +539,7 @@ DB::LD_Delete(const std::string& dir_)
   return false;
 }
 
-bool
-DB::LD_Insert(const std::string& dir_, size_t i)
-{
+bool DB::LD_Insert(const std::string& dir_, size_t i) {
   std::string dir(dir_);
   fixpath(dir);
   if (i > library_path_.size())
@@ -578,10 +559,11 @@ DB::LD_Insert(const std::string& dir_, size_t i)
   return true;
 }
 
-bool
-DB::PKG_LD_Insert(const std::string& package, const std::string& dir_, size_t i)
+bool DB::PKG_LD_Insert(const std::string& package,
+                       const std::string& directory,
+                       size_t             i)
 {
-  std::string dir(dir_);
+  std::string dir(directory);
   fixpath(dir);
   StringList &path(package_library_path_[package]);
 
@@ -602,10 +584,10 @@ DB::PKG_LD_Insert(const std::string& package, const std::string& dir_, size_t i)
   return true;
 }
 
-bool
-DB::PKG_LD_Delete(const std::string& package, const std::string& dir_)
+bool DB::PKG_LD_Delete(const std::string& package,
+                       const std::string& directory)
 {
-  std::string dir(dir_);
+  std::string dir(directory);
   fixpath(dir);
   auto iter = package_library_path_.find(package);
   if (iter == package_library_path_.end())
@@ -622,9 +604,7 @@ DB::PKG_LD_Delete(const std::string& package, const std::string& dir_)
   return false;
 }
 
-bool
-DB::PKG_LD_Delete(const std::string& package, size_t i)
-{
+bool DB::PKG_LD_Delete(const std::string& package, size_t i) {
   auto iter = package_library_path_.find(package);
   if (iter == package_library_path_.end())
     return false;
@@ -638,9 +618,7 @@ DB::PKG_LD_Delete(const std::string& package, size_t i)
   return true;
 }
 
-bool
-DB::PKG_LD_Clear(const std::string& package)
-{
+bool DB::PKG_LD_Clear(const std::string& package) {
   auto iter = package_library_path_.find(package);
   if (iter == package_library_path_.end())
     return false;
@@ -649,21 +627,15 @@ DB::PKG_LD_Clear(const std::string& package)
   return true;
 }
 
-bool
-DB::IgnoreFile_Add(const std::string& filename)
-{
+bool DB::IgnoreFile_Add(const std::string& filename) {
   return std::get<1>(ignore_file_rules_.insert(fixcpath(filename)));
 }
 
-bool
-DB::IgnoreFile_Delete(const std::string& filename)
-{
+bool DB::IgnoreFile_Delete(const std::string& filename) {
   return (ignore_file_rules_.erase(fixcpath(filename)) > 0);
 }
 
-bool
-DB::IgnoreFile_Delete(size_t id)
-{
+bool DB::IgnoreFile_Delete(size_t id) {
   if (id >= ignore_file_rules_.size())
     return false;
   auto iter = ignore_file_rules_.begin();
@@ -675,21 +647,15 @@ DB::IgnoreFile_Delete(size_t id)
   return true;
 }
 
-bool
-DB::AssumeFound_Add(const std::string& name)
-{
+bool DB::AssumeFound_Add(const std::string& name) {
   return std::get<1>(assume_found_rules_.insert(name));
 }
 
-bool
-DB::AssumeFound_Delete(const std::string& name)
-{
+bool DB::AssumeFound_Delete(const std::string& name) {
   return (assume_found_rules_.erase(name) > 0);
 }
 
-bool
-DB::AssumeFound_Delete(size_t id)
-{
+bool DB::AssumeFound_Delete(size_t id) {
   if (id >= assume_found_rules_.size())
     return false;
   auto iter = assume_found_rules_.begin();
@@ -701,21 +667,15 @@ DB::AssumeFound_Delete(size_t id)
   return true;
 }
 
-bool
-DB::BasePackages_Add(const std::string& name)
-{
+bool DB::BasePackages_Add(const std::string& name) {
   return std::get<1>(base_packages_.insert(name));
 }
 
-bool
-DB::BasePackages_Delete(const std::string& name)
-{
+bool DB::BasePackages_Delete(const std::string& name) {
   return (base_packages_.erase(name) > 0);
 }
 
-bool
-DB::BasePackages_Delete(size_t id)
-{
+bool DB::BasePackages_Delete(size_t id) {
   if (id >= base_packages_.size())
     return false;
   auto iter = base_packages_.begin();
@@ -727,9 +687,7 @@ DB::BasePackages_Delete(size_t id)
   return true;
 }
 
-void
-DB::ShowInfo()
-{
+void DB::ShowInfo() {
   if (opt_json & JSONBits::Query)
     return ShowInfo_json();
 
@@ -771,15 +729,11 @@ DB::ShowInfo()
   }
 }
 
-bool
-DB::IsBroken(const Elf *obj) const
-{
+bool DB::IsBroken(const Elf *obj) const {
   return obj->req_missing_.size() != 0;
 }
 
-bool
-DB::IsEmpty(const Package *pkg, const ObjFilterList &filters) const
-{
+bool DB::IsEmpty(const Package *pkg, const ObjFilterList &filters) const {
   size_t vis = 0;
   for (auto &obj : pkg->objects_) {
     if (util::all(filters, *this, *obj))
@@ -788,9 +742,7 @@ DB::IsEmpty(const Package *pkg, const ObjFilterList &filters) const
   return vis == 0;
 }
 
-bool
-DB::IsBroken(const Package *pkg) const
-{
+bool DB::IsBroken(const Package *pkg) const {
   for (auto &obj : pkg->objects_) {
     if (IsBroken(obj))
       return true;
@@ -798,14 +750,14 @@ DB::IsBroken(const Package *pkg) const
   return false;
 }
 
-void
-DB::ShowPackages(bool filter_broken,
-                  bool filter_notempty,
-                  const FilterList &pkg_filters,
-                  const ObjFilterList &obj_filters)
+void DB::ShowPackages(bool                 filter_broken,
+                      bool                 filter_notempty,
+                      const FilterList    &pkg_filters,
+                      const ObjFilterList &obj_filters)
 {
   if (opt_json & JSONBits::Query)
-    return ShowPackages_json(filter_broken, filter_notempty, pkg_filters, obj_filters);
+    return ShowPackages_json(filter_broken, filter_notempty,
+                             pkg_filters, obj_filters);
 
   if (!opt_quiet)
     printf("Packages:%s\n", (filter_broken ? " (filter: 'broken')" : ""));
@@ -838,7 +790,8 @@ DB::ShowPackages(bool filter_broken,
           if (!util::all(obj_filters, *this, *obj))
             continue;
           if (IsBroken(obj)) {
-            printf("    broken: %s / %s\n", obj->dirname_.c_str(), obj->basename_.c_str());
+            printf("    broken: %s / %s\n",
+                   obj->dirname_.c_str(), obj->basename_.c_str());
             if (opt_verbosity >= 2) {
               for (auto &missing : obj->req_missing_)
                 printf("      misses: %s\n", missing.c_str());
@@ -850,15 +803,16 @@ DB::ShowPackages(bool filter_broken,
         for (auto &obj : pkg->objects_) {
           if (!util::all(obj_filters, *this, *obj))
             continue;
-          printf("    contains %s / %s\n", obj->dirname_.c_str(), obj->basename_.c_str());
+          printf("    contains %s / %s\n",
+                 obj->dirname_.c_str(), obj->basename_.c_str());
         }
       }
     }
   }
 }
 
-void
-DB::ShowObjects(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
+void DB::ShowObjects(const FilterList    &pkg_filters,
+                     const ObjFilterList &obj_filters)
 {
   if (opt_json & JSONBits::Query)
     return ShowObjects_json(pkg_filters, obj_filters);
@@ -873,7 +827,8 @@ DB::ShowObjects(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
   for (auto &obj : objects_) {
     if (!util::all(obj_filters, *this, *obj))
       continue;
-    if (pkg_filters.size() && (!obj->owner_ || !util::all(pkg_filters, *this, *obj->owner_)))
+    if (pkg_filters.size() &&
+        (!obj->owner_ || !util::all(pkg_filters, *this, *obj->owner_)))
       continue;
     if (opt_quiet)
       printf("%s/%s\n", obj->dirname_.c_str(), obj->basename_.c_str());
@@ -881,9 +836,12 @@ DB::ShowObjects(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
       printf("  -> %s / %s\n", obj->dirname_.c_str(), obj->basename_.c_str());
     if (opt_verbosity < 1)
       continue;
-    printf("     class: %u (%s)\n", (unsigned)obj->ei_class_, obj->classString());
-    printf("     data:  %u (%s)\n", (unsigned)obj->ei_data_,  obj->dataString());
-    printf("     osabi: %u (%s)\n", (unsigned)obj->ei_osabi_, obj->osabiString());
+    printf("     class: %u (%s)\n"
+           "     data:  %u (%s)\n"
+           "     osabi: %u (%s)\n",
+           (unsigned)obj->ei_class_, obj->classString(),
+           (unsigned)obj->ei_data_,  obj->dataString(),
+           (unsigned)obj->ei_osabi_, obj->osabiString());
     if (obj->rpath_set_)
       printf("     rpath: %s\n", obj->rpath_.c_str());
     if (obj->runpath_set_)
@@ -892,7 +850,8 @@ DB::ShowObjects(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
       continue;
     printf("     finds:\n"); {
       for (auto &found : obj->req_found_)
-        printf("       -> %s / %s\n", found->dirname_.c_str(), found->basename_.c_str());
+        printf("       -> %s / %s\n",
+               found->dirname_.c_str(), found->basename_.c_str());
     }
     printf("     misses:\n"); {
       for (auto &miss : obj->req_missing_)
@@ -901,9 +860,7 @@ DB::ShowObjects(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
   }
 }
 
-void
-DB::ShowMissing()
-{
+void DB::ShowMissing() {
   if (opt_json & JSONBits::Query)
     return ShowMissing_json();
 
@@ -922,9 +879,7 @@ DB::ShowMissing()
   }
 }
 
-void
-DB::ShowFound()
-{
+void DB::ShowFound() {
   if (opt_json & JSONBits::Query)
     return ShowFound_json();
 
@@ -942,9 +897,8 @@ DB::ShowFound()
   }
 }
 
-void
-DB::ShowFilelist(const FilterList &pkg_filters,
-                  const StrFilterList &str_filters)
+void DB::ShowFilelist(const FilterList    &pkg_filters,
+                      const StrFilterList &str_filters)
 {
   if (opt_json & JSONBits::Query)
     return ShowFilelist_json(pkg_filters, str_filters);
@@ -962,17 +916,17 @@ DB::ShowFilelist(const FilterList &pkg_filters,
   }
 }
 
-static void
-strip_version(std::string &s)
-{
+static void strip_version(std::string &s) {
   size_t from = s.find_first_of("=<>!");
   if (from != std::string::npos)
     s.erase(from);
 }
 
 #ifdef WITH_ALPM
-bool
-split_depstring(const std::string &full, std::string &name, std::string &op, std::string &ver)
+bool split_depstring(const std::string &full,
+                     std::string       &name,
+                     std::string       &op,
+                     std::string       &ver)
 {
   size_t opidx = full.find_first_of("=<>!");
   if (opidx != std::string::npos) {
@@ -995,9 +949,7 @@ split_depstring(const std::string &full, std::string &name, std::string &op, std
   return true;
 }
 
-static bool
-version_op(const std::string &op, const char *v1, const char *v2)
-{
+static bool version_op(const std::string &op, const char *v1, const char *v2) {
   int res = alpm_pkg_vercmp(v1, v2);
   if ( (op == "="  && res == 0) ||
        (op == "!=" && res != 0) ||
@@ -1011,8 +963,10 @@ version_op(const std::string &op, const char *v1, const char *v2)
   return false;
 }
 
-static bool
-version_satisfies(const std::string &dop, const std::string &dver, const std::string &pop, const std::string &pver)
+static bool version_satisfies(const std::string &dop,
+                              const std::string &dver,
+                              const std::string &pop,
+                              const std::string &pver)
 {
   // does the provided version pver satisfy the required version hver?
   int ret = alpm_pkg_vercmp(dver.c_str(), pver.c_str());
@@ -1069,8 +1023,10 @@ version_satisfies(const std::string &dop, const std::string &dver, const std::st
   return false;
 }
 
-bool
-package_satisfies(const Package *other, const std::string &dep, const std::string &op, const std::string &ver)
+bool package_satisfies(const Package     *other,
+                       const std::string &dep,
+                       const std::string &op,
+                       const std::string &ver)
 {
   if (version_op(op, other->version_.c_str(), ver.c_str()))
     return true;
@@ -1086,17 +1042,19 @@ package_satisfies(const Package *other, const std::string &dep, const std::strin
 }
 #endif
 
-static const Package*
-find_depend(const std::string &dep_, const PkgMap &pkgmap, const PkgListMap &providemap, const PkgListMap &replacemap)
+static const Package* find_depend(const std::string &dependency,
+                                  const PkgMap      &pkgmap,
+                                  const PkgListMap  &providemap,
+                                  const PkgListMap  &replacemap)
 {
-  if (!dep_.length())
+  if (!dependency.length())
     return 0;
 
 #ifdef WITH_ALPM
   std::string dep, op, ver;
-  split_depstring(dep_, dep, op, ver);
+  split_depstring(dependency, dep, op, ver);
 #else
-  std::string dep(dep_);
+  std::string dep(dependency);
   strip_version(dep);
 #endif
 
@@ -1140,14 +1098,13 @@ find_depend(const std::string &dep_, const PkgMap &pkgmap, const PkgListMap &pro
   return nullptr;
 }
 
-static void
-install_recursive(std::vector<const Package*> &packages,
-                  PkgMap                      &installmap,
-                  const Package               *pkg,
-                  const PkgMap                &pkgmap,
-                  const PkgListMap            &providemap,
-                  const PkgListMap            &replacemap,
-                  const bool                   showmsg)
+static void install_recursive(std::vector<const Package*> &packages,
+                              PkgMap                      &installmap,
+                              const Package               *pkg,
+                              const PkgMap                &pkgmap,
+                              const PkgListMap            &providemap,
+                              const PkgListMap            &replacemap,
+                              const bool                   showmsg)
 {
   if (installmap.find(pkg->name_) != installmap.end())
     return;
@@ -1201,7 +1158,8 @@ install_recursive(std::vector<const Package*> &packages,
       }
       continue;
     }
-    install_recursive(packages, installmap, found, pkgmap, providemap, replacemap, false);
+    install_recursive(packages, installmap, found,
+                      pkgmap, providemap, replacemap, false);
   }
   for (auto &dep : pkg->optdepends_) {
     auto found = find_depend(dep, pkgmap, providemap, replacemap);
@@ -1214,23 +1172,24 @@ install_recursive(std::vector<const Package*> &packages,
       }
       continue;
     }
-    install_recursive(packages, installmap, found, pkgmap, providemap, replacemap, false);
+    install_recursive(packages, installmap, found,
+                      pkgmap, providemap, replacemap, false);
   }
 }
 
-void
-DB::CheckIntegrity(const Package    *pkg,
-                    const PkgMap     &pkgmap,
-                    const PkgListMap &providemap,
-                    const PkgListMap &replacemap,
-                    const PkgMap     &basemap,
-                    const ObjListMap &objmap,
-                    const std::vector<const Package*> &package_base,
-                    const ObjFilterList &obj_filters) const
+void DB::CheckIntegrity(const Package                     *pkg,
+                        const PkgMap                      &pkgmap,
+                        const PkgListMap                  &providemap,
+                        const PkgListMap                  &replacemap,
+                        const PkgMap                      &basemap,
+                        const ObjListMap                  &objmap,
+                        const std::vector<const Package*> &package_base,
+                        const ObjFilterList               &obj_filters) const
 {
   std::vector<const Package*> pulled(package_base);
   PkgMap                      installmap(basemap);
-  install_recursive(pulled, installmap, pkg, pkgmap, providemap, replacemap, true);
+  install_recursive(pulled, installmap, pkg,
+                    pkgmap, providemap, replacemap, true);
   (void)objmap;
 
   StringSet needed;
@@ -1270,9 +1229,8 @@ DB::CheckIntegrity(const Package    *pkg,
   }
 }
 
-void
-DB::CheckIntegrity(const FilterList    &pkg_filters,
-                    const ObjFilterList &obj_filters) const
+void DB::CheckIntegrity(const FilterList    &pkg_filters,
+                        const ObjFilterList &obj_filters) const
 {
   log(Message, "Looking for stale object files...\n");
   for (auto &o : objects_) {
@@ -1290,7 +1248,9 @@ DB::CheckIntegrity(const FilterList    &pkg_filters,
 
   for (auto &p: packages_) {
     pkgmap[p->name_] = p;
-    auto addit = [](const Package *pkg, std::string /*copy*/ name, PkgListMap &map) {
+    auto addit = [](const Package *pkg, std::string /*copy*/ name,
+                    PkgListMap &map)
+    {
       strip_version(name);
       auto fnd = map.find(name);
       if (fnd == map.end())
@@ -1322,15 +1282,19 @@ DB::CheckIntegrity(const FilterList    &pkg_filters,
   }
 
   // print some stats
-  log(Message, "packages: %lu, provides: %lu, replacements: %lu, objects: %lu\n",
-               (unsigned long)pkgmap.size(),
-               (unsigned long)providemap.size(),
-               (unsigned long)replacemap.size(),
-               (unsigned long)objmap.size());
+  log(Message,
+      "packages: %lu, provides: %lu, replacements: %lu, objects: %lu\n",
+      (unsigned long)pkgmap.size(),
+      (unsigned long)providemap.size(),
+      (unsigned long)replacemap.size(),
+      (unsigned long)objmap.size());
 
   double fac = 100.0 / double(packages_.size());
   unsigned int pc = 100;
-  auto status = [fac,&pc](unsigned long at, unsigned long cnt, unsigned long threads) {
+  auto status = [fac,&pc](unsigned long at,
+                          unsigned long cnt,
+                          unsigned long threads)
+  {
     auto newpc = (unsigned int)(fac * double(at));
     if (newpc == pc)
       return;
@@ -1394,8 +1358,8 @@ DB::CheckIntegrity(const FilterList    &pkg_filters,
       continue;
 
     std::vector<const Package*> realpkgs;
-    // Do not consider two conflicting packages which contain the same files to be
-    // file-conflicting.
+    // Do not consider two conflicting packages which contain
+    // the same files to be file-conflicting.
     for (auto &a : pkgs) {
       bool conflict = false;
       for (auto &b : pkgs) {
@@ -1408,7 +1372,8 @@ DB::CheckIntegrity(const FilterList    &pkg_filters,
     }
 
     if (realpkgs.size() > 1) {
-      printf("%zu packages contain file: %s\n", realpkgs.size(), std::get<0>(file)->c_str());
+      printf("%zu packages contain file: %s\n",
+             realpkgs.size(), std::get<0>(file)->c_str());
       if (opt_verbosity) {
         for (auto &p : realpkgs)
           printf("\t%s\n", p->name_.c_str());

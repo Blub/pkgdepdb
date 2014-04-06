@@ -2,9 +2,7 @@
 
 #include "main.h"
 
-static void
-json_in_quote(FILE *out, const std::string& str)
-{
+static void json_in_quote(FILE *out, const std::string& str) {
   for (size_t i = 0; i != str.length(); ++i) {
     switch (str[i]) {
       case '"':  fputc('\\', out); fputc('"', out); break;
@@ -21,17 +19,13 @@ json_in_quote(FILE *out, const std::string& str)
   }
 }
 
-static void
-json_quote(FILE *out, const std::string& str)
-{
+static void json_quote(FILE *out, const std::string& str) {
   fprintf(out, "\"");
   json_in_quote(out, str);
   fprintf(out, "\"");
 }
 
-static void
-print_objname(const Elf *obj)
-{
+static void print_objname(const Elf *obj) {
   putchar('"');
   json_in_quote(stdout, obj->dirname_);
   putchar('/');
@@ -39,11 +33,10 @@ print_objname(const Elf *obj)
   putchar('"');
 }
 
-void
-DB::ShowPackages_json(bool filter_broken,
-                       bool filter_notempty,
-                       const FilterList &pkg_filters,
-                       const ObjFilterList &obj_filters)
+void DB::ShowPackages_json(bool                filter_broken,
+                           bool                filter_notempty,
+                           const FilterList   &pkg_filters,
+                           const ObjFilterList &obj_filters)
 {
   printf("{");
   if (filter_broken)
@@ -152,9 +145,7 @@ DB::ShowPackages_json(bool filter_broken,
   printf("\n\t]\n}\n");
 }
 
-void
-DB::ShowInfo_json()
-{
+void DB::ShowInfo_json() {
   printf("{");
   printf( "\n\t\"db_version\": %u", (unsigned)loaded_version_);
   printf(",\n\t\"db_name\": "); json_quote(stdout, name_);
@@ -237,8 +228,8 @@ DB::ShowInfo_json()
   printf("\n}\n");
 }
 
-void
-DB::ShowObjects_json(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
+void DB::ShowObjects_json(const FilterList    &pkg_filters,
+                          const ObjFilterList &obj_filters)
 {
   if (!objects_.size()) {
     printf("{ \"objects\": [] }\n");
@@ -250,7 +241,8 @@ DB::ShowObjects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fil
   for (auto &obj : objects_) {
     if (!util::all(obj_filters, *this, *obj))
       continue;
-    if (pkg_filters.size() && (!obj->owner_ || !util::all(pkg_filters, *this, *obj->owner_)))
+    if (pkg_filters.size() &&
+        (!obj->owner_ || !util::all(pkg_filters, *this, *obj->owner_)))
       continue;
     printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
     print_objname(obj);
@@ -259,12 +251,17 @@ DB::ShowObjects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fil
       continue;
     }
     do {
-      printf("\n\t\t\"class\": %u, // %s", (unsigned)obj->ei_class_, obj->classString());
-      printf("\n\t\t\"data\":  %u, // %s", (unsigned)obj->ei_data_,  obj->dataString());
-      if (opt_verbosity >= 2 || obj->rpath_set_ || obj->runpath_set_)
-        printf("\n\t\t\"osabi\": %u, // %s", (unsigned)obj->ei_osabi_, obj->osabiString());
-      else
-        printf("\n\t\t\"osabi\": %u  // %s", (unsigned)obj->ei_osabi_, obj->osabiString());
+      printf("\n\t\t\"class\": %u, // %s"
+             "\n\t\t\"data\":  %u, // %s",
+             (unsigned)obj->ei_class_, obj->classString(),
+             (unsigned)obj->ei_data_,  obj->dataString());
+      if (opt_verbosity >= 2 || obj->rpath_set_ || obj->runpath_set_) {
+        printf("\n\t\t\"osabi\": %u, // %s",
+               (unsigned)obj->ei_osabi_, obj->osabiString());
+      } else {
+        printf("\n\t\t\"osabi\": %u  // %s",
+               (unsigned)obj->ei_osabi_, obj->osabiString());
+      }
       if (obj->rpath_set_) {
         printf(",\n\t\t\"rpath\": ");
         json_quote(stdout, obj->rpath_);
@@ -300,9 +297,7 @@ DB::ShowObjects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fil
   printf("\n] }\n");
 }
 
-void
-DB::ShowFound_json()
-{
+void DB::ShowFound_json() {
   printf("{ \"found_objects\": {");
   const char *mainsep = "\n\t";
   for (const Elf *obj : objects_) {
@@ -322,9 +317,8 @@ DB::ShowFound_json()
   printf("\n} }\n");
 }
 
-void
-DB::ShowFilelist_json(const FilterList &pkg_filters,
-                       const StrFilterList &str_filters)
+void DB::ShowFilelist_json(const FilterList    &pkg_filters,
+                           const StrFilterList &str_filters)
 {
   printf("{ \"filelist\": [");
   const char *mainsep = "\n\t";
@@ -355,9 +349,7 @@ DB::ShowFilelist_json(const FilterList &pkg_filters,
   printf("\n] }\n");
 }
 
-void
-DB::ShowMissing_json()
-{
+void DB::ShowMissing_json() {
   printf("{ \"missing_objects\": {");
   const char *mainsep = "\n\t";
   for (const Elf *obj : objects_) {
@@ -377,9 +369,7 @@ DB::ShowMissing_json()
   printf("\n} }\n");
 }
 
-static void
-json_obj(size_t id, FILE *out, const Elf *obj)
-{
+static void json_obj(size_t id, FILE *out, const Elf *obj) {
   fprintf(out, "\n\t\t{\n"
                "\t\t\t\"id\": %lu", (unsigned long)id);
 
@@ -414,9 +404,7 @@ json_obj(size_t id, FILE *out, const Elf *obj)
 }
 
 template<class OBJLIST>
-static void
-json_objlist(FILE *out, const OBJLIST &list)
-{
+static void json_objlist(FILE *out, const OBJLIST &list) {
   if (!list.size())
     return;
   // let's group them...
@@ -434,9 +422,7 @@ json_objlist(FILE *out, const OBJLIST &list)
 }
 
 template<class STRLIST>
-static void
-json_strlist(FILE *out, const STRLIST &list)
-{
+static void json_strlist(FILE *out, const STRLIST &list) {
   bool comma = false;
   for (auto &i : list) {
     if (comma) fputc(',', out);
@@ -446,9 +432,7 @@ json_strlist(FILE *out, const STRLIST &list)
   }
 }
 
-static void
-json_pkg(FILE *out, const Package *pkg)
-{
+static void json_pkg(FILE *out, const Package *pkg) {
   fprintf(out, "\n\t\t{");
   const char *sep = "\n";
   if (pkg->name_.size()) {
@@ -472,9 +456,7 @@ json_pkg(FILE *out, const Package *pkg)
 }
 
 #if 0
-static void
-json_obj_found(FILE *out, const Elf *obj, const ObjectSet &found)
-{
+static void json_obj_found(FILE *out, const Elf *obj, const ObjectSet &found) {
   fprintf(out, "\n\t\t{"
                "\n\t\t\t\"obj\": %lu"
                "\n\t\t\t\"found\": [",
@@ -484,8 +466,8 @@ json_obj_found(FILE *out, const Elf *obj, const ObjectSet &found)
                "\n\t\t}");
 }
 
-static void
-json_obj_missing(FILE *out, const Elf *obj, const StringSet &missing)
+static void json_obj_missing(FILE *out, const Elf *obj,
+                             const StringSet &missing)
 {
   fprintf(out, "\n\t\t{"
                "\n\t\t\t\"obj\": %lu"
@@ -497,9 +479,7 @@ json_obj_missing(FILE *out, const Elf *obj, const StringSet &missing)
 }
 #endif
 
-bool
-db_store_json(DB *db, const std::string& filename)
-{
+bool db_store_json(DB *db, const std::string& filename) {
   FILE *out = fopen(filename.c_str(), "wb");
   if (!out) {
     log(Error, "failed to open file `%s' for reading\n", filename.c_str());

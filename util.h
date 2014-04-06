@@ -122,27 +122,27 @@ inline rptr<T> mk_rptr(Args&&... args) {
 }
 
 namespace util {
-  template<typename CONT, typename... Args>
-  inline bool
-  any(const CONT &lst, const Args&... args) {
-    if (!lst.size())
-      return true;
-    for (auto &i : lst) {
-      if ((i)(args...))
-        return true;
-    }
-    return false;
-  }
 
-  template<typename CONT, typename... Args>
-  inline bool
-  all(const CONT &lst, const Args&... args) {
-    for (auto &i : lst) {
-      if (!(*i)(args...))
-        return false;
-    }
+template<typename CONT, typename... Args>
+inline bool any(const CONT &lst, const Args&... args) {
+  if (!lst.size())
     return true;
+  for (auto &i : lst) {
+    if ((i)(args...))
+      return true;
   }
+  return false;
 }
+
+template<typename CONT, typename... Args>
+inline bool all(const CONT &lst, const Args&... args) {
+  for (auto &i : lst) {
+    if (!(*i)(args...))
+      return false;
+  }
+  return true;
+}
+
+} // namespace util
 
 #endif

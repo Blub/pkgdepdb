@@ -33,15 +33,15 @@ Elf::Elf(const Elf& cp)
 {}
 
 template<bool BE, typename HDR, typename SecHDR, typename Dyn>
-Elf*
-LoadElf(const char *data, size_t size, bool *waserror, const char *name)
-{
+Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
   std::unique_ptr<Elf> object(new Elf);
 
-  auto checksize = [size,name](ssize_t ioff, size_t sz, const char *msg) -> bool {
+  auto checksize = [size,name](ssize_t ioff, size_t sz, const char *msg)
+  -> bool {
     size_t off = size_t(ioff);
     if (off + sz > size) {
-      log(Error, "%s: unexpected end of file in ELF file, offset %lu (file size %lu): %s\n",
+      log(Error, "%s: unexpected end of file in ELF file,"
+                 " offset %lu (file size %lu): %s\n",
           name, (unsigned long)(off + sz), (unsigned long)size, msg);
       return false;
     }
@@ -54,12 +54,18 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
   auto  shnum   = Eswap<BE>(hdr->e_shnum);
   auto  e_shoff = Eswap<BE>(hdr->e_shoff);
 
-  if (!checksize((ssize_t)e_shoff, sizeof(SecHDR), "looking for section headers"))
+  if (!checksize((ssize_t)e_shoff, sizeof(SecHDR),
+                 "looking for section headers"))
+  {
     return 0;
+  }
 
   SecHDR *sec_start = (SecHDR*)(data + e_shoff);
-  if (!checksize((char*)(sec_start + shnum-1) - data, sizeof(*sec_start), "section header array"))
+  if (!checksize((char*)(sec_start + shnum-1) - data, sizeof(*sec_start),
+                 "section header array"))
+  {
     return 0;
+  }
   auto findsec = [=](std::function<bool(SecHDR*)> cond) -> SecHDR* {
     for (size_t i = 0; i != shnum; ++i) {
       SecHDR *s = sec_start + i;
@@ -69,9 +75,13 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
     return 0;
   };
 
-  SecHDR *dynhdr = findsec([](SecHDR *hdr) { return Eswap<BE>(hdr->sh_type) == SHT_DYNAMIC; });
+  SecHDR *dynhdr = findsec(
+    [](SecHDR *hdr) {
+      return Eswap<BE>(hdr->sh_type) == SHT_DYNAMIC;
+    });
   if (!dynhdr) {
-    log(Debug, "%s: not a dynamic executable, no .dynamic section found\n", name);
+    log(Debug, "%s: not a dynamic executable, no .dynamic section found\n",
+        name);
     *waserror = false;
     return 0;
   }
@@ -85,8 +95,11 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
 #pragma clang diagnostic pop
   size_t dyncount = Eswap<BE>(dynhdr->sh_size) / sizeof(Dyn);
 
-  if (!checksize((char*)(dyn_start + dyncount-1)-data, sizeof(Dyn), ".dynamic entries"))
+  if (!checksize((char*)(dyn_start + dyncount-1)-data, sizeof(Dyn),
+                 ".dynamic entries"))
+  {
     return 0;
+  }
 
   Dyn    *dynstr   = 0;
   size_t  strsz    = 0;
@@ -172,10 +185,14 @@ LoadElf(const char *data, size_t size, bool *waserror, const char *name)
   return object.release();
 }
 
-static const auto LoadElf32LE = &LoadElf<false, Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
-static const auto LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
-static const auto LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
-static const auto LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
+static
+const auto LoadElf32LE = &LoadElf<false, Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
+static
+const auto LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
+static
+const auto LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
+static
+const auto LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
 
 Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
 {
@@ -204,7 +221,9 @@ Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
   if (ei_data != ELFDATA2LSB &&
       ei_data != ELFDATA2MSB)
   {
-    log(Error, "%s: unrecognized ELF data type: %u (neither ELFDATA2LSB nor ELFDATA2MSB)\n",
+    log(Error,
+        "%s: unrecognized ELF data type: %u"
+        " (neither ELFDATA2LSB nor ELFDATA2MSB)\n",
         name, (unsigned)ei_data);
     return 0;
   }
@@ -236,9 +255,7 @@ Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
   return e;
 }
 
-void
-fixpath(std::string& path)
-{
+void fixpath(std::string& path) {
   size_t at = 0;
   do {
     at = path.find("//", at);
@@ -295,9 +312,7 @@ fixpath(std::string& path)
   }
 }
 
-void
-fixpathlist(std::string& list)
-{
+void fixpathlist(std::string& list) {
   std::string old(std::move(list));
   list = "";
   size_t at = 0;
@@ -315,9 +330,7 @@ fixpathlist(std::string& list)
   list.append(std::move(sub));
 }
 
-static void
-replace_origin(std::string& path, const std::string& origin)
-{
+static void replace_origin(std::string& path, const std::string& origin) {
   size_t at = 0;
   do {
     at = path.find("$ORIGIN", at);
@@ -330,18 +343,14 @@ replace_origin(std::string& path, const std::string& origin)
   fixpathlist(path);
 }
 
-void
-Elf::SolvePaths(const std::string& origin)
-{
+void Elf::SolvePaths(const std::string& origin) {
   if (rpath_set_)
     replace_origin(rpath_, origin);
   if (runpath_set_)
     replace_origin(runpath_, origin);
 }
 
-const char*
-Elf::classString() const
-{
+const char* Elf::classString() const {
   switch (ei_class_) {
     case ELFCLASSNONE: return "NONE";
     case ELFCLASS32:   return "ELF32";
@@ -350,9 +359,7 @@ Elf::classString() const
   }
 }
 
-const char*
-Elf::dataString() const
-{
+const char* Elf::dataString() const {
   switch (ei_data_) {
     case ELFDATANONE: return "NONE";
     case ELFDATA2LSB: return "2's complement, little-endian";
@@ -361,9 +368,7 @@ Elf::dataString() const
   }
 }
 
-const char*
-Elf::osabiString() const
-{
+const char* Elf::osabiString() const {
   switch (ei_osabi_) {
     case 0:    return "None";
     case 1:    return "HP-UX";
@@ -387,9 +392,7 @@ Elf::osabiString() const
   }
 }
 
-bool
-Elf::CanUse(const Elf &other, bool strict) const
-{
+bool Elf::CanUse(const Elf &other, bool strict) const {
   if (ei_data_  != other.ei_data_ ||
       ei_class_ != other.ei_class_)
   {

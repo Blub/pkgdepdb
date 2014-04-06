@@ -38,9 +38,7 @@ enum {
     WHITE = GRAY
 };
 
-void
-log(int level, const char *msg, ...)
-{
+void log(int level, const char *msg, ...) {
   if (level < LogLevel)
     return;
 
@@ -109,103 +107,107 @@ static struct option long_opts[] = {
   { 0, 0, 0, 0 }
 };
 
-static void
-help [[noreturn]] (int x)
-{
+static void help [[noreturn]] (int x) {
   FILE *out = x ? stderr : stdout;
-  fprintf(out, "usage: %s [options] packages...\n", arg0);
-  fprintf(out, "options:\n"
-               "  -h, --help         show this message\n"
-               "  --version          show version info\n"
-               "  -v, --verbose      print more information\n"
-               "  -q, --quiet        suppress progress messages\n"
-               "  --depends=<YES|NO> enable or disable package dependencies\n"
-               "  --files=<YES|NO>   whether to store all non-object files of packages\n"
-               "  -J, --json=PART    activate json mode for parts of the program\n"
+  fprintf(out,
+    "usage: %s [options] packages...\n", arg0);
+  fprintf(out,
+    "options:\n"
+    "  -h, --help         show this message\n"
+    "  --version          show version info\n"
+    "  -v, --verbose      print more information\n"
+    "  -q, --quiet        suppress progress messages\n"
+    "  --depends=<YES|NO> enable or disable package dependencies\n"
+    "  --files=<YES|NO>   whether to store all non-object files of packages\n"
+    "  -J, --json=PART    activate json mode for parts of the program\n"
 #ifdef ENABLE_THREADS
-               "  -j N               limit to at most N threads\n"
+    "  -j N               limit to at most N threads\n"
 #endif
                );
-  fprintf(out, "json options:\n"
-               "  off, n, none       no json output\n"
-               "  on, q, query       use json on query outputs\n"
-               "  db                 use json to store the db (NOT RECOMMENDED)\n"
-               "  all, a             both\n"
-               "  (optional + or - prefix to add or remove bits)\n"
-               );
-  fprintf(out, "db management options:\n"
-               "  -d, --db=FILE      set the database file to commit to\n"
-               "  -i, --install      install packages to a dependency db\n"
-               "  -r, --remove       remove packages from the database\n"
-               "  --dry              do not commit the changes to the db\n"
-               "  --fixpaths         fix up path entries as older versions didn't\n"
-               "                     handle ../ in paths (includes --relink)\n"
-               "  -R, --rule=CMD     modify rules\n"
-               "  --wipe             remove all packages, keep rules/settings\n"
-               "  --touch            write out the db even without modifications\n"
-               );
-  fprintf(out, "db query options:\n"
-               "  -I, --info         show general information about the db\n"
-               "  -L, --list         list object files\n"
-               "  -M, --missing      show the 'missing' table\n"
-               "  -F, --found        show the 'found' table\n"
-               "  -P, --pkgs         show the installed packages (and -v their files)\n"
-               "  -n, --rename=NAME  rename the database\n"
-               "  --integrity        perform a dependency integrity check\n"
-               "  -f, --filter=FILT  filter the queried packages\n"
-               "  --ls               list all package files\n"
-               );
-  fprintf(out, "db query filters:\n"
-               "  -b, --broken       only packages with broken libs (use with -P)\n"
-               "      --not-empty    filter out packages which are empty after filters\n"
-               "                     have been applied\n"
-               );
-  fprintf(out, "db library path options: (run --relink after these changes)\n"
-               "  --ld-prepend=DIR   add or move a directory to the\n"
-               "                     top of the trusted library path\n"
-               "  --ld-append=DIR    add or move a directory to the\n"
-               "                     bottom of the trusted library path\n"
-               "  --ld-delete=DIR    remove a library path\n"
-               "  --ld-insert=N:DIR  add or move a directro to position N\n"
-               "                     of the trusted library path\n"
-               "  --ld-clear         remove all library paths\n"
-               "  --relink           relink all objects\n"
-               );
-  fprintf(out, "rules for --rule:\n"
-               "  strict:BOOL        set strict mode (default=off)\n"
-               "  ignore:FILENAME    add a file-ignore rule\n"
-               "  unignore:FILENAME  remove a file-ignore rule\n"
-               "  unignore-id:ID     remove a file-ignore rule by its id\n"
-               "  assume-found:NAME  add a file-ignore rule\n"
-               "  unassume-found:LIBNAME\n"
-               "                     remove a file-ignore rule\n"
-               "  unassume-found-id:ID\n"
-               "                     remove a file-ignore rule by its id\n"
-               "  pkg-ld-clear:PKG   clear a pacakge's library path\n"
-               "  pkg-ld-append:PKG:PATH\n"
-               "  pkg-ld-prepend:PKG:PATH\n"
-               "  pkg-ld-insert:PKG:ID:PATH\n"
-               "                     add a path to the package's library path\n"
-               "  pkg-ld-delete:PKG:PATH\n"
-               "  pkg-ld-delete-id:PKG:ID\n"
-               "                     delete a package's library path\n"
-               "  base-add:PKG       add PKG to the base package list\n"
-               "  base-remove:PKG    remove PKG form the base package list\n"
-               "  base-remove-id:ID  remove form the base package list by id\n"
-               );
+  fprintf(out,
+    "json options:\n"
+    "  off, n, none       no json output\n"
+    "  on, q, query       use json on query outputs\n"
+    "  db                 use json to store the db (NOT RECOMMENDED)\n"
+    "  all, a             both\n"
+    "  (optional + or - prefix to add or remove bits)\n"
+    );
+  fprintf(out,
+    "db management options:\n"
+    "  -d, --db=FILE      set the database file to commit to\n"
+    "  -i, --install      install packages to a dependency db\n"
+    "  -r, --remove       remove packages from the database\n"
+    "  --dry              do not commit the changes to the db\n"
+    "  --fixpaths         fix up path entries as older versions didn't\n"
+    "                     handle ../ in paths (includes --relink)\n"
+    "  -R, --rule=CMD     modify rules\n"
+    "  --wipe             remove all packages, keep rules/settings\n"
+    "  --touch            write out the db even without modifications\n"
+    );
+  fprintf(out,
+    "db query options:\n"
+    "  -I, --info         show general information about the db\n"
+    "  -L, --list         list object files\n"
+    "  -M, --missing      show the 'missing' table\n"
+    "  -F, --found        show the 'found' table\n"
+    "  -P, --pkgs         show the installed packages (and -v their files)\n"
+    "  -n, --rename=NAME  rename the database\n"
+    "  --integrity        perform a dependency integrity check\n"
+    "  -f, --filter=FILT  filter the queried packages\n"
+    "  --ls               list all package files\n"
+    );
+  fprintf(out,
+    "db query filters:\n"
+    "  -b, --broken       only packages with broken libs (use with -P)\n"
+    "      --not-empty    filter out packages which are empty after filters\n"
+    "                     have been applied\n"
+    );
+  fprintf(out,
+    "db library path options: (run --relink after these changes)\n"
+    "  --ld-prepend=DIR   add or move a directory to the\n"
+    "                     top of the trusted library path\n"
+    "  --ld-append=DIR    add or move a directory to the\n"
+    "                     bottom of the trusted library path\n"
+    "  --ld-delete=DIR    remove a library path\n"
+    "  --ld-insert=N:DIR  add or move a directro to position N\n"
+    "                     of the trusted library path\n"
+    "  --ld-clear         remove all library paths\n"
+    "  --relink           relink all objects\n"
+    );
+  fprintf(out,
+    "rules for --rule:\n"
+    "  strict:BOOL        set strict mode (default=off)\n"
+    "  ignore:FILENAME    add a file-ignore rule\n"
+    "  unignore:FILENAME  remove a file-ignore rule\n"
+    "  unignore-id:ID     remove a file-ignore rule by its id\n"
+    "  assume-found:NAME  add a file-ignore rule\n"
+    "  unassume-found:LIBNAME\n"
+    "                     remove a file-ignore rule\n"
+    "  unassume-found-id:ID\n"
+    "                     remove a file-ignore rule by its id\n"
+    "  pkg-ld-clear:PKG   clear a pacakge's library path\n"
+    "  pkg-ld-append:PKG:PATH\n"
+    "  pkg-ld-prepend:PKG:PATH\n"
+    "  pkg-ld-insert:PKG:ID:PATH\n"
+    "                     add a path to the package's library path\n"
+    "  pkg-ld-delete:PKG:PATH\n"
+    "  pkg-ld-delete-id:PKG:ID\n"
+    "                     delete a package's library path\n"
+    "  base-add:PKG       add PKG to the base package list\n"
+    "  base-remove:PKG    remove PKG form the base package list\n"
+    "  base-remove-id:ID  remove form the base package list by id\n"
+    );
   exit(x);
 }
 
-static void
-version [[noreturn]] (int x)
-{
+static void version [[noreturn]] (int x) {
   printf("pkgdepdb " FULL_VERSION_STRING "\n");
   exit(x);
 }
 
 // don't ask
 class ArgArg {
-public:
+ public:
   bool        on_;
   bool       *mode_;
   std::vector<std::string> arg_;
@@ -234,9 +236,7 @@ static bool parse_filter(const std::string &filter,
                          ObjFilterList&,
                          StrFilterList&);
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   arg0 = argv[0];
 
   if (argc < 2)
@@ -285,7 +285,8 @@ main(int argc, char **argv)
 #pragma clang diagnostic ignored "-Wunreachable-code"
   for (;;) {
     int opt_index = 0;
-    int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:j:f:", long_opts, &opt_index);
+    int c = getopt_long(argc, argv, "hvqird:ILMFPbn:R:J:j:f:",
+                        long_opts, &opt_index);
     if (c == -1)
       break;
     switch (c) {
@@ -530,7 +531,8 @@ main(int argc, char **argv)
     for (auto pkg : packages) {
       modified = true;
       if (!db->InstallPackage(std::move(pkg))) {
-        printf("failed to commit package %s to database\n", pkg->name_.c_str());
+        printf("failed to commit package %s to database\n",
+               pkg->name_.c_str());
         break;
       }
     }
@@ -588,12 +590,11 @@ main(int argc, char **argv)
   return 0;
 }
 
-static bool
-try_rule(const std::string& rule,
-         const std::string& what,
-         const char        *usage,
-         bool              *ret,
-         std::function<bool(const std::string&)> fn)
+static bool try_rule(const std::string                      &rule,
+                     const std::string                      &what,
+                     const char                             *usage,
+                     bool                                   *ret,
+                     std::function<bool(const std::string&)> fn)
 {
   if (rule.compare(0, what.length(), what) == 0) {
     if (rule.length() < what.length()+1) {
@@ -608,9 +609,7 @@ try_rule(const std::string& rule,
   return false;
 }
 
-static bool
-parse_rule(DB *db, const std::string& rule)
-{
+static bool parse_rule(DB *db, const std::string& rule) {
   bool ret = false;
 
   if (try_rule(rule, "ignore:", "FILENAME", &ret,
@@ -684,7 +683,8 @@ parse_rule(DB *db, const std::string& rule)
       }
       return db->PKG_LD_Insert(cmd.substr(0, s1),
                                cmd.substr(s2+1),
-                               strtoul(cmd.substr(s1, s2-s1).c_str(), nullptr, 0));
+                               strtoul(cmd.substr(s1, s2-s1).c_str(),
+                                       nullptr, 0));
     })
     || try_rule(rule, "pkg-ld-delete:", "PKG:PATH", &ret,
     [db,&rule](const std::string &cmd) {
@@ -704,7 +704,8 @@ parse_rule(DB *db, const std::string& rule)
         log(Error, "format: pkg-ld-delete-id:PKG:ID\n");
         return false;
       }
-      return db->PKG_LD_Delete(cmd.substr(0, s), strtoul(cmd.substr(s+1).c_str(), nullptr, 0));
+      return db->PKG_LD_Delete(cmd.substr(0, s),
+                               strtoul(cmd.substr(s+1).c_str(), nullptr, 0));
     })
     || try_rule(rule, "base-add:", "PKG", &ret,
     [db,&rule](const std::string &cmd) {
@@ -725,11 +726,10 @@ parse_rule(DB *db, const std::string& rule)
   return false;
 }
 
-static bool
-parse_filter(const std::string &filter,
-             FilterList &pkg_filters,
-             ObjFilterList &obj_filters,
-             StrFilterList &str_filters)
+static bool parse_filter(const std::string &filter,
+                         FilterList        &pkg_filters,
+                         ObjFilterList     &obj_filters,
+                         StrFilterList     &str_filters)
 {
   // -fname=foo exact
   // -fname:foo glob
