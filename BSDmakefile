@@ -33,8 +33,8 @@ CPPFLAGS += -DENABLE_THREADS
 .include "Makefile"
 
 .if !defined(ALLFLAGS) || !defined(OLDCXX) \
-    || $(ALLFLAGS) != $(COMPAREFLAGS) \
-    || $(OLDCXX) != $(CXX)
+    || "$(ALLFLAGS)" != "$(COMPAREFLAGS)" \
+    || "$(OLDCXX)" != "$(CXX)"
 .PHONY: .cflags
 # the first echo needs to use single quotes otherwise the .if
 # comparisons fail
