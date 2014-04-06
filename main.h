@@ -214,85 +214,88 @@ public:
   StringSet                         assume_found_rules_;
 
 public:
-  bool install_package(Package* &&pkg);
-  bool delete_package (const std::string& name);
-  Elf *find_for       (const Elf*, const std::string& lib, const StringList *extrapath) const;
-  void link_object    (Elf*, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const;
-  void link_object_do (Elf*, const Package *owner);
-  void relink_all     ();
-  void fix_paths      ();
-  bool wipe_packages  ();
-  bool wipe_filelists ();
+  bool InstallPackage(Package* &&pkg);
+  bool DeletePackage (const std::string& name);
+  Elf *FindFor       (const Elf*, const std::string& lib, const StringList *extrapath) const;
+  void LinkObject    (Elf*, const Package *owner, ObjectSet &req_found, StringSet &req_missing) const;
+  void LinkObject_do (Elf*, const Package *owner);
+  void RelinkAll     ();
+  void FixPaths      ();
+  bool WipePackages  ();
+  bool WipeFilelists ();
 
 #ifdef ENABLE_THREADS
-  void relink_all_threaded();
+  void RelinkAll_Threaded();
 #endif
 
-  Package* find_pkg   (const std::string& name) const;
+  Package* FindPkg   (const std::string& name) const;
   PackageList::const_iterator
-           find_pkg_i (const std::string& name) const;
+           FindPkg_i (const std::string& name) const;
 
-  void show_info();
-  void show_info_json();
-  void show_packages(bool flt_broken, bool flt_notempty, const FilterList&, const ObjFilterList&);
-  void show_packages_json(bool flt_broken, bool flt_notempty, const FilterList&, const ObjFilterList&);
-  void show_objects(const FilterList&, const ObjFilterList&);
-  void show_objects_json(const FilterList&, const ObjFilterList&);
-  void show_missing();
-  void show_missing_json();
-  void show_found();
-  void show_found_json();
-  void show_filelist(const FilterList&, const StrFilterList&);
-  void show_filelist_json(const FilterList&, const StrFilterList&);
-  void check_integrity(const FilterList &pkg_filters,
-                       const ObjFilterList &obj_filters) const;
-  void check_integrity(const Package    *pkg,
-                       const PkgMap     &pkgmap,
-                       const PkgListMap &providemap,
-                       const PkgListMap &replacemap,
-                       const PkgMap     &basemap,
-                       const ObjListMap &objmap,
-                       const std::vector<const Package*> &base,
-                       const ObjFilterList &obj_filters) const;
+  void ShowInfo();
+  void ShowInfo_json();
+  void ShowPackages     (bool filter_broken, bool filter_notempty,
+                         const FilterList&, const ObjFilterList&);
+  void ShowPackages_json(bool filter_broken, bool filter_notempty,
+                         const FilterList&, const ObjFilterList&);
+  void ShowObjects      (const FilterList&, const ObjFilterList&);
+  void ShowObjects_json (const FilterList&, const ObjFilterList&);
+  void ShowMissing      ();
+  void ShowMissing_json ();
+  void ShowFound        ();
+  void ShowFound_json   ();
+  void ShowFilelist     (const FilterList&, const StrFilterList&);
+  void ShowFilelist_json(const FilterList&, const StrFilterList&);
 
-  bool store(const std::string& filename);
-  bool read (const std::string& filename);
-  bool empty() const;
+  void CheckIntegrity(const FilterList &pkg_filters,
+                      const ObjFilterList &obj_filters) const;
+  void CheckIntegrity(const Package    *pkg,
+                      const PkgMap     &pkgmap,
+                      const PkgListMap &providemap,
+                      const PkgListMap &replacemap,
+                      const PkgMap     &basemap,
+                      const ObjListMap &objmap,
+                      const std::vector<const Package*> &base,
+                      const ObjFilterList &obj_filters) const;
 
-  bool ld_append (const std::string& dir);
-  bool ld_prepend(const std::string& dir);
-  bool ld_delete (const std::string& dir);
-  bool ld_delete (size_t i);
-  bool ld_insert (const std::string& dir, size_t i);
-  bool ld_clear  ();
+  bool Store(const std::string& filename);
+  bool Read (const std::string& filename);
+  bool Empty() const;
 
-  bool ignore_file  (const std::string& name);
-  bool unignore_file(const std::string& name);
-  bool unignore_file(size_t id);
+  bool LD_Append (const std::string& dir);
+  bool LD_Prepend(const std::string& dir);
+  bool LD_Delete (const std::string& dir);
+  bool LD_Delete (size_t i);
+  bool LD_Insert (const std::string& dir, size_t i);
+  bool LD_Clear  ();
 
-  bool assume_found  (const std::string& name);
-  bool unassume_found(const std::string& name);
-  bool unassume_found(size_t id);
+  bool IgnoreFile_Add  (const std::string& name);
+  bool IgnoreFile_Delete(const std::string& name);
+  bool IgnoreFile_Delete(size_t id);
 
-  bool add_base_package   (const std::string& name);
-  bool remove_base_package(const std::string& name);
-  bool remove_base_package(size_t id);
+  bool AssumeFound_Add   (const std::string& name);
+  bool AssumeFound_Delete(const std::string& name);
+  bool AssumeFound_Delete(size_t id);
 
-  bool pkg_ld_insert(const std::string& package, const std::string& path, size_t i);
-  bool pkg_ld_delete(const std::string& package, const std::string& path);
-  bool pkg_ld_delete(const std::string& package, size_t i);
-  bool pkg_ld_clear (const std::string& package);
+  bool BasePackages_Add   (const std::string& name);
+  bool BasePackages_Delete(const std::string& name);
+  bool BasePackages_Delete(size_t id);
+
+  bool PKG_LD_Insert(const std::string& package, const std::string& path, size_t i);
+  bool PKG_LD_Delete(const std::string& package, const std::string& path);
+  bool PKG_LD_Delete(const std::string& package, size_t i);
+  bool PKG_LD_Clear (const std::string& package);
 
 private:
-  bool elf_finds(const Elf*, const std::string& lib, const StringList *extrapath) const;
+  bool ElfFinds(const Elf*, const std::string& lib, const StringList *extrapath) const;
 
-  const StringList* get_obj_libpath(const Elf*) const;
-  const StringList* get_pkg_libpath(const Package*) const;
+  const StringList* GetObjectLibPath(const Elf*) const;
+  const StringList* GetPackageLibPath(const Package*) const;
 
 public:
-  bool is_broken(const Package *pkg) const;
-  bool is_broken(const Elf *elf) const;
-  bool is_empty (const Package *elf, const ObjFilterList &filters) const;
+  bool IsBroken(const Package *pkg) const;
+  bool IsBroken(const Elf *elf) const;
+  bool IsEmpty (const Package *elf, const ObjFilterList &filters) const;
 
 public: // NOT SERIALIZED:
   bool contains_package_depends_;

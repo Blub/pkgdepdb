@@ -819,15 +819,15 @@ db_read(DB *db, const std::string& filename)
 // There we go:
 
 bool
-DB::store(const std::string& filename)
+DB::Store(const std::string& filename)
 {
   return db_store(this, filename);
 }
 
 bool
-DB::read(const std::string& filename)
+DB::Read(const std::string& filename)
 {
-  if (!empty()) {
+  if (!Empty()) {
     log(Error, "internal usage error: DB::read on a non-empty db!\n");
     return false;
   }

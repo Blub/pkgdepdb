@@ -40,7 +40,7 @@ print_objname(const Elf *obj)
 }
 
 void
-DB::show_packages_json(bool filter_broken,
+DB::ShowPackages_json(bool filter_broken,
                        bool filter_notempty,
                        const FilterList &pkg_filters,
                        const ObjFilterList &obj_filters)
@@ -62,9 +62,9 @@ DB::show_packages_json(bool filter_broken,
   for (auto &pkg : packages_) {
     if (!util::all(pkg_filters, *this, *pkg))
       continue;
-    if (filter_broken && !is_broken(pkg))
+    if (filter_broken && !IsBroken(pkg))
       continue;
-    if (filter_notempty && is_empty(pkg, obj_filters))
+    if (filter_notempty && IsEmpty(pkg, obj_filters))
       continue;
     printf("%s{", mainsep); mainsep = ",\n\t\t";
     printf("\n\t\t\t\"name\": ");
@@ -105,7 +105,7 @@ DB::show_packages_json(bool filter_broken,
         for (auto &obj : pkg->objects_) {
           if (!util::all(obj_filters, *this, *obj))
             continue;
-          if (!is_broken(obj))
+          if (!IsBroken(obj))
             continue;
           if (opt_verbosity >= 2) {
             printf("%s{", sep); sep = ",\n\t\t\t\t";
@@ -153,7 +153,7 @@ DB::show_packages_json(bool filter_broken,
 }
 
 void
-DB::show_info_json()
+DB::ShowInfo_json()
 {
   printf("{");
   printf( "\n\t\"db_version\": %u", (unsigned)loaded_version_);
@@ -238,7 +238,7 @@ DB::show_info_json()
 }
 
 void
-DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
+DB::ShowObjects_json(const FilterList &pkg_filters, const ObjFilterList &obj_filters)
 {
   if (!objects_.size()) {
     printf("{ \"objects\": [] }\n");
@@ -301,7 +301,7 @@ DB::show_objects_json(const FilterList &pkg_filters, const ObjFilterList &obj_fi
 }
 
 void
-DB::show_found_json()
+DB::ShowFound_json()
 {
   printf("{ \"found_objects\": {");
   const char *mainsep = "\n\t";
@@ -323,7 +323,7 @@ DB::show_found_json()
 }
 
 void
-DB::show_filelist_json(const FilterList &pkg_filters,
+DB::ShowFilelist_json(const FilterList &pkg_filters,
                        const StrFilterList &str_filters)
 {
   printf("{ \"filelist\": [");
@@ -356,7 +356,7 @@ DB::show_filelist_json(const FilterList &pkg_filters,
 }
 
 void
-DB::show_missing_json()
+DB::ShowMissing_json()
 {
   printf("{ \"missing_objects\": {");
   const char *mainsep = "\n\t";

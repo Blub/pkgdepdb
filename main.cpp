@@ -242,27 +242,29 @@ main(int argc, char **argv)
   if (argc < 2)
     help(1);
 
-  std::string  dbfile, newname;
-  bool         do_install    = false;
-  bool         do_delete     = false;
-  bool         do_wipe       = false;
-  bool         do_wipefiles  = false;
-  bool         has_db        = false;
-  bool         modified      = false;
-  bool         show_info     = false;
-  bool         show_list     = false;
-  bool         show_missing  = false;
-  bool         show_found    = false;
-  bool         show_packages = false;
-  bool         show_filelist = false;
-  bool         do_rename     = false;
-  bool         do_relink     = false;
-  bool         do_fixpaths   = false;
-  bool         dryrun        = false;
-  bool         filter_broken = false;
-  bool         filter_nempty = false;
-  bool         do_integrity  = false;
-  bool oldmode = true;
+  std::string dbfile,
+              newname;
+  bool        do_install    = false;
+  bool        do_delete     = false;
+  bool        do_wipe       = false;
+  bool        do_wipefiles  = false;
+  bool        has_db        = false;
+  bool        modified      = false;
+  bool        show_info     = false;
+  bool        show_list     = false;
+  bool        show_missing  = false;
+  bool        show_found    = false;
+  bool        show_packages = false;
+  bool        show_filelist = false;
+  bool        do_rename     = false;
+  bool        do_relink     = false;
+  bool        do_fixpaths   = false;
+  bool        dryrun        = false;
+  bool        filter_broken = false;
+  bool        filter_nempty = false;
+  bool        do_integrity  = false;
+
+  bool        oldmode       = true;
 
   // library path options
   ArgArg ld_append (&oldmode),
@@ -479,7 +481,7 @@ main(int argc, char **argv)
 
   std::unique_ptr<DB> db(new DB);
   if (has_db) {
-    if (!db->read(dbfile)) {
+    if (!db->Read(dbfile)) {
       log(Error, "failed to read database\n");
       return 1;
     }
@@ -497,37 +499,37 @@ main(int argc, char **argv)
 
   if (ld_append) {
     for (auto &dir : ld_append.arg_)
-      modified = db->ld_append(dir)  || modified;
+      modified = db->LD_Append(dir)  || modified;
   }
   if (ld_prepend) {
     for (auto &dir : ld_prepend.arg_)
-      modified = db->ld_prepend(dir) || modified;
+      modified = db->LD_Prepend(dir) || modified;
   }
   if (ld_delete) {
     for (auto &dir : ld_delete.arg_)
-      modified = db->ld_delete(dir)  || modified;
+      modified = db->LD_Delete(dir)  || modified;
   }
   for (auto &ins : ld_insert) {
-    modified = db->ld_insert(std::get<0>(ins), std::get<1>(ins))
+    modified = db->LD_Insert(std::get<0>(ins), std::get<1>(ins))
              || modified;
   }
   if (ld_clear)
-    modified = db->ld_clear() || modified;
+    modified = db->LD_Clear() || modified;
 
   if (do_wipe)
-    modified = db->wipe_packages() || modified;
+    modified = db->WipePackages() || modified;
 
   if (do_fixpaths) {
     modified = true;
     log(Message, "fixing up path entries\n");
-    db->fix_paths();
+    db->FixPaths();
   }
 
   if (do_install && packages.size()) {
     log(Message, "installing packages\n");
     for (auto pkg : packages) {
       modified = true;
-      if (!db->install_package(std::move(pkg))) {
+      if (!db->InstallPackage(std::move(pkg))) {
         printf("failed to commit package %s to database\n", pkg->name_.c_str());
         break;
       }
@@ -538,7 +540,7 @@ main(int argc, char **argv)
     while (optind < argc) {
       log(Message, "uninstalling: %s\n", argv[optind]);
       modified = true;
-      if (!db->delete_package(argv[optind])) {
+      if (!db->DeletePackage(argv[optind])) {
         log(Error, "error uninstalling package: %s\n", argv[optind]);
         return 1;
       }
@@ -549,37 +551,37 @@ main(int argc, char **argv)
   if (do_relink) {
     modified = true;
     log(Message, "relinking everything\n");
-    db->relink_all();
+    db->RelinkAll();
   }
 
   if (do_wipefiles)
-    modified = db->wipe_filelists();
+    modified = db->WipeFilelists();
 
   if (show_info)
-    db->show_info();
+    db->ShowInfo();
 
   if (show_packages)
-    db->show_packages(filter_broken, filter_nempty, pkg_filters, obj_filters);
+    db->ShowPackages(filter_broken, filter_nempty, pkg_filters, obj_filters);
 
   if (show_list)
-    db->show_objects(pkg_filters, obj_filters);
+    db->ShowObjects(pkg_filters, obj_filters);
 
   if (show_missing)
-    db->show_missing();
+    db->ShowMissing();
 
   if (show_found)
-    db->show_found();
+    db->ShowFound();
 
   if (show_filelist)
-    db->show_filelist(pkg_filters, str_filters);
+    db->ShowFilelist(pkg_filters, str_filters);
 
   if (do_integrity)
-    db->check_integrity(pkg_filters, obj_filters);
+    db->CheckIntegrity(pkg_filters, obj_filters);
 
   if (!dryrun && modified && has_db) {
     if (opt_json & JSONBits::DB)
       db_store_json(db.get(), dbfile);
-    else if (!db->store(dbfile))
+    else if (!db->Store(dbfile))
       log(Error, "failed to write to the database\n");
   }
 
@@ -613,7 +615,7 @@ parse_rule(DB *db, const std::string& rule)
 
   if (try_rule(rule, "ignore:", "FILENAME", &ret,
     [db](const std::string &cmd) {
-      return db->ignore_file(cmd);
+      return db->IgnoreFile_Add(cmd);
     })
     || try_rule(rule, "strict:", "BOOL", &ret,
     [db](const std::string &cmd) {
@@ -623,27 +625,27 @@ parse_rule(DB *db, const std::string& rule)
     })
     || try_rule(rule, "unignore:", "FILENAME", &ret,
     [db](const std::string &cmd) {
-      return db->unignore_file(cmd);
+      return db->IgnoreFile_Delete(cmd);
     })
     || try_rule(rule, "unignore-id:", "ID", &ret,
     [db](const std::string &cmd) {
-      return db->unignore_file(strtoul(cmd.c_str(), nullptr, 0));
+      return db->IgnoreFile_Delete(strtoul(cmd.c_str(), nullptr, 0));
     })
     || try_rule(rule, "assume-found:", "LIBNAME", &ret,
     [db](const std::string &cmd) {
-      return db->assume_found(cmd);
+      return db->AssumeFound_Add(cmd);
     })
     || try_rule(rule, "unassume-found:", "LIBNAME", &ret,
     [db](const std::string &cmd) {
-      return db->unassume_found(cmd);
+      return db->AssumeFound_Delete(cmd);
     })
     || try_rule(rule, "unassume-found:", "ID", &ret,
     [db](const std::string &cmd) {
-      return db->unassume_found(strtoul(cmd.c_str(), nullptr, 0));
+      return db->AssumeFound_Delete(strtoul(cmd.c_str(), nullptr, 0));
     })
     || try_rule(rule, "pkg-ld-clear:", "PKG", &ret,
     [db,&rule](const std::string &cmd) {
-      return db->pkg_ld_clear(cmd);
+      return db->PKG_LD_Clear(cmd);
     })
     || try_rule(rule, "pkg-ld-append:", "PKG:PATH", &ret,
     [db,&rule](const std::string &cmd) {
@@ -655,7 +657,7 @@ parse_rule(DB *db, const std::string& rule)
       }
       std::string pkg(cmd.substr(0, s));
       StringList &lst(db->package_library_path_[pkg]);
-      return db->pkg_ld_insert(pkg, cmd.substr(s+1), lst.size());
+      return db->PKG_LD_Insert(pkg, cmd.substr(s+1), lst.size());
     })
     || try_rule(rule, "pkg-ld-prepend:", "PKG:PATH", &ret,
     [db,&rule](const std::string &cmd) {
@@ -665,7 +667,7 @@ parse_rule(DB *db, const std::string& rule)
         log(Error, "format: pkg-ld-prepend:PKG:PATH\n");
         return false;
       }
-      return db->pkg_ld_insert(cmd.substr(0, s), cmd.substr(s+1), 0);
+      return db->PKG_LD_Insert(cmd.substr(0, s), cmd.substr(s+1), 0);
     })
     || try_rule(rule, "pkg-ld-insert:", "PKG:ID:PATH", &ret,
     [db,&rule](const std::string &cmd) {
@@ -680,7 +682,7 @@ parse_rule(DB *db, const std::string& rule)
         log(Error, "format: pkg-ld-insert:PKG:ID:PATH\n");
         return false;
       }
-      return db->pkg_ld_insert(cmd.substr(0, s1),
+      return db->PKG_LD_Insert(cmd.substr(0, s1),
                                cmd.substr(s2+1),
                                strtoul(cmd.substr(s1, s2-s1).c_str(), nullptr, 0));
     })
@@ -692,7 +694,7 @@ parse_rule(DB *db, const std::string& rule)
         log(Error, "format: pkg-ld-delete:PKG:PATH\n");
         return false;
       }
-      return db->pkg_ld_delete(cmd.substr(0, s), cmd.substr(s+1));
+      return db->PKG_LD_Delete(cmd.substr(0, s), cmd.substr(s+1));
     })
     || try_rule(rule, "pkg-ld-delete-id:", "PKG:ID", &ret,
     [db,&rule](const std::string &cmd) {
@@ -702,19 +704,19 @@ parse_rule(DB *db, const std::string& rule)
         log(Error, "format: pkg-ld-delete-id:PKG:ID\n");
         return false;
       }
-      return db->pkg_ld_delete(cmd.substr(0, s), strtoul(cmd.substr(s+1).c_str(), nullptr, 0));
+      return db->PKG_LD_Delete(cmd.substr(0, s), strtoul(cmd.substr(s+1).c_str(), nullptr, 0));
     })
     || try_rule(rule, "base-add:", "PKG", &ret,
     [db,&rule](const std::string &cmd) {
-      return db->add_base_package(cmd);
+      return db->BasePackages_Add(cmd);
     })
     || try_rule(rule, "base-remove:", "PKG", &ret,
     [db,&rule](const std::string &cmd) {
-      return db->remove_base_package(cmd);
+      return db->BasePackages_Delete(cmd);
     })
     || try_rule(rule, "base-remove-id:", "ID", &ret,
     [db,&rule](const std::string &cmd) {
-      return db->remove_base_package(strtoul(cmd.c_str(), nullptr, 0));
+      return db->BasePackages_Delete(strtoul(cmd.c_str(), nullptr, 0));
     })
   ) {
     return ret;

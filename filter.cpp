@@ -313,7 +313,7 @@ PackageFilter::pkglibdepends(rptr<Match> matcher, bool neg) {
 unique_ptr<PackageFilter>
 PackageFilter::broken(bool neg) {
   return mk_unique<PkgFilt>(neg, [](const DB &db, const Package &pkg) {
-    return db.is_broken(&pkg);
+    return db.IsBroken(&pkg);
   });
 }
 
