@@ -14,7 +14,7 @@ VERSION_PATCH := 7dev
 
 CXX ?= clang++
 CXXFLAGS += -std=c++11
-CXXFLAGS += -Wall -Wextra -Werror -fno-rtti
+CXXFLAGS += -Wall -Wextra -Werror -Wno-unknown-pragmas -fno-rtti
 CPPFLAGS += -DPKGDEPDB_V_MAJ=$(VERSION_MAJOR)
 CPPFLAGS += -DPKGDEPDB_V_MIN=$(VERSION_MINOR)
 CPPFLAGS += -DPKGDEPDB_V_PAT=$(VERSION_PATCH)
