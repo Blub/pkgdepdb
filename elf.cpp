@@ -7,7 +7,7 @@
 #include "endian.h"
 
 Elf::Elf()
-: refcount(0)
+: refcount_(0)
 {
   ei_class =
   ei_osabi = 0;
@@ -19,7 +19,7 @@ Elf::Elf()
 }
 
 Elf::Elf(const Elf& cp)
-: refcount(0),
+: refcount_(0),
   dirname (cp.dirname),
   basename(cp.basename),
   ei_class(cp.ei_class),

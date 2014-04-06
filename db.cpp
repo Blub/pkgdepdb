@@ -158,7 +158,7 @@ DB::delete_package(const std::string& name)
 
   objects.erase(
     std::remove_if(objects.begin(), objects.end(),
-      [](rptr<Elf> &obj) { return 1 == obj->refcount; }),
+      [](rptr<Elf> &obj) { return 1 == obj->refcount_; }),
     objects.end());
 
   return true;

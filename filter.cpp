@@ -104,7 +104,7 @@ PackageFilter::~PackageFilter()
 {}
 
 ObjectFilter::ObjectFilter(bool neg_)
-: refcount(0), negate(neg_)
+: refcount_(0), negate(neg_)
 {}
 
 ObjectFilter::~ObjectFilter()

@@ -37,64 +37,64 @@ const std::string* strref::operator->() const { return &s_; }
 template<typename T>
 class rptr {
 public:
-  T *ptr;
+  T *ptr_;
 
-  rptr()     : ptr(NULL) {}
-  rptr(T *t) : ptr(t) {
-    if (ptr) ptr->refcount++;
+  rptr()     : ptr_(NULL) {}
+  rptr(T *t) : ptr_(t) {
+    if (ptr_) ptr_->refcount_++;
   }
-  rptr(const rptr<T> &o) : ptr(o.ptr) {
-    if (ptr) ptr->refcount++;
+  rptr(const rptr<T> &o) : ptr_(o.ptr_) {
+    if (ptr_) ptr_->refcount_++;
   }
-  rptr(rptr<T> &&o) : ptr(o.ptr) {
-    o.ptr = 0;
+  rptr(rptr<T> &&o) : ptr_(o.ptr_) {
+    o.ptr_ = 0;
   }
   ~rptr() {
-    if (ptr && !--(ptr->refcount))
-      delete ptr;
+    if (ptr_ && !--(ptr_->refcount_))
+      delete ptr_;
   }
-  operator T*() const { return  ptr; }
-  T*      get() const { return  ptr; }
+  operator T*() const { return  ptr_; }
+  T*      get() const { return  ptr_; }
 
-  bool operator!() const { return !ptr; }
+  bool operator!() const { return !ptr_; }
 
-  T&       operator*()        { return *ptr; }
-  T*       operator->()       { return  ptr; }
-  const T* operator->() const { return ptr; }
+  T&       operator*()        { return *ptr_; }
+  T*       operator->()       { return  ptr_; }
+  const T* operator->() const { return  ptr_; }
 
   rptr<T>& operator=(T* o) {
-    if (o) o->refcount++;
-    if (ptr && !--(ptr->refcount))
-      delete ptr;
-    ptr = o;
+    if (o) o->refcount_++;
+    if (ptr_ && !--(ptr_->refcount_))
+      delete ptr_;
+    ptr_ = o;
     return (*this);
   }
   rptr<T>& operator=(const rptr<T> &o) {
-    if (ptr && !--(ptr->refcount))
-      delete ptr;
-    if ( (ptr = o.ptr) )
-      ptr->refcount++;
+    if (ptr_ && !--(ptr_->refcount_))
+      delete ptr_;
+    if ( (ptr_ = o.ptr_) )
+      ptr_->refcount_++;
     return (*this);
   }
   rptr<T>& operator=(rptr<T> &&o) {
-    if (ptr && !--(ptr->refcount))
-      delete ptr;
-    ptr = o.ptr;
-    o.ptr = 0;
+    if (ptr_ && !--(ptr_->refcount_))
+      delete ptr_;
+    ptr_ = o.ptr_;
+    o.ptr_ = 0;
     return (*this);
   }
   bool operator==(const T* t) const {
-    return ptr == t;
+    return ptr_ == t;
   }
   bool operator==(T* t) const {
-    return ptr == t;
+    return ptr_ == t;
   }
   inline T* release() {
-    if (!ptr)
+    if (!ptr_)
       return nullptr;
-    auto p = ptr;
-    ptr->refcount--;
-    ptr = nullptr;
+    auto p = ptr_;
+    ptr_->refcount_--;
+    ptr_ = nullptr;
     return p;
   }
 };

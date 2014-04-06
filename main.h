@@ -84,7 +84,7 @@ public:
   static Elf* open(const char *data, size_t size, bool *waserror, const char *name);
 
 public:
-  size_t refcount;
+  size_t refcount_;
 
   // path + name separated
   std::string dirname;
@@ -303,7 +303,7 @@ public: // NOT SERIALIZED:
 namespace filter {
 class Match {
 public:
-  size_t refcount; // make it a capturable rptr
+  size_t refcount_; // make it a capturable rptr
   Match();
   virtual ~Match();
   virtual bool operator()(const std::string&) const = 0;
@@ -352,7 +352,7 @@ protected:
 public:
   ObjectFilter() = delete;
 
-  size_t refcount;
+  size_t refcount_;
   bool   negate;
 
   virtual ~ObjectFilter();
