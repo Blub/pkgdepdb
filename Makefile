@@ -10,7 +10,7 @@ PACKAGE_NAME := pkgdepdb
 
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
-VERSION_PATCH := 7
+VERSION_PATCH := 8dev
 
 CXX ?= clang++
 CXXFLAGS += -std=c++11
