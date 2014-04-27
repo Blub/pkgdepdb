@@ -414,11 +414,11 @@ static void json_objlist(FILE *out, const OBJLIST &list) {
   for (; i != count; ++i, ++iter) {
     if ((i & 0xF) == 0)
       fprintf(out, "\n\t\t\t\t");
-    fprintf(out, "%lu, ", (*iter)->json_.id);
+    fprintf(out, "%lu, ", (unsigned long)(*iter)->json_.id);
   }
   if ((i & 0xF) == 0)
     fprintf(out, "%s\n\t\t\t\t", (i ? "" : ","));
-  fprintf(out, "%lu", (*iter)->json_.id);
+  fprintf(out, "%lu", (unsigned long)(*iter)->json_.id);
 }
 
 template<class STRLIST>
