@@ -822,7 +822,7 @@ static bool parse_filter(const std::string &filter,
   MAKE_PKGFILTER(pkglibdepends);
 #undef MAKE_PKGFILTER
 
-#define MAKE_OBJFILTER(NAME) ADDFILTER2(ObjectFilter, lib#NAME, NAME, obj_filters)
+#define MAKE_OBJFILTER(NAME) ADDFILTER2(ObjectFilter, lib##NAME, NAME, obj_filters)
   MAKE_OBJFILTER(name);
   MAKE_OBJFILTER(depends);
   MAKE_OBJFILTER(path);
