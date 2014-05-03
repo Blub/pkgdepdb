@@ -84,7 +84,7 @@ class Elf {
   static Elf* Open(const char* data, size_t size, bool *err, const char *name);
 
  public:
-  size_t refcount_;
+  size_t refcount_ = 0;
 
   // path + name separated
   std::string dirname_;
@@ -357,7 +357,7 @@ class ObjectFilter {
  public:
   ObjectFilter() = delete;
 
-  size_t refcount_;
+  size_t refcount_ = 0;
   bool   negate_;
 
   virtual ~ObjectFilter();

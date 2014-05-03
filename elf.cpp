@@ -7,8 +7,7 @@
 #include "endian.h"
 
 Elf::Elf()
-: refcount_   (0),
-  ei_class_   (0),
+: ei_class_   (0),
   ei_osabi_   (0),
   rpath_set_  (false),
   runpath_set_(false),
@@ -16,8 +15,7 @@ Elf::Elf()
 {}
 
 Elf::Elf(const Elf& cp)
-: refcount_(0),
-  dirname_    (cp.dirname_),
+: dirname_    (cp.dirname_),
   basename_   (cp.basename_),
   ei_class_   (cp.ei_class_),
   ei_data_    (cp.ei_data_),
