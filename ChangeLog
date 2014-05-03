@@ -1,3 +1,14 @@
+2014-05-03 Blub
+
+	* fix uninitialized refcount_ member
+	* convention change: refcount_ members now get an '= 0' in class-defs
+		rather than being explicitly initialized in constructors
+	* Releasing 0.1.7.1 as hotfix
+
+2014-05-02 Blub
+
+	* fix accidental removal of -flib* filters
+
 2014-04-27 Blub
 
 	* buildfix for 32 bit
