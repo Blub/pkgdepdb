@@ -15,19 +15,6 @@
 
 #include "main.h"
 
-using ObjClass = uint32_t;
-
-static inline ObjClass getObjClass(unsigned char ei_class,
-                                   unsigned char ei_data,
-                                   unsigned char ei_osabi)
-{
-  return static_cast<ObjClass>((ei_data << 16) | (ei_class << 8) | ei_osabi);
-}
-
-static inline ObjClass getObjClass(Elf *elf) {
-  return getObjClass(elf->ei_class_, elf->ei_data_, elf->ei_osabi_);
-}
-
 DB::DB() {
   loaded_version_           = DB::CURRENT;
   contains_package_depends_ = false;
