@@ -39,7 +39,7 @@ class rptr {
 public:
   T *ptr_;
 
-  rptr()     : ptr_(NULL) {}
+  constexpr rptr() : ptr_(nullptr) {}
   rptr(T *t) : ptr_(t) {
     if (ptr_) ptr_->refcount_++;
   }
@@ -70,13 +70,15 @@ public:
     return (*this);
   }
   rptr<T>& operator=(const rptr<T> &o) {
+    if (o.ptr_) o.ptr_->refcount_++;
     if (ptr_ && !--(ptr_->refcount_))
       delete ptr_;
-    if ( (ptr_ = o.ptr_) )
-      ptr_->refcount_++;
+    ptr_ = o.ptr_;
     return (*this);
   }
   rptr<T>& operator=(rptr<T> &&o) {
+    if (this == &o)
+      return (*this);
     if (ptr_ && !--(ptr_->refcount_))
       delete ptr_;
     ptr_ = o.ptr_;

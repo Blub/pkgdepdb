@@ -308,7 +308,7 @@ class DB {
 namespace filter {
 class Match {
  public:
-  size_t refcount_; // make it a capturable rptr
+  size_t refcount_ = 0; // make it a capturable rptr
   Match();
   virtual ~Match();
   virtual bool operator()(const std::string&) const = 0;
