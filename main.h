@@ -160,6 +160,7 @@ class Package {
  public: // loading utiltiy functions
   void Guess(const std::string& name);
   bool ConflictsWith(const Package&) const;
+  bool Replaces(const Package&) const;
 
  public: // NOT SERIALIZED:
   // used only while loading an archive

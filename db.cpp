@@ -1353,6 +1353,8 @@ void DB::CheckIntegrity(const FilterList    &pkg_filters,
         if (&a == &b) continue;
         if ( (conflict = a->ConflictsWith(*b)) )
           break;
+        if ( (conflict = a->Replaces(*b)) )
+          break;
       }
       if (!conflict)
         realpkgs.push_back(a);
