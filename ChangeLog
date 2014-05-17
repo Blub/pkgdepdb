@@ -1,3 +1,7 @@
+2014-05-17 Blub
+
+	* integrity check now goes through package replacements
+
 2014-05-03 Blub
 
 	* fix uninitialized refcount_ member

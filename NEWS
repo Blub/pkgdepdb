@@ -1,3 +1,6 @@
+2014-XX-XX Release 0.1.8
+	- integrity checks now honor replacement packages
+
 2014-05-03 Release 0.1.7.1
 	- Bugfixes:
 		* uninitialized reference counters
