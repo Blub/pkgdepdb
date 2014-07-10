@@ -252,16 +252,11 @@ void DB::ShowObjects_json(const FilterList    &pkg_filters,
     }
     do {
       printf("\n\t\t\"class\": %u, // %s"
-             "\n\t\t\"data\":  %u, // %s",
+             "\n\t\t\"data\":  %u, // %s"
+             "\n\t\t\"osabi\": %u, // %s",
              (unsigned)obj->ei_class_, obj->classString(),
-             (unsigned)obj->ei_data_,  obj->dataString());
-      if (opt_verbosity >= 2 || obj->rpath_set_ || obj->runpath_set_) {
-        printf("\n\t\t\"osabi\": %u, // %s",
-               (unsigned)obj->ei_osabi_, obj->osabiString());
-      } else {
-        printf("\n\t\t\"osabi\": %u  // %s",
-               (unsigned)obj->ei_osabi_, obj->osabiString());
-      }
+             (unsigned)obj->ei_data_,  obj->dataString(),
+             (unsigned)obj->ei_osabi_, obj->osabiString());
       if (obj->rpath_set_) {
         printf(",\n\t\t\"rpath\": ");
         json_quote(stdout, obj->rpath_);
@@ -270,6 +265,8 @@ void DB::ShowObjects_json(const FilterList    &pkg_filters,
         printf(",\n\t\t\"runpath\": ");
         json_quote(stdout, obj->runpath_);
       }
+      printf(",\n\t\t\"interpreter\": ");
+      json_quote(stdout, obj->interpreter_);
       if (opt_verbosity < 2) {
         printf("\n\t}");
         break;
@@ -388,6 +385,8 @@ static void json_obj(size_t id, FILE *out, const Elf *obj) {
     fprintf(out, ",\n\t\t\t\"runpath\": ");
     json_quote(out, obj->runpath_);
   }
+  fprintf(out, ",\n\t\t\t\"interpreter\": ");
+  json_quote(out, obj->interpreter_);
   if (obj->needed_.size()) {
     fprintf(out, ",\n\t\t\t\"needed\": [");
     bool comma = false;

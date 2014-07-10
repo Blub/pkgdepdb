@@ -833,6 +833,8 @@ void DB::ShowObjects(const FilterList    &pkg_filters,
       printf("     rpath: %s\n", obj->rpath_.c_str());
     if (obj->runpath_set_)
       printf("     runpath: %s\n", obj->runpath_.c_str());
+    if (obj->interpreter_.length())
+      printf("     interpreter: %s\n", obj->interpreter_.c_str());
     if (opt_verbosity < 2)
       continue;
     printf("     finds:\n"); {

@@ -14,7 +14,7 @@
 
 // version
 uint16_t
-DB::CURRENT = 8;
+DB::CURRENT = 9;
 
 // magic header
 static const char
@@ -360,6 +360,8 @@ static bool write_obj(SerialOut &out, const Elf *obj) {
       <= (uint8_t)obj->runpath_set_
       <= obj->rpath_
       <= obj->runpath_;
+  if (out.version_ >= 9)
+    out <= obj->interpreter_;
 
   if (!write_stringlist(out, obj->needed_))
     return false;
@@ -375,7 +377,8 @@ static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
     in >= ref;
     if (in.ver8_refs_) {
       if (ref >= in.objref_.size()) {
-        log(Error, "db error: objref out of range\n");
+        log(Error, "db error: objref out of range [%zu/%zu]\n", ref,
+            in.objref_.size());
         return false;
       }
       obj = in.objref_[ref];
@@ -416,6 +419,8 @@ static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
      >= runpset
      >= obj->rpath_
      >= obj->runpath_;
+  if (in.version_ >= 9)
+    in >= obj->interpreter_;
   obj->rpath_set_   = rpset;
   obj->runpath_set_ = runpset;
 
@@ -478,7 +483,8 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
     in >= ref;
     if (in.ver8_refs_) {
       if (ref >= in.pkgref_.size()) {
-        log(Error, "db error: pkgref out of range\n");
+        log(Error, "db error: pkgref out of range [%zu/%zu]\n", ref,
+            in.pkgref_.size());
         return false;
       }
       pkg = in.pkgref_[ref];
@@ -598,6 +604,11 @@ static bool db_store(DB *db, const std::string& filename) {
   if (hdr.version < 8)
     hdr.version = 8;
 
+  // ver9 contains interpreter data
+  if (hdr.version < 9)
+    hdr.version = 9;
+
+  out.version_ = hdr.version;
   out <= hdr;
   out <= db->name_;
   if (!write_stringlist(out, db->library_path_))
@@ -689,6 +700,7 @@ static bool db_read(DB *db, const std::string& filename) {
     log(Error, "not a valid database file: %s\n", filename.c_str());
     return false;
   }
+  in.version_ = hdr.version;
 
   db->loaded_version_ = hdr.version;
   // supported versions:

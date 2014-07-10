@@ -1,5 +1,6 @@
 2014-XX-XX Release 0.1.8
 	- integrity checks now honor replacement packages
+	- DB version 9: storing ELF interpreter data
 
 2014-05-03 Release 0.1.7.1
 	- Bugfixes:
@@ -16,7 +17,7 @@
 	- Noticeably more efficient database reading.
 	- Tiny bugfixes
 	- Change in database layout
-	- DB verison 8: more efficient reference IDs.
+	- DB version 8: more efficient reference IDs.
 	- Added --touch
 
 2013-12-01 Release 0.1.5

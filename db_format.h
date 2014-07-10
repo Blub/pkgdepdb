@@ -34,7 +34,8 @@ class SerialIn {
   std::vector<Elf*>             objref_;
   std::vector<Package*>         pkgref_;
   // whether objref and pkgref are used
-  bool                          ver8_refs_;
+  bool                          ver8_refs_ = false;
+  uint16_t                      version_ = 0;
 
  private:
   SerialIn(DB*, SerialStream*);
@@ -54,6 +55,8 @@ class SerialOut {
 
   bool GetObjRef(const Elf*,     size_t *out);
   bool GetPkgRef(const Package*, size_t *out);
+
+  uint16_t                      version_ = 0;
 
  private:
   SerialOut(DB*, SerialStream*);
