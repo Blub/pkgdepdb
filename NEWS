@@ -3,6 +3,9 @@
 	- DB version 9: storing ELF interpreter data
 	- -flib{rpath,runpath,interp}
 	- -fpkglib{rpath,runpath,interp}
+	- Bugfixes:
+		C++11 related sequence point issue breaking db store/load code with recent
+		compilers.
 
 2014-05-03 Release 0.1.7.1
 	- Bugfixes:
