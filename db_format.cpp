@@ -219,7 +219,8 @@ bool SerialOut::GetObjRef(const Elf *e, size_t *out) {
     *out = exists->second;
     return true;
   }
-  objref_[e] = *out = objref_.size();
+  *out = objref_.size();
+  objref_[e] = *out;
   return false;
 }
 
@@ -229,7 +230,8 @@ bool SerialOut::GetPkgRef(const Package *p, size_t *out) {
     *out = exists->second;
     return true;
   }
-  pkgref_[p] = *out = pkgref_.size();
+  *out = pkgref_.size();
+  pkgref_[p] = *out;
   return false;
 }
 
