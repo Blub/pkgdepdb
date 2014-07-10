@@ -100,6 +100,7 @@ class Elf {
   bool                     runpath_set_;
   std::string              rpath_;
   std::string              runpath_;
+  std::string              interpreter_;
   std::vector<std::string> needed_;
 
  public: // utility functions while loading

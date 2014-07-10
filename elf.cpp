@@ -30,7 +30,8 @@ Elf::Elf(const Elf& cp)
   owner_      (cp.owner_)
 {}
 
-template<bool BE, typename HDR, typename SecHDR, typename Dyn>
+template<bool BE,
+         typename HDR, typename SecHDR, typename ProgHDR, typename Dyn>
 Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
   std::unique_ptr<Elf> object(new Elf);
 
@@ -50,31 +51,56 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
 #pragma clang diagnostic ignored "-Wcast-align"
   HDR  *hdr     = (HDR*)(data);
   auto  shnum   = Eswap<BE>(hdr->e_shnum);
+  auto  phnum   = Eswap<BE>(hdr->e_phnum);
   auto  e_shoff = Eswap<BE>(hdr->e_shoff);
+  auto  e_phoff = Eswap<BE>(hdr->e_phoff);
 
   if (!checksize((ssize_t)e_shoff, sizeof(SecHDR),
-                 "looking for section headers"))
+                 "looking for section headers") ||
+      !checksize((ssize_t)e_phoff, sizeof(ProgHDR),
+                 "looking for program headers"))
   {
     return 0;
   }
 
-  SecHDR *sec_start = (SecHDR*)(data + e_shoff);
+  auto prog_start = reinterpret_cast<const ProgHDR*>(data + e_phoff);
+  // TODO: check auxiliary data when phnum == PX_XNUM
+  if (phnum == PN_XNUM)
+    log(Error, "%s: TODO: program header count too large, skipping", name);
+  else {
+    if (!checksize((char*)(prog_start + phnum-1) - data, sizeof(*prog_start),
+                   "program header array"))
+    {
+      return 0;
+    }
+    auto ph = prog_start;
+    for (; ph != prog_start + phnum; ++ph) {
+      if (Eswap<BE>(ph->p_type) == PT_INTERP)
+        break;
+    }
+    if (ph != prog_start + phnum) {
+      // this one has an interpreter request
+      object->interpreter_ = data + Eswap<BE>(ph->p_offset);
+    }
+  }
+
+  auto sec_start = reinterpret_cast<const SecHDR*>(data + e_shoff);
   if (!checksize((char*)(sec_start + shnum-1) - data, sizeof(*sec_start),
                  "section header array"))
   {
     return 0;
   }
-  auto findsec = [=](std::function<bool(SecHDR*)> cond) -> SecHDR* {
+  auto findsec = [=](std::function<bool(const SecHDR*)> cond) -> const SecHDR* {
     for (size_t i = 0; i != shnum; ++i) {
-      SecHDR *s = sec_start + i;
+      auto s = sec_start + i;
       if (cond(s))
         return s;
     }
     return 0;
   };
 
-  SecHDR *dynhdr = findsec(
-    [](SecHDR *hdr) {
+  auto dynhdr = findsec(
+    [](const SecHDR *hdr) {
       return Eswap<BE>(hdr->sh_type) == SHT_DYNAMIC;
     });
   if (!dynhdr) {
@@ -120,7 +146,7 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
   }
 
   // find string section with the offset from DT_STRTAB
-  SecHDR *dynstrsec = findsec([dynstr](SecHDR *hdr) {
+  auto dynstrsec = findsec([dynstr](const SecHDR *hdr) {
     return Eswap<BE>(hdr->sh_type) == SHT_STRTAB &&
            Eswap<BE>(hdr->sh_addr) == Eswap<BE>(dynstr->d_un.d_ptr);
   });
@@ -183,14 +209,14 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
   return object.release();
 }
 
-static
-const auto LoadElf32LE = &LoadElf<false, Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
-static
-const auto LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Dyn>;
-static
-const auto LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
-static
-const auto LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Dyn>;
+static const auto
+LoadElf32LE = &LoadElf<false, Elf32_Ehdr, Elf32_Shdr, Elf32_Phdr, Elf32_Dyn>;
+static const auto
+LoadElf32BE = &LoadElf<true,  Elf32_Ehdr, Elf32_Shdr, Elf32_Phdr, Elf32_Dyn>;
+static const auto
+LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Phdr, Elf64_Dyn>;
+static const auto
+LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Phdr, Elf64_Dyn>;
 
 Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
 {
