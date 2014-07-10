@@ -294,9 +294,9 @@ PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
   });
 }
 
+static
 unique_ptr<PackageFilter>
-PackageFilter::pkglibdepends(rptr<Match> matcher, bool neg) {
-  auto depfilter = ObjectFilter::depends(matcher, false);
+PkgLibFilter(unique_ptr<ObjectFilter> depfilter, bool neg) {
   if (!depfilter)
     return nullptr;
   rptr<ObjectFilter> libfilter(depfilter.release());
@@ -309,6 +309,19 @@ PackageFilter::pkglibdepends(rptr<Match> matcher, bool neg) {
     return false;
   });
 }
+
+#define MAKE_PKGLIBFILTER(NAME)                                 \
+unique_ptr<PackageFilter>                                       \
+PackageFilter::pkglib##NAME(rptr<Match> matcher, bool neg) {    \
+  return PkgLibFilter(ObjectFilter::NAME(matcher, false), neg); \
+}
+
+MAKE_PKGLIBFILTER(depends)
+MAKE_PKGLIBFILTER(rpath)
+MAKE_PKGLIBFILTER(runpath)
+MAKE_PKGLIBFILTER(interp)
+
+#undef MAKE_PKGLIBFILTER
 
 unique_ptr<PackageFilter> PackageFilter::broken(bool neg) {
   return mk_unique<PkgFilt>(neg, [](const DB &db, const Package &pkg) {
@@ -336,6 +349,24 @@ unique_ptr<ObjectFilter> ObjectFilter::depends(rptr<Match> matcher, bool neg) {
       if ((*matcher)(i))
         return true;
     return false;
+  });
+}
+
+unique_ptr<ObjectFilter> ObjectFilter::rpath(rptr<Match> matcher, bool neg) {
+  return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
+    return (*matcher)(elf.rpath_);
+  });
+}
+
+unique_ptr<ObjectFilter> ObjectFilter::runpath(rptr<Match> matcher, bool neg) {
+  return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
+    return (*matcher)(elf.runpath_);
+  });
+}
+
+unique_ptr<ObjectFilter> ObjectFilter::interp(rptr<Match> matcher, bool neg) {
+  return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
+    return (*matcher)(elf.interpreter_);
   });
 }
 

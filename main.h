@@ -349,6 +349,9 @@ class PackageFilter {
   static unique_ptr<PackageFilter> conflicts    (rptr<Match>, bool neg);
   static unique_ptr<PackageFilter> replaces     (rptr<Match>, bool neg);
   static unique_ptr<PackageFilter> pkglibdepends(rptr<Match>, bool neg);
+  static unique_ptr<PackageFilter> pkglibrpath  (rptr<Match>, bool neg);
+  static unique_ptr<PackageFilter> pkglibrunpath(rptr<Match>, bool neg);
+  static unique_ptr<PackageFilter> pkglibinterp (rptr<Match>, bool neg);
 
   static unique_ptr<PackageFilter> broken       (bool neg);
 };
@@ -376,6 +379,9 @@ class ObjectFilter {
   static unique_ptr<ObjectFilter> name   (rptr<Match>, bool neg);
   static unique_ptr<ObjectFilter> path   (rptr<Match>, bool neg);
   static unique_ptr<ObjectFilter> depends(rptr<Match>, bool neg);
+  static unique_ptr<ObjectFilter> rpath(rptr<Match>, bool neg);
+  static unique_ptr<ObjectFilter> runpath(rptr<Match>, bool neg);
+  static unique_ptr<ObjectFilter> interp(rptr<Match>, bool neg);
 };
 
 class StringFilter {
