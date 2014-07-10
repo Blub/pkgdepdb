@@ -2,6 +2,10 @@
 
 	* database bump: 9
 	* storing ELF interpreter data
+	* added filters for rpath/runpath/interpreter in the variants -flib
+	  and -fpkglib
+	* -flibrpath, -flibrunpath, -flibinterp
+	* -fpkglibrpath, -fpkglibrunpath, -fpkglibinterp
 
 2014-05-17 Blub
 

@@ -201,9 +201,9 @@ Only consider packages with the provided package as optional dependency
 .It Fl f Ns alldepends= Ns Ar PACKAGENAME
 Only consider packages with the provided package as dependency or optional
 dependency.
-.It Fl f Ns pkglibdepends= Ns Ar NAME
+.It Fl f Ns pkglib Ns Ar FILTER Ns Ar = Ns Ar NAME
 Only consider packages which contain at least one library matching the
-\(dq-flibdepends\(dq filter with the provided pattern.
+\(dq-flibFILTER\(dq filter with the provided pattern.
 .It Fl f Ns provides= Ns Ar NAME
 Check the package's list of provided packages.
 .It Fl f Ns conflicts= Ns Ar NAME
@@ -223,6 +223,12 @@ a slash and the filename, paths are sanitized and will not contain ./ or
 double slashes).
 .It Fl f Ns libdepends= Ns Ar NAME
 Only consider libraries which link against the provided library.
+.It Fl f Ns librpath= Ns Ar NAME
+Only consider libraries with a matching rpath set.
+.It Fl f Ns librunpath= Ns Ar NAME
+Only consider libraries with a matching runpath set.
+.It Fl f Ns libinterp= Ns Ar NAME
+Only consider libraries with a matching interpreter requested.
 .It Fl f Ns file= Ns Ar NAME
 Only show files matching a certain name.
 .El

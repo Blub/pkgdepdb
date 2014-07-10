@@ -361,7 +361,7 @@ static bool write_obj(SerialOut &out, const Elf *obj) {
       <= obj->rpath_
       <= obj->runpath_;
   if (out.version_ >= 9)
-    out <= obj->interpreter_;
+    out <= (uint8_t)obj->interpreter_set_ <= obj->interpreter_;
 
   if (!write_stringlist(out, obj->needed_))
     return false;
@@ -409,7 +409,7 @@ static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
   // Read out the object data
 
   // Serialize the actual object data
-  uint8_t rpset, runpset;
+  uint8_t rpset, runpset, interpset;
   in >= obj->dirname_
      >= obj->basename_
      >= obj->ei_class_
@@ -420,9 +420,10 @@ static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
      >= obj->rpath_
      >= obj->runpath_;
   if (in.version_ >= 9)
-    in >= obj->interpreter_;
-  obj->rpath_set_   = rpset;
-  obj->runpath_set_ = runpset;
+    in >= interpset >= obj->interpreter_;
+  obj->rpath_set_       = rpset;
+  obj->runpath_set_     = runpset;
+  obj->interpreter_set_ = interpset;
 
   if (!read_stringlist(in, obj->needed_))
     return false;

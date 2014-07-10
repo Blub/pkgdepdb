@@ -96,8 +96,9 @@ class Elf {
   unsigned char ei_osabi_; // freebsd/linux/...
 
   // requirements:
-  bool                     rpath_set_;
-  bool                     runpath_set_;
+  bool                     rpath_set_       = false;
+  bool                     runpath_set_     = false;
+  bool                     interpreter_set_ = false;
   std::string              rpath_;
   std::string              runpath_;
   std::string              interpreter_;

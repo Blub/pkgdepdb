@@ -354,19 +354,19 @@ unique_ptr<ObjectFilter> ObjectFilter::depends(rptr<Match> matcher, bool neg) {
 
 unique_ptr<ObjectFilter> ObjectFilter::rpath(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
-    return (*matcher)(elf.rpath_);
+    return elf.rpath_set_ && (*matcher)(elf.rpath_);
   });
 }
 
 unique_ptr<ObjectFilter> ObjectFilter::runpath(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
-    return (*matcher)(elf.runpath_);
+    return elf.runpath_set_ && (*matcher)(elf.runpath_);
   });
 }
 
 unique_ptr<ObjectFilter> ObjectFilter::interp(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
-    return (*matcher)(elf.interpreter_);
+    return elf.interpreter_set_ && (*matcher)(elf.interpreter_);
   });
 }
 

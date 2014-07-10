@@ -820,12 +820,18 @@ static bool parse_filter(const std::string &filter,
   MAKE_PKGFILTER(conflicts);
   MAKE_PKGFILTER(replaces);
   MAKE_PKGFILTER(pkglibdepends);
+  MAKE_PKGFILTER(pkglibrpath);
+  MAKE_PKGFILTER(pkglibrunpath);
+  MAKE_PKGFILTER(pkglibinterp);
 #undef MAKE_PKGFILTER
 
 #define MAKE_OBJFILTER(NAME) ADDFILTER2(ObjectFilter, lib##NAME, NAME, obj_filters)
   MAKE_OBJFILTER(name);
   MAKE_OBJFILTER(depends);
   MAKE_OBJFILTER(path);
+  MAKE_OBJFILTER(rpath);
+  MAKE_OBJFILTER(runpath);
+  MAKE_OBJFILTER(interp);
 #undef MAKE_OBJFILTER
 
   ADDFILTER2(StringFilter, file, filter, str_filters);

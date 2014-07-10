@@ -80,6 +80,7 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
     }
     if (ph != prog_start + phnum) {
       // this one has an interpreter request
+      object->interpreter_set_ = true;
       object->interpreter_ = data + Eswap<BE>(ph->p_offset);
     }
   }
