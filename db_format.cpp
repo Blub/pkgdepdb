@@ -409,7 +409,7 @@ static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
   // Read out the object data
 
   // Serialize the actual object data
-  uint8_t rpset, runpset, interpset;
+  uint8_t rpset, runpset, interpset = 0;
   in >= obj->dirname_
      >= obj->basename_
      >= obj->ei_class_
