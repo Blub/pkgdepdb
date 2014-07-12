@@ -1,4 +1,4 @@
-2014-XX-XX Release 0.1.8
+2014-07-12 Release 0.1.8
 	- integrity checks now honor replacement packages
 	- DB version 9: storing ELF interpreter data
 	- -flib{rpath,runpath,interp}

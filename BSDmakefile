@@ -10,6 +10,8 @@ GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null ||
 .  include ".cflags"
 .endif
 
+.include "Makefile.pre"
+
 .if $(GITINFO) != ""
     CPPFLAGS += -DGITINFO="\"$(GITINFO)\""
 .endif
