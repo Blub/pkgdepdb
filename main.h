@@ -349,6 +349,7 @@ class PackageFilter {
   static unique_ptr<PackageFilter> provides     (rptr<Match>, bool neg);
   static unique_ptr<PackageFilter> conflicts    (rptr<Match>, bool neg);
   static unique_ptr<PackageFilter> replaces     (rptr<Match>, bool neg);
+  static unique_ptr<PackageFilter> contains     (rptr<Match>, bool neg);
   static unique_ptr<PackageFilter> pkglibdepends(rptr<Match>, bool neg);
   static unique_ptr<PackageFilter> pkglibrpath  (rptr<Match>, bool neg);
   static unique_ptr<PackageFilter> pkglibrunpath(rptr<Match>, bool neg);

@@ -277,6 +277,7 @@ MAKE_PKGFILTER1(optdepends)
 MAKE_PKGFILTER1(provides)
 MAKE_PKGFILTER1(conflicts)
 MAKE_PKGFILTER1(replaces)
+MAKE_PKGFILTER(contains,filelist)
 
 #undef MAKE_PKGFILTER
 #undef MAKE_PKGFILTER1
