@@ -210,6 +210,8 @@ Check the package's list of provided packages.
 The package must conflict with the provided one.
 .It Fl f Ns replaces= Ns Ar NAME
 The package must be marked as replacing the provided package.
+.It Fl f Ns contains= Ns Ar PATH
+A file matching the provided path has to be present in the package.
 .It Fl f Ns broken
 This rule has no match string. Consider only broken packages. Contrary to
 the
