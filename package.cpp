@@ -199,7 +199,8 @@ static bool read_object(Package         *pkg,
   }
 
   bool err = false;
-  rptr<Elf> object(Elf::Open(&data[0], data.size(), &err, filename.c_str()));
+  rptr<Elf> object(Elf::Open(&data[0], data.size(), &err, filename.c_str(),
+                             optconfig));
   if (!object.get()) {
     if (err)
       optconfig.Log(Error, "error in: %s\n", filename.c_str());

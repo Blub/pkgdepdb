@@ -6,6 +6,13 @@
 #include <algorithm>
 
 #include "main.h"
+#include "pkgdepdb.h"
+#include "elf.h"
+#include "package.h"
+#include "db.h"
+#include "filter.h"
+
+namespace pkgdepdb {
 
 namespace util {
   template<typename C, typename K>
@@ -72,10 +79,10 @@ RegexMatch::RegexMatch(string &&pattern, bool icase)
   if ( (err = ::regcomp(&regex_, pattern_.c_str(), cflags)) != 0) {
     char buf[4096];
     regerror(err, &regex_, buf, sizeof(buf));
-    log(Error, "failed to compile regex (flags: %s): %s\n",
-        (icase ? "case insensitive" : "case sensitive"),
-        pattern.c_str());
-    log(Error, "regex error: %s\n", buf);
+    fprintf(stderr, "failed to compile regex (flags: %s): %s\n",
+            (icase ? "case insensitive" : "case sensitive"),
+            pattern.c_str());
+    fprintf(stderr, "regex error: %s\n", buf);
     return;
   }
   compiled_ = true;
@@ -246,14 +253,14 @@ static bool match_glob(const string &glob, size_t g,
   }
 }
 
-unique_ptr<PackageFilter> PackageFilter::name(rptr<Match> matcher, bool neg) {
+uniq<PackageFilter> PackageFilter::name(rptr<Match> matcher, bool neg) {
   return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
     return (*matcher)(pkg.name_);
   });
 }
 
 template<typename CONT>
-static unique_ptr<PackageFilter>
+static uniq<PackageFilter>
 make_pkgfilter(rptr<Match> matcher, bool neg, CONT (Package::*member)) {
   return mk_unique<PkgFilt>(neg, [matcher,member](const Package &pkg) {
     for (auto &i : pkg.*member) {
@@ -263,9 +270,9 @@ make_pkgfilter(rptr<Match> matcher, bool neg, CONT (Package::*member)) {
     return false;
   });
 }
-#define MAKE_PKGFILTER(NAME,VAR)                      \
-unique_ptr<PackageFilter>                             \
-PackageFilter::NAME(rptr<Match> matcher, bool neg) {  \
+#define MAKE_PKGFILTER(NAME,VAR)                         \
+uniq<PackageFilter>                                      \
+PackageFilter::NAME(rptr<Match> matcher, bool neg) {     \
   return make_pkgfilter(matcher, neg, &Package::VAR##_); \
 }
 
@@ -282,7 +289,7 @@ MAKE_PKGFILTER(contains,filelist)
 #undef MAKE_PKGFILTER
 #undef MAKE_PKGFILTER1
 
-unique_ptr<PackageFilter>
+uniq<PackageFilter>
 PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
   return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
     for (auto &i : pkg.depends_)
@@ -296,8 +303,8 @@ PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
 }
 
 static
-unique_ptr<PackageFilter>
-PkgLibFilter(unique_ptr<ObjectFilter> depfilter, bool neg) {
+uniq<PackageFilter>
+PkgLibFilter(uniq<ObjectFilter> depfilter, bool neg) {
   if (!depfilter)
     return nullptr;
   rptr<ObjectFilter> libfilter(depfilter.release());
@@ -312,7 +319,7 @@ PkgLibFilter(unique_ptr<ObjectFilter> depfilter, bool neg) {
 }
 
 #define MAKE_PKGLIBFILTER(NAME)                                 \
-unique_ptr<PackageFilter>                                       \
+uniq<PackageFilter>                                             \
 PackageFilter::pkglib##NAME(rptr<Match> matcher, bool neg) {    \
   return PkgLibFilter(ObjectFilter::NAME(matcher, false), neg); \
 }
@@ -324,27 +331,27 @@ MAKE_PKGLIBFILTER(interp)
 
 #undef MAKE_PKGLIBFILTER
 
-unique_ptr<PackageFilter> PackageFilter::broken(bool neg) {
+uniq<PackageFilter> PackageFilter::broken(bool neg) {
   return mk_unique<PkgFilt>(neg, [](const DB &db, const Package &pkg) {
     return db.IsBroken(&pkg);
   });
 }
 
 // general purpose object filter
-unique_ptr<ObjectFilter> ObjectFilter::name(rptr<Match> matcher, bool neg) {
+uniq<ObjectFilter> ObjectFilter::name(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     return (*matcher)(elf.basename_);
   });
 }
 
-unique_ptr<ObjectFilter> ObjectFilter::path(rptr<Match> matcher, bool neg) {
+uniq<ObjectFilter> ObjectFilter::path(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     string p(elf.dirname_); p.append(1, '/'); p.append(elf.basename_);
     return (*matcher)(p);
   });
 }
 
-unique_ptr<ObjectFilter> ObjectFilter::depends(rptr<Match> matcher, bool neg) {
+uniq<ObjectFilter> ObjectFilter::depends(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     for (auto &i : elf.needed_)
       if ((*matcher)(i))
@@ -353,26 +360,26 @@ unique_ptr<ObjectFilter> ObjectFilter::depends(rptr<Match> matcher, bool neg) {
   });
 }
 
-unique_ptr<ObjectFilter> ObjectFilter::rpath(rptr<Match> matcher, bool neg) {
+uniq<ObjectFilter> ObjectFilter::rpath(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     return elf.rpath_set_ && (*matcher)(elf.rpath_);
   });
 }
 
-unique_ptr<ObjectFilter> ObjectFilter::runpath(rptr<Match> matcher, bool neg) {
+uniq<ObjectFilter> ObjectFilter::runpath(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     return elf.runpath_set_ && (*matcher)(elf.runpath_);
   });
 }
 
-unique_ptr<ObjectFilter> ObjectFilter::interp(rptr<Match> matcher, bool neg) {
+uniq<ObjectFilter> ObjectFilter::interp(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
     return elf.interpreter_set_ && (*matcher)(elf.interpreter_);
   });
 }
 
 // string filter
-unique_ptr<StringFilter> StringFilter::filter(rptr<Match> matcher, bool neg) {
+uniq<StringFilter> StringFilter::filter(rptr<Match> matcher, bool neg) {
   return mk_unique<StrFilt>(neg, [matcher](const string &str) {
     return (*matcher)(str);
   });
@@ -393,7 +400,9 @@ bool RegexMatch::operator()(const string &other) const {
 }
 #endif
 
-} // namespace filter
+} // ::pkgdepdb::filter
+
+} // ::pkgdepdb
 
 #ifdef TEST
 #include <iostream>

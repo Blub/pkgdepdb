@@ -278,7 +278,7 @@ bool write_objset(SerialOut &out, const ObjectSet& list) {
 bool read_objset(SerialIn &in, ObjectSet& list, const Config& config) {
 #if 0
   ObjectList lst;
-  if (!read_objlist(in, lst))
+  if (!read_objlist(in, lst, config))
     return false;
   list.~ObjectSet();
   new (&list) ObjectSet(lst.begin(), lst.end());
@@ -524,7 +524,7 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
   // Now serialize the actual package data:
   in >= pkg->name_
      >= pkg->version_;
-  if (!read_objlist(in, pkg->objects_))
+  if (!read_objlist(in, pkg->objects_, config))
     return false;
   for (auto &o : pkg->objects_)
     o->owner_ = pkg;
@@ -751,7 +751,7 @@ static bool db_read(DB *db, const string& filename) {
     }
   }
 
-  if (!read_objlist(in, db->objects_)) {
+  if (!read_objlist(in, db->objects_, db->config_)) {
     db->config_.Log(Error, "failed reading object list\n");
     return false;
   }
@@ -760,7 +760,7 @@ static bool db_read(DB *db, const string& filename) {
   rptr<Elf> obj;
   for (uint32_t i = 0; i != len; ++i) {
     if (!read_obj(in, obj, db->config_) ||
-        !read_objset(in, obj->req_found_))
+        !read_objset(in, obj->req_found_, db->config_))
     {
       db->config_.Log(Error, "failed reading map of found dependencies\n");
       return false;

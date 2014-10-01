@@ -10,6 +10,13 @@
 #include <archive_entry.h>
 
 #include "main.h"
+#include "pkgdepdb.h"
+#include "elf.h"
+#include "package.h"
+#include "db.h"
+#include "filter.h"
+
+using namespace pkgdepdb;
 
 static const char *arg0 = 0;
 
@@ -235,8 +242,10 @@ int main(int argc, char **argv) {
   ObjFilterList obj_filters;
   StrFilterList str_filters;
 
-  LogLevel = Message;
-  if (!ReadConfig())
+  Config config;
+  config.log_level_ = LogLevel::Message;
+
+  if (!config.ReadConfig())
     return 1;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunreachable-code"
@@ -254,7 +263,7 @@ int main(int argc, char **argv) {
         version(0);
         break;
       case 'q':
-        opt_quiet = true;
+        config.quiet_ = true;
         break;
       case 'd':
         oldmode = false;
@@ -270,7 +279,7 @@ int main(int argc, char **argv) {
 
       case -'d': dryrun = true; break;
 
-      case 'v': ++opt_verbosity; break;
+      case 'v': ++config.verbosity_; break;
 
       case 'i':  oldmode = false; do_install    = true; break;
       case 'r':  oldmode = false; do_delete     = true; break;
@@ -292,17 +301,17 @@ int main(int argc, char **argv) {
       case -1024-'T': oldmode = false; modified = true; break;
 
       case -1024-'D':
-        opt_package_depends = CfgStrToBool(optarg);
+        config.package_depends_ = Config::str2bool(optarg);
         break;
 
       case -1024-'f':
         if (optarg)
-          opt_package_filelist = CfgStrToBool(optarg);
+          config.package_filelist_ = Config::str2bool(optarg);
         else
-          opt_package_filelist = true;
+          config.package_filelist_ = true;
         break;
       case -1025-'f':
-        opt_package_filelist = false;
+        config.package_filelist_ = false;
         break;
       case -1026-'f':
         oldmode = false;
@@ -323,13 +332,14 @@ int main(int argc, char **argv) {
         oldmode = false;
         string str(optarg);
         if (!isdigit(str[0])) {
-          log(Error, "--ld-insert format wrong: has to start with a number\n");
+          fprintf(stderr,
+                  "--ld-insert format wrong: has to start with a number\n");
           help(1);
           return 1;
         }
         size_t colon = str.find_first_of(':');
         if (string::npos == colon) {
-          log(Error, "--ld-insert format wrong, no colon found\n");
+          fprintf(stderr, "--ld-insert format wrong, no colon found\n");
           help(1);
           return 1;
         }
@@ -339,20 +349,20 @@ int main(int argc, char **argv) {
       }
 
       case 'J':
-        if (!CfgParseJSONBit(optarg))
+        if (!Config::ParseJSONBit(optarg, config.json_))
           help(1);
         break;
 
       case 'j':
-        opt_max_jobs = (unsigned int)strtoul(optarg, nullptr, 0);
+        config.max_jobs_ = (unsigned int)strtoul(optarg, nullptr, 0);
         // some sanity:
-        if (opt_max_jobs > 32)
-          opt_max_jobs = 32;
+        if (config.max_jobs_ > 128)
+          config.max_jobs_ = 128;
         break;
 
       case 'f':
         if (!parse_filter(optarg, pkg_filters, obj_filters, str_filters)) {
-          log(Error, "invalid --filter: `%s'\n", optarg);
+          fprintf(stderr, "invalid --filter: `%s'\n", optarg);
           return 1;
         }
         break;
@@ -365,24 +375,24 @@ int main(int argc, char **argv) {
   }
 #pragma clang diagnostic pop
 
-  if (opt_quiet)
-    LogLevel = Print;
+  if (config.quiet_)
+    config.log_level_ = LogLevel::Print;
 
   if (do_fixpaths)
     do_relink = true;
 
   if (do_install && (do_delete || do_wipe)) {
-    log(Error, "--install and --remove/--wipe are mutually exclusive\n");
+    fprintf(stderr, "--install and --remove/--wipe are mutually exclusive\n");
     help(1);
   }
 
   if (do_delete && optind >= argc) {
-    log(Error, "--remove requires a list of package names\n");
+    fprintf(stderr, "--remove requires a list of package names\n");
     help(1);
   }
 
   if (do_install && optind >= argc) {
-    log(Error, "--install requires a list of package archive files\n");
+    fprintf(stderr, "--install requires a list of package archive files\n");
     help(1);
   }
 
@@ -393,7 +403,7 @@ int main(int argc, char **argv) {
     if (optind >= argc)
       help(1);
     while (optind < argc) {
-      Package *package = Package::Open(argv[optind++]);
+      Package *package = Package::Open(argv[optind++], config);
       package->ShowNeeded();
       delete package;
     }
@@ -401,27 +411,27 @@ int main(int argc, char **argv) {
   }
 
   if (!has_db) {
-    if (opt_default_db.length()) {
+    if (config.database_.length()) {
       has_db = true;
-      dbfile = move(opt_default_db);
+      dbfile = move(config.database_);
     }
   }
 
   if (!has_db) {
-    log(Message, "no database selected\n");
+    fprintf(stderr, "no database selected\n");
     return 0;
   }
 
   if (!do_delete && optind < argc) {
     if (do_install)
-      log(Message, "loading packages...\n");
+      config.Log(Message, "loading packages...\n");
 
     while (optind < argc) {
       if (do_install)
-        log(Print, "  %s\n", argv[optind]);
-      Package *package = Package::Open(argv[optind]);
+        config.Log(Print, "  %s\n", argv[optind]);
+      Package *package = Package::Open(argv[optind], config);
       if (!package)
-        log(Error, "error reading package %s\n", argv[optind]);
+        config.Log(Error, "error reading package %s\n", argv[optind]);
       else {
         if (do_install)
           packages.push_back(package);
@@ -434,13 +444,13 @@ int main(int argc, char **argv) {
     }
 
     if (do_install)
-      log(Message, "packages loaded...\n");
+      config.Log(Message, "packages loaded...\n");
   }
 
-  uniq<DB> db(new DB);
+  uniq<DB> db(new DB(config));
   if (has_db) {
     if (!db->Read(dbfile)) {
-      log(Error, "failed to read database\n");
+      config.Log(Error, "failed to read database\n");
       return 1;
     }
   }
@@ -479,12 +489,12 @@ int main(int argc, char **argv) {
 
   if (do_fixpaths) {
     modified = true;
-    log(Message, "fixing up path entries\n");
+    config.Log(Message, "fixing up path entries\n");
     db->FixPaths();
   }
 
   if (do_install && packages.size()) {
-    log(Message, "installing packages\n");
+    config.Log(Message, "installing packages\n");
     for (auto pkg : packages) {
       modified = true;
       if (!db->InstallPackage(move(pkg))) {
@@ -497,10 +507,10 @@ int main(int argc, char **argv) {
 
   if (do_delete) {
     while (optind < argc) {
-      log(Message, "uninstalling: %s\n", argv[optind]);
+      config.Log(Message, "uninstalling: %s\n", argv[optind]);
       modified = true;
       if (!db->DeletePackage(argv[optind])) {
-        log(Error, "error uninstalling package: %s\n", argv[optind]);
+        config.Log(Error, "error uninstalling package: %s\n", argv[optind]);
         return 1;
       }
       ++optind;
@@ -509,7 +519,7 @@ int main(int argc, char **argv) {
 
   if (do_relink) {
     modified = true;
-    log(Message, "relinking everything\n");
+    config.Log(Message, "relinking everything\n");
     db->RelinkAll();
   }
 
@@ -538,10 +548,10 @@ int main(int argc, char **argv) {
     db->CheckIntegrity(pkg_filters, obj_filters);
 
   if (!dryrun && modified && has_db) {
-    if (opt_json & JSONBits::DB)
+    if (config.json_ & JSONBits::DB)
       db_store_json(db.get(), dbfile);
     else if (!db->Store(dbfile))
-      log(Error, "failed to write to the database\n");
+      config.Log(Error, "failed to write to the database\n");
   }
 
   return 0;
@@ -555,8 +565,8 @@ static bool try_rule(const string                 &rule,
 {
   if (rule.compare(0, what.length(), what) == 0) {
     if (rule.length() < what.length()+1) {
-      log(Error, "malformed rule: `%s`\n", rule.c_str());
-      log(Error, "format: %s%s\n", what.c_str(), usage);
+      fprintf(stderr, "malformed rule: `%s`\n", rule.c_str());
+      fprintf(stderr, "format: %s%s\n", what.c_str(), usage);
       *ret = false;
       return true;
     }
@@ -576,7 +586,7 @@ static bool parse_rule(DB *db, const string& rule) {
     || try_rule(rule, "strict:", "BOOL", &ret,
     [db](const string &cmd) {
       bool old = db->strict_linking_;
-      db->strict_linking_ = CfgStrToBool(cmd);
+      db->strict_linking_ = Config::str2bool(cmd);
       return old == db->strict_linking_;
     })
     || try_rule(rule, "unignore:", "FILENAME", &ret,
@@ -607,8 +617,8 @@ static bool parse_rule(DB *db, const string& rule) {
     [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
       if (s == string::npos) {
-        log(Error, "malformed rule: `%s`\n", rule.c_str());
-        log(Error, "format: pkg-ld-append:PKG:PATH\n");
+        fprintf(stderr, "malformed rule: `%s`\n", rule.c_str());
+        fprintf(stderr, "format: pkg-ld-append:PKG:PATH\n");
         return false;
       }
       string pkg(cmd.substr(0, s));
@@ -619,8 +629,8 @@ static bool parse_rule(DB *db, const string& rule) {
     [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
       if (s == string::npos) {
-        log(Error, "malformed rule: `%s`\n", rule.c_str());
-        log(Error, "format: pkg-ld-prepend:PKG:PATH\n");
+        fprintf(stderr, "malformed rule: `%s`\n", rule.c_str());
+        fprintf(stderr, "format: pkg-ld-prepend:PKG:PATH\n");
         return false;
       }
       return db->PKG_LD_Insert(cmd.substr(0, s), cmd.substr(s+1), 0);
@@ -634,8 +644,8 @@ static bool parse_rule(DB *db, const string& rule) {
       if (s1 == string::npos ||
           s2 == string::npos)
       {
-        log(Error, "malformed rule: `%s`\n", rule.c_str());
-        log(Error, "format: pkg-ld-insert:PKG:ID:PATH\n");
+        fprintf(stderr, "malformed rule: `%s`\n", rule.c_str());
+        fprintf(stderr, "format: pkg-ld-insert:PKG:ID:PATH\n");
         return false;
       }
       return db->PKG_LD_Insert(cmd.substr(0, s1),
@@ -647,8 +657,8 @@ static bool parse_rule(DB *db, const string& rule) {
     [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
       if (s == string::npos) {
-        log(Error, "malformed rule: `%s`\n", rule.c_str());
-        log(Error, "format: pkg-ld-delete:PKG:PATH\n");
+        fprintf(stderr, "malformed rule: `%s`\n", rule.c_str());
+        fprintf(stderr, "format: pkg-ld-delete:PKG:PATH\n");
         return false;
       }
       return db->PKG_LD_Delete(cmd.substr(0, s), cmd.substr(s+1));
@@ -657,8 +667,8 @@ static bool parse_rule(DB *db, const string& rule) {
     [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
       if (s == string::npos) {
-        log(Error, "malformed rule: `%s`\n", rule.c_str());
-        log(Error, "format: pkg-ld-delete-id:PKG:ID\n");
+        fprintf(stderr, "malformed rule: `%s`\n", rule.c_str());
+        fprintf(stderr, "format: pkg-ld-delete-id:PKG:ID\n");
         return false;
       }
       return db->PKG_LD_Delete(cmd.substr(0, s),
@@ -679,7 +689,7 @@ static bool parse_rule(DB *db, const string& rule) {
   ) {
     return ret;
   }
-  log(Error, "no such rule command: `%s'\n", rule.c_str());
+  fprintf(stderr, "no such rule command: `%s'\n", rule.c_str());
   return false;
 }
 
@@ -724,7 +734,7 @@ static bool parse_filter(const string  &filter,
       else if (unquote == '[') unquote = ']';
       else if (unquote == '<') unquote = '>';
       if (filter.length() < at+2) {
-        log(Error, "empty filter content: %s\n", filter.c_str());
+        fprintf(stderr, "empty filter content: %s\n", filter.c_str());
         return false;
       }
       regex = filter.substr(at+1);

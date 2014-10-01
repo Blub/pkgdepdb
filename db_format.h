@@ -94,9 +94,9 @@ static inline SerialIn& operator>=(SerialIn &in, string& r) {
 }
 
 bool write_objlist   (SerialOut &out, const ObjectList  &list);
-bool read_objlist    (SerialIn  &in,        ObjectList  &list);
+bool read_objlist    (SerialIn  &in,        ObjectList  &list, const Config&);
 bool write_objset    (SerialOut &out, const ObjectSet   &list);
-bool read_objset     (SerialIn  &in,        ObjectSet   &list);
+bool read_objset     (SerialIn  &in,        ObjectSet   &list, const Config&);
 bool write_stringlist(SerialOut &out, const vec<string> &list);
 bool read_stringlist (SerialIn  &in,        vec<string> &list);
 bool write_stringset (SerialOut &out, const StringSet   &list);
