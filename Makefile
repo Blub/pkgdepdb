@@ -11,7 +11,6 @@ PACKAGE_NAME := pkgdepdb
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
 VERSION_PATCH := 9dev
-GIT_INFO :=
 
 CXX ?= clang++
 CXXFLAGS += -std=c++11
@@ -48,7 +47,7 @@ config.h: config.h.in Makefile Makefile.pre BSDmakefile GNUmakefile
 	    -e 's/@@V_MINOR@@/$(VERSION_MINOR)/g' \
 	    -e 's/@@V_PATCH@@/$(VERSION_PATCH)/g' \
 	    -e 's|@@ETC@@|"$(SYSCONFDIR)"|g' \
-	    -e 's/@@GIT_INFO@@/$(GIT_INFO)/g' \
+	    -e 's/@@GIT_INFO@@/"$(GIT_INFO)"/g' \
 	    -e 's/@@ENABLE_THREADS@@/$(ENABLE_THREADS)/g' \
 	    -e 's/@@ENABLE_ALPM@@/$(ENABLE_ALPM)/g' \
 	    config.h.in > config.h

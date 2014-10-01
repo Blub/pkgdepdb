@@ -12,9 +12,7 @@ ifeq ($(CXX),clang++)
 endif
 -include Makefile
 
-ifneq ($(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null),)
-    CPPFLAGS += -DGITINFO="\"$(shell git describe --always)\""
-endif
+GIT_INFO := $(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null || true)
 
 ALPM ?= no
 ifeq ($(ALPM),yes)
@@ -29,7 +27,7 @@ endif
 
 THREADS ?= no
 ifeq ($(THREADS),yes)
-ENABLE_THREADS:="#define PKGDEPDB_ENABLE_THREADS"
+ENABLE_THREADS := define
 endif
 
 #ifneq ($(strip $(ALLFLAGS)),$(strip $(?COMPAREFLAGS)))

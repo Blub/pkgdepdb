@@ -1,6 +1,6 @@
 OBJECTS_SRC = ${OBJECTS:C/\.o/.cpp/g}
 
-GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null || true
+GIT_INFO != GIT_CEILING_DIRECTORIES="`pwd`/.." git describe --always 2>/dev/null || true
 
 .if exists(.localflags)
 .  include ".localflags"
@@ -11,10 +11,6 @@ GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null ||
 .endif
 
 .include "Makefile.pre"
-
-.if $(GITINFO) != ""
-    CPPFLAGS += -DGITINFO="\"$(GITINFO)\""
-.endif
 
 ALPM ?= no
 .if $(ALPM) == yes

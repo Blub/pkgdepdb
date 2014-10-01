@@ -11,3 +11,4 @@ CLANG_FLAGS := -Weverything \
 
 ENABLE_THREADS := undef
 ENABLE_ALPM := undef
+GIT_INFO ?=

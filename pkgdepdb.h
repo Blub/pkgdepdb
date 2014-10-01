@@ -24,6 +24,8 @@ struct Config {
   uint   log_level_        = LogLevel::Message;
 
   Config();
+  Config(Config&&) = delete;
+  Config(const Config&) = delete;
   ~Config();
 
   bool ReadConfig();
