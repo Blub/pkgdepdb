@@ -96,11 +96,11 @@ depend:
 	-rm -f Makefile.bak
 # DO NOT DELETE
 
-main.o: .cflags main.h util.h
-config.o: .cflags main.h util.h
-package.o: .cflags main.h util.h
-elf.o: .cflags main.h util.h endian.h
-db.o: .cflags main.h util.h
-db_format.o: .cflags main.h util.h db_format.h
-db_json.o: .cflags main.h util.h
-filter.o: .cflags main.h util.h
+main.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
+config.o: .cflags main.h util.h config.h pkgdepdb.h
+package.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h
+elf.o: .cflags elf.h main.h util.h config.h pkgdepdb.h endian.h
+db.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
+db_format.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h db_format.h
+db_json.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
+filter.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
