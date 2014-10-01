@@ -488,11 +488,13 @@ static void json_obj_missing(FILE *out, const Elf *obj,
 bool db_store_json(DB *db, const string& filename) {
   FILE *out = fopen(filename.c_str(), "wb");
   if (!out) {
-    log(Error, "failed to open file `%s' for reading\n", filename.c_str());
+    db->config_.Log(Error,
+                    "failed to open file `%s' for reading\n",
+                    filename.c_str());
     return false;
   }
 
-  log(Message, "writing json database file\n");
+  db->config_.Log(Message, "writing json database file\n");
 
   guard close_out([out]() { fclose(out); });
 

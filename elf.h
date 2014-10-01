@@ -41,7 +41,8 @@ struct Elf {
 
   Elf();
   Elf(const Elf& cp);
-  static Elf* Open(const char* data, size_t size, bool *err, const char *name);
+  static Elf* Open(const char* data, size_t size, bool *err, const char *name,
+                   const Config&);
 
   // utility functions while loading
   void SolvePaths(const string& origin);

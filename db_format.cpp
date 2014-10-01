@@ -242,7 +242,7 @@ bool SerialOut::GetPkgRef(const Package *p, size_t *out) {
 }
 
 static bool write_obj(SerialOut &out, const Elf *obj);
-static bool read_obj (SerialIn  &in,  rptr<Elf> &obj);
+static bool read_obj (SerialIn  &in,  rptr<Elf> &obj, const Config&);
 
 bool write_objlist(SerialOut &out, const ObjectList& list) {
   auto len = static_cast<uint32_t>(list.size());
@@ -254,12 +254,12 @@ bool write_objlist(SerialOut &out, const ObjectList& list) {
   return out.out_;
 }
 
-bool read_objlist(SerialIn &in, ObjectList& list) {
+bool read_objlist(SerialIn &in, ObjectList& list, const Config& config) {
   uint32_t len;
   in >= len;
   list.resize(len);
   for (size_t i = 0; i != len; ++i) {
-    if (!read_obj(in, list[i]))
+    if (!read_obj(in, list[i], config))
       return false;
   }
   return in.in_;
@@ -275,7 +275,7 @@ bool write_objset(SerialOut &out, const ObjectSet& list) {
   return out.out_;
 }
 
-bool read_objset(SerialIn &in, ObjectSet& list) {
+bool read_objset(SerialIn &in, ObjectSet& list, const Config& config) {
 #if 0
   ObjectList lst;
   if (!read_objlist(in, lst))
@@ -287,7 +287,7 @@ bool read_objset(SerialIn &in, ObjectSet& list) {
   in >= len;
   for (size_t i = 0; i != len; ++i) {
     rptr<Elf> obj;
-    if (!read_obj(in, obj))
+    if (!read_obj(in, obj, config))
       return false;
     list.insert(obj);
   }
@@ -375,7 +375,7 @@ static bool write_obj(SerialOut &out, const Elf *obj) {
   return true;
 }
 
-static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
+static bool read_obj(SerialIn &in, rptr<Elf> &obj, const Config& config) {
   ObjRef r;
   in >= r;
   size_t ref;
@@ -383,15 +383,15 @@ static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
     in >= ref;
     if (in.ver8_refs_) {
       if (ref >= in.objref_.size()) {
-        log(Error, "db error: objref out of range [%zu/%zu]\n", ref,
-            in.objref_.size());
+        config.Log(Error, "db error: objref out of range [%zu/%zu]\n", ref,
+                   in.objref_.size());
         return false;
       }
       obj = in.objref_[ref];
     } else {
       auto existing = in.old_objref_.find(ref);
       if (existing == in.old_objref_.end()) {
-        log(Error, "db error: failed to find deserialized object\n");
+        config.Log(Error, "db error: failed to find deserialized object\n");
         return false;
       }
       obj = existing->second;
@@ -399,7 +399,7 @@ static bool read_obj(SerialIn &in, rptr<Elf> &obj) {
     return true;
   }
   if (r != ObjRef::OBJ) {
-    log(Error, "object expected, object-ref value: %u\n", (unsigned)r);
+    config.Log(Error, "object expected, object-ref value: %u\n", (unsigned)r);
     return false;
   }
 
@@ -481,7 +481,8 @@ static bool write_pkg(SerialOut &out,    Package  *pkg,
 }
 
 static bool read_pkg(SerialIn &in,     Package  *&pkg,
-                     unsigned  hdrver, HdrFlags  flags)
+                     unsigned  hdrver, HdrFlags  flags,
+                     const Config& config)
 {
   ObjRef r;
   in >= r;
@@ -490,15 +491,15 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
     in >= ref;
     if (in.ver8_refs_) {
       if (ref >= in.pkgref_.size()) {
-        log(Error, "db error: pkgref out of range [%zu/%zu]\n", ref,
-            in.pkgref_.size());
+        config.Log(Error, "db error: pkgref out of range [%zu/%zu]\n", ref,
+                    in.pkgref_.size());
         return false;
       }
       pkg = in.pkgref_[ref];
     } else {
       auto existing = in.old_pkgref_.find(ref);
       if (existing == in.old_pkgref_.end()) {
-        log(Error, "db error: failed to find deserialized package\n");
+        config.Log(Error, "db error: failed to find deserialized package\n");
         return false;
       }
       pkg = existing->second;
@@ -506,7 +507,8 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
     return true;
   }
   if (r != ObjRef::PKG) {
-    log(Error, "package expected, object-ref value: %u\n", (unsigned)r);
+    config.Log(Error, "package expected, object-ref value: %u\n",
+                (unsigned)r);
     return false;
   }
 
@@ -562,14 +564,15 @@ static bool db_store(DB *db, const string& filename) {
   uniq<SerialOut> sout(SerialOut::Open(db, filename, mkgzip));
 
   if (mkgzip)
-    log(Message, "writing compressed database\n");
+    db->config_.Log(Message, "writing compressed database\n");
   else
-    log(Message, "writing database\n");
+    db->config_.Log(Message, "writing database\n");
 
   SerialOut &out(*sout);
 
   if (!sout || !out.out_) {
-    log(Error, "failed to open file %s for writing\n", filename.c_str());
+    db->config_.Log(Error, "failed to open file %s for writing\n",
+                    filename.c_str());
     return false;
   }
 
@@ -691,9 +694,9 @@ static bool db_read(DB *db, const string& filename) {
   uniq<SerialIn> sin(SerialIn::Open(db, filename, gzip));
 
   if (gzip)
-    log(Message, "reading compressed database\n");
+    db->config_.Log(Message, "reading compressed database\n");
   else
-    log(Message, "reading database\n");
+    db->config_.Log(Message, "reading database\n");
 
   SerialIn &in(*sin);
   if (!sin || !in.in_) {
@@ -704,7 +707,8 @@ static bool db_read(DB *db, const string& filename) {
   Header hdr;
   in >= hdr;
   if (memcmp(hdr.magic, depdb_magic, sizeof(hdr.magic)) != 0) {
-    log(Error, "not a valid database file: %s\n", filename.c_str());
+    db->config_.Log(Error,
+                    "not a valid database file: %s\n", filename.c_str());
     return false;
   }
   in.version_ = hdr.version;
@@ -713,9 +717,10 @@ static bool db_read(DB *db, const string& filename) {
   // supported versions:
   if (hdr.version > DB::CURRENT)
   {
-    log(Error, "cannot read depdb version %u files, (known up to %u)\n",
-        (unsigned)hdr.version,
-        (unsigned)DB::CURRENT);
+    db->config_.Log(Error,
+                    "cannot read depdb version %u files, (known up to %u)\n",
+                    (unsigned)hdr.version,
+                    (unsigned)DB::CURRENT);
     return false;
   }
 
@@ -731,7 +736,7 @@ static bool db_read(DB *db, const string& filename) {
 
   in >= db->name_;
   if (!read_stringlist(in, db->library_path_)) {
-    log(Error, "failed reading library paths\n");
+    db->config_.Log(Error, "failed reading library paths\n");
     return false;
   }
 
@@ -740,34 +745,34 @@ static bool db_read(DB *db, const string& filename) {
   in >= len;
   db->packages_.resize(len);
   for (uint32_t i = 0; i != len; ++i) {
-    if (!read_pkg(in, db->packages_[i], hdr.version, hdr.flags)) {
-      log(Error, "failed reading packages\n");
+    if (!read_pkg(in, db->packages_[i], hdr.version, hdr.flags, db->config_)) {
+      db->config_.Log(Error, "failed reading packages\n");
       return false;
     }
   }
 
   if (!read_objlist(in, db->objects_)) {
-    log(Error, "failed reading object list\n");
+    db->config_.Log(Error, "failed reading object list\n");
     return false;
   }
 
   in >= len;
   rptr<Elf> obj;
   for (uint32_t i = 0; i != len; ++i) {
-    if (!read_obj(in, obj) ||
+    if (!read_obj(in, obj, db->config_) ||
         !read_objset(in, obj->req_found_))
     {
-      log(Error, "failed reading map of found dependencies\n");
+      db->config_.Log(Error, "failed reading map of found dependencies\n");
       return false;
     }
   }
 
   in >= len;
   for (uint32_t i = 0; i != len; ++i) {
-    if (!read_obj(in, obj) ||
+    if (!read_obj(in, obj, db->config_) ||
         !read_stringset(in, obj->req_missing_))
     {
-      log(Error, "failed reading map of missing dependencies\n");
+      db->config_.Log(Error, "failed reading map of missing dependencies\n");
       return false;
     }
   }
@@ -811,7 +816,7 @@ bool DB::Store(const string& filename) {
 
 bool DB::Read(const string& filename) {
   if (!Empty()) {
-    log(Error, "internal usage error: DB::read on a non-empty db!\n");
+    config_.Log(Error, "internal usage error: DB::read on a non-empty db!\n");
     return false;
   }
   return db_read(this, filename);

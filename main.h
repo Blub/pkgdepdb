@@ -33,11 +33,6 @@ namespace pkgdepdb {
 
 typedef unsigned int uint;
 
-enum LogLevel {
-  Debug, Message, Print, Warn, Error
-};
-void log(int level, const char *msg, ...);
-
 struct Elf;
 using ObjectSet   = std::set<rptr<Elf>>;
 using ObjectList  = vec<rptr<Elf>>;

@@ -52,7 +52,7 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
   vec<char> data(size);
   ssize_t rc = archive_read_data(tar, &data[0], size);
   if ((size_t)rc != size) {
-    log(Error, "failed to read .PKGINFO");
+    optconfig.Log(Error, "failed to read .PKGINFO");
     return false;
   }
 
@@ -72,17 +72,17 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
   auto getvalue = [&](const char *entryname, string &out) -> bool {
     skipwhite();
     if (pos >= size) {
-      log(Error, "invalid %s entry in .PKGINFO", entryname);
+      optconfig.Log(Error, "invalid %s entry in .PKGINFO", entryname);
       return false;
     }
     if (str[pos] != '=') {
-      log(Error, "Error in .PKGINFO");
+      optconfig.Log(Error, "Error in .PKGINFO");
       return false;
     }
     ++pos;
     skipwhite();
     if (pos >= size) {
-      log(Error, "invalid %s entry in .PKGINFO", entryname);
+      optconfig.Log(Error, "invalid %s entry in .PKGINFO", entryname);
       return false;
     }
     size_t to = str.find_first_of(" \n\r\t", pos);
@@ -182,18 +182,19 @@ std::tuple<string, string> splitpath(const string& path)
 static bool read_object(Package         *pkg,
                         struct archive  *tar,
                         string         &&filename,
-                        size_t           size)
+                        size_t           size,
+                        const Config    &optconfig)
 {
   vec<char> data;
   data.resize(size);
 
   ssize_t rc = archive_read_data(tar, &data[0], size);
   if (rc < 0) {
-    log(Error, "failed to read from archive stream\n");
+    optconfig.Log(Error, "failed to read from archive stream\n");
     return false;
   }
   else if ((size_t)rc != size) {
-    log(Error, "file was short: %s\n", filename.c_str());
+    optconfig.Log(Error, "file was short: %s\n", filename.c_str());
     return false;
   }
 
@@ -201,7 +202,7 @@ static bool read_object(Package         *pkg,
   rptr<Elf> object(Elf::Open(&data[0], data.size(), &err, filename.c_str()));
   if (!object.get()) {
     if (err)
-      log(Error, "error in: %s\n", filename.c_str());
+      optconfig.Log(Error, "error in: %s\n", filename.c_str());
     return !err;
   }
 
@@ -250,7 +251,7 @@ static bool add_entry(Package              *pkg,
     // it's a symlink...
     const char *link = archive_entry_symlink(entry);
     if (!link) {
-      log(Error, "error reading symlink");
+      optconfig.Log(Error, "error reading symlink");
       return false;
     }
     archive_read_data_skip(tar);
@@ -267,7 +268,7 @@ static bool add_entry(Package              *pkg,
   if (isinfo)
     return read_info(pkg, tar, size, optconfig);
 
-  return read_object(pkg, tar, move(filename), size);
+  return read_object(pkg, tar, move(filename), size, optconfig);
 }
 
 Elf* Package::Find(const string& dirname, const string& basename) const {

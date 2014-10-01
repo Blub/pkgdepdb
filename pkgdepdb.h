@@ -9,6 +9,10 @@ namespace JSONBits {
     DB    = (1<<1);
 }
 
+enum LogLevel {
+  Debug, Message, Print, Warn, Error
+};
+
 struct Config {
   string database_         = "";
   uint   verbosity_        = 0;
@@ -23,8 +27,9 @@ struct Config {
   ~Config();
 
   bool ReadConfig();
+  void Log(uint level, const char *msg, ...) const;
 
-  static bool ParseJSONBit(const char *bit, uint &opt_json);
+  static const char *ParseJSONBit(const char *bit, uint &opt_json);
   static bool str2bool(const string&);
 
  private:

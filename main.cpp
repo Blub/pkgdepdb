@@ -11,48 +11,7 @@
 
 #include "main.h"
 
-static int LogLevel = Message;
 static const char *arg0 = 0;
-
-string   opt_default_db = "";
-unsigned int  opt_verbosity = 0;
-unsigned int  opt_json      = 0;
-unsigned int  opt_max_jobs  = 0;
-bool          opt_quiet     = false;
-bool          opt_package_depends = true;
-bool          opt_package_filelist = false;
-
-enum {
-    RESET = 0,
-    BOLD  = 1,
-    BLACK = 30,
-    RED,
-    GREEN,
-    YELLOW,
-    BLUE,
-    MAGENTA,
-    CYAN,
-    GRAY,
-    WHITE = GRAY
-};
-
-void log(int level, const char *msg, ...) {
-  if (level < LogLevel)
-    return;
-
-  FILE *out = (level <= Message) ? stdout : stderr;
-
-  if (level == Message) {
-    if (isatty(fileno(out))) {
-      fprintf(out, "\033[%d;%dm***\033[0;0m ", BOLD, GREEN);
-    } else
-      fprintf(out, "*** ");
-  }
-  va_list ap;
-  va_start(ap, msg);
-  vfprintf(out, msg, ap);
-  va_end(ap);
-}
 
 static struct option long_opts[] = {
   { "help",    no_argument,       0, 'h' },

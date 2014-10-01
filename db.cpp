@@ -249,22 +249,22 @@ bool DB::InstallPackage(Package* &&pkg) {
 Elf* DB::FindFor(const Elf *obj, const string& needed,
                  const StringList *extrapath) const
 {
-  log(Debug, "dependency of %s/%s   :  %s\n",
-      obj->dirname_.c_str(), obj->basename_.c_str(), needed.c_str());
+  config_.Log(Debug, "dependency of %s/%s   :  %s\n",
+              obj->dirname_.c_str(), obj->basename_.c_str(), needed.c_str());
   for (auto &lib : objects_) {
     if (!obj->CanUse(*lib, strict_linking_)) {
-      log(Debug, "  skipping %s/%s (objclass)\n",
-          lib->dirname_.c_str(), lib->basename_.c_str());
+      config_.Log(Debug, "  skipping %s/%s (objclass)\n",
+                  lib->dirname_.c_str(), lib->basename_.c_str());
       continue;
     }
     if (lib->basename_    != needed) {
-      log(Debug, "  skipping %s/%s (wrong name)\n",
-          lib->dirname_.c_str(), lib->basename_.c_str());
+      config_.Log(Debug, "  skipping %s/%s (wrong name)\n",
+                  lib->dirname_.c_str(), lib->basename_.c_str());
       continue;
     }
     if (!ElfFinds(obj, lib->dirname_, extrapath)) {
-      log(Debug, "  skipping %s/%s (not visible)\n",
-          lib->dirname_.c_str(), lib->basename_.c_str());
+      config_.Log(Debug, "  skipping %s/%s (not visible)\n",
+                  lib->dirname_.c_str(), lib->basename_.c_str());
       continue;
     }
     // same class, same name, and visible...
@@ -1233,15 +1233,15 @@ void DB::CheckIntegrity(const Package             *pkg,
 void DB::CheckIntegrity(const FilterList    &pkg_filters,
                         const ObjFilterList &obj_filters) const
 {
-  log(Message, "Looking for stale object files...\n");
+  config_.Log(Message, "Looking for stale object files...\n");
   for (auto &o : objects_) {
     if (!o->owner_) {
-      log(Message, "  object `%s/%s' has no owning package!\n",
-          o->dirname_.c_str(), o->basename_.c_str());
+      config_.Log(Message, "  object `%s/%s' has no owning package!\n",
+                  o->dirname_.c_str(), o->basename_.c_str());
     }
   }
 
-  log(Message, "Preparing data to check package dependencies...\n");
+  config_.Log(Message, "Preparing data to check package dependencies...\n");
   // we assume here that std::map has better search performance than O(n)
   PkgMap     pkgmap;
   PkgListMap providemap, replacemap;
@@ -1283,7 +1283,7 @@ void DB::CheckIntegrity(const FilterList    &pkg_filters,
   }
 
   // print some stats
-  log(Message,
+  config_.Log(Message,
       "packages: %lu, provides: %lu, replacements: %lu, objects: %lu\n",
       (unsigned long)pkgmap.size(),
       (unsigned long)providemap.size(),
@@ -1309,7 +1309,7 @@ void DB::CheckIntegrity(const FilterList    &pkg_filters,
       printf("\n");
   };
 
-  log(Message, "Checking package dependencies...\n");
+  config_.Log(Message, "Checking package dependencies...\n");
 #ifdef PKGDEPDB_ENABLE_THREADS
   if (config_.max_jobs_ == 1) {
 #endif
@@ -1347,7 +1347,7 @@ void DB::CheckIntegrity(const FilterList    &pkg_filters,
   }
 #endif
 
-  log(Message, "Checking for file conflicts...\n");
+  config_.Log(Message, "Checking for file conflicts...\n");
   std::map<strref,vec<const Package*>> file_counter;
   for (auto &pkg : packages_) {
     for (auto &file : pkg->filelist_) {

@@ -36,16 +36,19 @@ Elf::Elf(const Elf& cp)
 
 template<bool BE,
          typename HDR, typename SecHDR, typename ProgHDR, typename Dyn>
-Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
+Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name,
+             const Config &optconfig)
+{
   uniq<Elf> object(new Elf);
 
-  auto checksize = [size,name](ssize_t ioff, size_t sz, const char *msg)
+  auto checksize =
+    [size,name,&optconfig](ssize_t ioff, size_t sz, const char *msg)
   -> bool {
     size_t off = size_t(ioff);
     if (off + sz > size) {
-      log(Error, "%s: unexpected end of file in ELF file,"
-                 " offset %lu (file size %lu): %s\n",
-          name, (unsigned long)(off + sz), (unsigned long)size, msg);
+      optconfig.Log(Error, "%s: unexpected end of file in ELF file,"
+                           " offset %lu (file size %lu): %s\n",
+                    name, (unsigned long)(off + sz), (unsigned long)size, msg);
       return false;
     }
     return true;
@@ -70,7 +73,8 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
   auto prog_start = reinterpret_cast<const ProgHDR*>(data + e_phoff);
   // TODO: check auxiliary data when phnum == PX_XNUM
   if (phnum == PN_XNUM)
-    log(Error, "%s: TODO: program header count too large, skipping", name);
+    optconfig.Log(Error, "%s: TODO: program header count too large, skipping",
+                  name);
   else {
     if (!checksize((char*)(prog_start + phnum-1) - data, sizeof(*prog_start),
                    "program header array"))
@@ -109,14 +113,15 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
       return Eswap<BE>(hdr->sh_type) == SHT_DYNAMIC;
     });
   if (!dynhdr) {
-    log(Debug, "%s: not a dynamic executable, no .dynamic section found\n",
-        name);
+    optconfig.Log(Debug,
+                  "%s: not a dynamic executable, no .dynamic section found\n",
+                  name);
     *waserror = false;
     return 0;
   }
 
   if (Eswap<BE>(dynhdr->sh_entsize) != sizeof(Dyn)) {
-    log(Error, "%s: invalid entsize for dynamic section\n", name);
+    optconfig.Log(Error, "%s: invalid entsize for dynamic section\n", name);
     return 0;
   }
 
@@ -142,11 +147,11 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
       strsz  = Eswap<BE>(dyn->d_un.d_val);
   }
   if (!dynstr) {
-    log(Error, "%s: No DT_STRTAB\n", name);
+    optconfig.Log(Error, "%s: No DT_STRTAB\n", name);
     return 0;
   }
   if (!strsz) {
-    log(Error, "%s: No DT_STRSZ\n", name);
+    optconfig.Log(Error, "%s: No DT_STRSZ\n", name);
     return 0;
   }
 
@@ -156,7 +161,7 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
            Eswap<BE>(hdr->sh_addr) == Eswap<BE>(dynstr->d_un.d_ptr);
   });
   if (!dynstrsec) {
-    log(Error, "%s: Found no .dynstr section\n", name);
+    optconfig.Log(Error, "%s: Found no .dynstr section\n", name);
     return 0;
   }
 
@@ -167,7 +172,7 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
   auto get_string = [=](size_t off) -> const char* {
     // range check
     if (off >= strsz) {
-      log(Error, "%s: out of bounds string entry\n", name);
+      optconfig.Log(Error, "%s: out of bounds string entry\n", name);
       return 0;
     }
     const char *str = data + dynstr_at + off;
@@ -176,7 +181,7 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
     while (*str && str != end) ++str;
     if (*str && str == end) {
       // missing terminating nul byte
-      log(Error, "%s: unterminated string in string table\n", name);
+      optconfig.Log(Error, "%s: unterminated string in string table\n", name);
       return 0;
     }
     return at;
@@ -223,7 +228,8 @@ LoadElf64LE = &LoadElf<false, Elf64_Ehdr, Elf64_Shdr, Elf64_Phdr, Elf64_Dyn>;
 static const auto
 LoadElf64BE = &LoadElf<true,  Elf64_Ehdr, Elf64_Shdr, Elf64_Phdr, Elf64_Dyn>;
 
-Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
+Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name,
+               const Config &optconfig)
 {
   *waserror = false;
   unsigned char *elf_ident = (unsigned char*)data;
@@ -232,7 +238,7 @@ Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
       elf_ident[EI_MAG2] != ELFMAG2 ||
       elf_ident[EI_MAG3] != ELFMAG3)
   {
-    log(Debug, "%s: not an ELF file\n", name);
+    optconfig.Log(Debug, "%s: not an ELF file\n", name);
     return 0;
   }
 
@@ -243,17 +249,18 @@ Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
   unsigned char ei_osabi   = elf_ident[EI_OSABI];
 
   if (ei_version != EV_CURRENT) {
-    log(Error, "%s: invalid ELF version: %u\n", name, (unsigned)ei_version);
+    optconfig.Log(Error, "%s: invalid ELF version: %u\n",
+                  name, (unsigned)ei_version);
     return 0;
   }
 
   if (ei_data != ELFDATA2LSB &&
       ei_data != ELFDATA2MSB)
   {
-    log(Error,
-        "%s: unrecognized ELF data type: %u"
-        " (neither ELFDATA2LSB nor ELFDATA2MSB)\n",
-        name, (unsigned)ei_data);
+    optconfig.Log(Error,
+                  "%s: unrecognized ELF data type: %u"
+                  " (neither ELFDATA2LSB nor ELFDATA2MSB)\n",
+                  name, (unsigned)ei_data);
     return 0;
   }
 
@@ -261,20 +268,21 @@ Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
       ei_osabi != ELFOSABI_LINUX   &&
       ei_osabi != ELFOSABI_NONE)
   {
-    log(Warn, "%s: osabi not recognized: %u\n", name, (unsigned)ei_osabi);
+    optconfig.Log(Warn, "%s: osabi not recognized: %u\n",
+                  name, (unsigned)ei_osabi);
   }
 
   Elf *e = 0;
   if (ei_class == ELFCLASS32) {
     if (ei_data == ELFDATA2LSB)
-      e = LoadElf32LE(data, size, waserror, name);
+      e = LoadElf32LE(data, size, waserror, name, optconfig);
     else
-      e = LoadElf32BE(data, size, waserror, name);
+      e = LoadElf32BE(data, size, waserror, name, optconfig);
   } else if (ei_class == ELFCLASS64) {
     if (ei_data == ELFDATA2LSB)
-      e = LoadElf64LE(data, size, waserror, name);
+      e = LoadElf64LE(data, size, waserror, name, optconfig);
     else
-      e = LoadElf64BE(data, size, waserror, name);
+      e = LoadElf64BE(data, size, waserror, name, optconfig);
   }
   if (!e)
     return 0;
