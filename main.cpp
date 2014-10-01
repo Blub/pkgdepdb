@@ -201,7 +201,7 @@ static void help [[noreturn]] (int x) {
 }
 
 static void version [[noreturn]] (int x) {
-  printf("pkgdepdb " FULL_VERSION_STRING "\n");
+  printf("pkgdepdb " PKGDEPDB_VERSION_STRING "\n");
   exit(x);
 }
 

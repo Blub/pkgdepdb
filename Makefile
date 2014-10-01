@@ -11,15 +11,11 @@ PACKAGE_NAME := pkgdepdb
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
 VERSION_PATCH := 9dev
+GIT_INFO :=
 
 CXX ?= clang++
 CXXFLAGS += -std=c++11
 CXXFLAGS += -Wall -Wextra -Werror -Wno-unknown-pragmas -fno-rtti
-CPPFLAGS += -DPKGDEPDB_V_MAJ=$(VERSION_MAJOR)
-CPPFLAGS += -DPKGDEPDB_V_MIN=$(VERSION_MINOR)
-CPPFLAGS += -DPKGDEPDB_V_PAT=$(VERSION_PATCH)
-
-CPPFLAGS += -DPKGDEPDB_ETC="\"$(SYSCONFDIR)\""
 
 LIBARCHIVE_CFLAGS =
 LIBARCHIVE_LIBS   = -larchive
@@ -45,6 +41,15 @@ all:      $(BINARY)
 static:   $(STATIC_BINARY)
 man:      $(MANPAGES)
 manpages: $(MANPAGES)
+
+main.h: config.h
+config.h: config.h.in Makefile
+	sed -e 's/@@V_MAJOR@@/$(VERSION_MAJOR)/g' \
+	    -e 's/@@V_MINOR@@/$(VERSION_MINOR)/g' \
+	    -e 's/@@V_PATCH@@/$(VERSION_PATCH)/g' \
+	    -e 's|@@ETC@@|"$(SYSCONFDIR)"|g' \
+	    -e 's/@@GIT_INFO@@/$(GIT_INFO)/g' \
+	    config.h.in > config.h
 
 .cpp.o:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
