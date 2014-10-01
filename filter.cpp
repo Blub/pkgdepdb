@@ -22,45 +22,45 @@ Match::~Match() {}
 
 class ExactMatch : public Match {
  public:
-  std::string text_;
-  ExactMatch(std::string&&);
-  bool operator()(const std::string&) const override;
+  string text_;
+  ExactMatch(string&&);
+  bool operator()(const string&) const override;
 };
 
 class GlobMatch : public Match {
  public:
-  std::string glob_;
-  GlobMatch(std::string&&);
-  bool operator()(const std::string&) const override;
+  string glob_;
+  GlobMatch(string&&);
+  bool operator()(const string&) const override;
 };
 
-ExactMatch::ExactMatch(std::string &&text)
+ExactMatch::ExactMatch(string &&text)
 : text_(move(text)) {}
 
-GlobMatch::GlobMatch(std::string &&glob)
+GlobMatch::GlobMatch(string &&glob)
 : glob_(move(glob)) {}
 
-rptr<Match> Match::CreateExact(std::string &&text) {
+rptr<Match> Match::CreateExact(string &&text) {
   return new ExactMatch(move(text));
 }
 
-rptr<Match> Match::CreateGlob (std::string &&text) {
+rptr<Match> Match::CreateGlob (string &&text) {
   return new GlobMatch(move(text));
 }
 
 #ifdef WITH_REGEX
 class RegexMatch : public Match {
  public:
-  std::string pattern_;
-  bool        icase_;
-  regex_t     regex_;
-  bool        compiled_;
-  RegexMatch(std::string&&, bool icase);
+  string  pattern_;
+  bool    icase_;
+  regex_t regex_;
+  bool    compiled_;
+  RegexMatch(string&&, bool icase);
   ~RegexMatch();
-  bool operator()(const std::string&) const override;
+  bool operator()(const string&) const override;
 };
 
-RegexMatch::RegexMatch(std::string &&pattern, bool icase)
+RegexMatch::RegexMatch(string &&pattern, bool icase)
 : pattern_ (move(pattern)),
   icase_   (icase),
   compiled_(false)
@@ -85,7 +85,7 @@ RegexMatch::~RegexMatch() {
   regfree(&regex_);
 }
 
-rptr<Match> Match::CreateRegex(std::string &&text, bool icase) {
+rptr<Match> Match::CreateRegex(string &&text, bool icase) {
   auto match = mk_rptr<RegexMatch>(move(text), icase);
   if (!match->compiled_)
     return nullptr;
@@ -117,12 +117,12 @@ StringFilter::~StringFilter()
 // general purpose package filter
 class PkgFilt : public PackageFilter {
  public:
-  std::function<bool(const DB&, const Package&)> func;
+  function<bool(const DB&, const Package&)> func;
 
-  PkgFilt(bool neg, std::function<bool(const DB&, const Package&)> &&fn)
+  PkgFilt(bool neg, function<bool(const DB&, const Package&)> &&fn)
   : PackageFilter(neg), func(move(fn)) {}
 
-  PkgFilt(bool neg, std::function<bool(const Package&)> &&fn)
+  PkgFilt(bool neg, function<bool(const Package&)> &&fn)
   : PkgFilt(neg, [fn] (const DB &db, const Package &pkg) -> bool {
     (void)db;
     return fn(pkg);
@@ -136,9 +136,9 @@ class PkgFilt : public PackageFilter {
 // general purpose object filter
 class ObjFilt : public ObjectFilter {
  public:
-  std::function<bool(const Elf&)> func;
+  function<bool(const Elf&)> func;
 
-  ObjFilt(bool neg, std::function<bool(const Elf&)> &&fn)
+  ObjFilt(bool neg, function<bool(const Elf&)> &&fn)
   : ObjectFilter(neg), func(move(fn)) {}
 
   virtual bool visible(const Elf &elf) const {
@@ -149,20 +149,20 @@ class ObjFilt : public ObjectFilter {
 // general purpose string filter
 class StrFilt : public StringFilter {
  public:
-  std::function<bool(const std::string&)> func;
+  function<bool(const string&)> func;
 
-  StrFilt(bool neg, std::function<bool(const std::string&)> &&fn)
+  StrFilt(bool neg, function<bool(const string&)> &&fn)
   : StringFilter(neg), func(move(fn)) {}
 
-  virtual bool visible(const std::string &str) const {
+  virtual bool visible(const string &str) const {
     return func(str);
   }
 };
 
 // Utility functions:
 
-static bool match_glob(const std::string &glob, size_t g,
-                       const std::string &str,  size_t s)
+static bool match_glob(const string &glob, size_t g,
+                       const string &str,  size_t s)
 // tail recursive
 {
   size_t from, to;
@@ -339,7 +339,7 @@ unique_ptr<ObjectFilter> ObjectFilter::name(rptr<Match> matcher, bool neg) {
 
 unique_ptr<ObjectFilter> ObjectFilter::path(rptr<Match> matcher, bool neg) {
   return mk_unique<ObjFilt>(neg, [matcher](const Elf &elf) {
-    std::string p(elf.dirname_); p.append(1, '/'); p.append(elf.basename_);
+    string p(elf.dirname_); p.append(1, '/'); p.append(elf.basename_);
     return (*matcher)(p);
   });
 }
@@ -373,21 +373,21 @@ unique_ptr<ObjectFilter> ObjectFilter::interp(rptr<Match> matcher, bool neg) {
 
 // string filter
 unique_ptr<StringFilter> StringFilter::filter(rptr<Match> matcher, bool neg) {
-  return mk_unique<StrFilt>(neg, [matcher](const std::string &str) {
+  return mk_unique<StrFilt>(neg, [matcher](const string &str) {
     return (*matcher)(str);
   });
 }
 
-bool ExactMatch::operator()(const std::string &other) const {
+bool ExactMatch::operator()(const string &other) const {
   return text_ == other;
 }
 
-bool GlobMatch::operator()(const std::string &other) const {
+bool GlobMatch::operator()(const string &other) const {
   return match_glob(glob_, 0, other, 0);
 }
 
 #ifdef WITH_REGEX
-bool RegexMatch::operator()(const std::string &other) const {
+bool RegexMatch::operator()(const string &other) const {
   regmatch_t rm;
   return 0 == regexec(&regex_, other.c_str(), 0, &rm, 0);
 }
@@ -399,7 +399,7 @@ bool RegexMatch::operator()(const std::string &other) const {
 #include <iostream>
 using filter::match_glob;
 int main() {
-  std::string text("This is a stupid text.");
+  string text("This is a stupid text.");
   int r=0;
 
   auto tryglob = [&](const char *c, bool expect) {

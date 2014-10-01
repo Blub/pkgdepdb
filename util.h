@@ -1,11 +1,7 @@
 #ifndef PKGDEPDB_UTIL_H__
 #define PKGDEPDB_UTIL_H__
 
-#include <string>
-
-using std::unique_ptr;
-using std::move;
-using std::vector;
+namespace pkgdepdb {
 
 class strref {
 public:
@@ -114,8 +110,8 @@ public:
 };
 
 template<class T, class... Args>
-inline unique_ptr<T> mk_unique(Args&&... args) {
-  return move(unique_ptr<T>(new T(std::forward<Args>(args)...)));
+inline uniq<T> mk_unique(Args&&... args) {
+  return move(uniq<T>(new T(std::forward<Args>(args)...)));
 }
 
 template<class T, class... Args>
@@ -145,6 +141,8 @@ inline bool all(const CONT &lst, const Args&... args) {
   return true;
 }
 
-} // namespace util
+} // ::pkgdepdb::util
+
+} // ::pkgdepdb
 
 #endif

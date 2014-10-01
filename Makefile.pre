@@ -9,3 +9,5 @@ CLANG_FLAGS := -Weverything \
                -Wno-sign-conversion \
                -Werror
 
+ENABLE_THREADS := undef
+ENABLE_ALPM := undef

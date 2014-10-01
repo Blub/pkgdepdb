@@ -1,8 +1,15 @@
 #include <stdio.h>
 
 #include "main.h"
+#include "pkgdepdb.h"
+#include "elf.h"
+#include "package.h"
+#include "db.h"
+#include "filter.h"
 
-static void json_in_quote(FILE *out, const std::string& str) {
+namespace pkgdepdb {
+
+static void json_in_quote(FILE *out, const string& str) {
   for (size_t i = 0; i != str.length(); ++i) {
     switch (str[i]) {
       case '"':  fputc('\\', out); fputc('"', out); break;
@@ -19,7 +26,7 @@ static void json_in_quote(FILE *out, const std::string& str) {
   }
 }
 
-static void json_quote(FILE *out, const std::string& str) {
+static void json_quote(FILE *out, const string& str) {
   fprintf(out, "\"");
   json_in_quote(out, str);
   fprintf(out, "\"");
@@ -64,7 +71,7 @@ void DB::ShowPackages_json(bool                filter_broken,
     json_quote(stdout, pkg->name_);
     printf(",\n\t\t\t\"version\": ");
     json_quote(stdout, pkg->version_);
-    if (opt_verbosity >= 1) {
+    if (config_.verbosity_ >= 1) {
       if (pkg->groups_.size()) {
         printf(",\n\t\t\t\"groups\": [");
         const char *sep = "\n\t\t\t\t";
@@ -100,7 +107,7 @@ void DB::ShowPackages_json(bool                filter_broken,
             continue;
           if (!IsBroken(obj))
             continue;
-          if (opt_verbosity >= 2) {
+          if (config_.verbosity_ >= 2) {
             printf("%s{", sep); sep = ",\n\t\t\t\t";
             printf("\n\t\t\t\t\t\"object\": ");
             print_objname(obj);
@@ -246,7 +253,7 @@ void DB::ShowObjects_json(const FilterList    &pkg_filters,
       continue;
     printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
     print_objname(obj);
-    if (opt_verbosity < 1) {
+    if (config_.verbosity_ < 1) {
       printf("\n\t}");
       continue;
     }
@@ -267,7 +274,7 @@ void DB::ShowObjects_json(const FilterList    &pkg_filters,
       }
       printf(",\n\t\t\"interpreter\": ");
       json_quote(stdout, obj->interpreter_);
-      if (opt_verbosity < 2) {
+      if (config_.verbosity_ < 2) {
         printf("\n\t}");
         break;
       }
@@ -322,7 +329,7 @@ void DB::ShowFilelist_json(const FilterList    &pkg_filters,
   for (auto &pkg : packages_) {
     if (!util::all(pkg_filters, *this, *pkg))
       continue;
-    if (!opt_quiet) {
+    if (!config_.quiet_) {
       printf("%s", mainsep); mainsep = ",\n\t";
       json_quote(stdout, pkg->name_);
       printf(": [");
@@ -332,7 +339,7 @@ void DB::ShowFilelist_json(const FilterList    &pkg_filters,
     for (auto &file : pkg->filelist_) {
       if (!util::all(str_filters, file))
         continue;
-      if (!opt_quiet) {
+      if (!config_.quiet_) {
         printf("%s", sep); sep = ",\n\t\t";
         json_quote(stdout, file);
       } else {
@@ -340,7 +347,7 @@ void DB::ShowFilelist_json(const FilterList    &pkg_filters,
         json_quote(stdout, file);
       }
     }
-    if (!opt_quiet)
+    if (!config_.quiet_)
       printf("\n\t]");
   }
   printf("\n] }\n");
@@ -478,7 +485,7 @@ static void json_obj_missing(FILE *out, const Elf *obj,
 }
 #endif
 
-bool db_store_json(DB *db, const std::string& filename) {
+bool db_store_json(DB *db, const string& filename) {
   FILE *out = fopen(filename.c_str(), "wb");
   if (!out) {
     log(Error, "failed to open file `%s' for reading\n", filename.c_str());
@@ -543,3 +550,5 @@ bool db_store_json(DB *db, const std::string& filename) {
   fprintf(out, "\n}\n");
   return true;
 }
+
+} // ::pkgdepdb

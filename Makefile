@@ -43,12 +43,14 @@ man:      $(MANPAGES)
 manpages: $(MANPAGES)
 
 main.h: config.h
-config.h: config.h.in Makefile
+config.h: config.h.in Makefile Makefile.pre BSDmakefile GNUmakefile
 	sed -e 's/@@V_MAJOR@@/$(VERSION_MAJOR)/g' \
 	    -e 's/@@V_MINOR@@/$(VERSION_MINOR)/g' \
 	    -e 's/@@V_PATCH@@/$(VERSION_PATCH)/g' \
 	    -e 's|@@ETC@@|"$(SYSCONFDIR)"|g' \
 	    -e 's/@@GIT_INFO@@/$(GIT_INFO)/g' \
+	    -e 's/@@ENABLE_THREADS@@/$(ENABLE_THREADS)/g' \
+	    -e 's/@@ENABLE_ALPM@@/$(ENABLE_ALPM)/g' \
 	    config.h.in > config.h
 
 .cpp.o:

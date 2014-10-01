@@ -10,7 +10,13 @@
 #include <utility>
 
 #include "main.h"
+#include "pkgdepdb.h"
+#include "elf.h"
+#include "package.h"
+#include "db.h"
 #include "db_format.h"
+
+namespace pkgdepdb {
 
 // version
 uint16_t
@@ -60,7 +66,7 @@ class SerialFile : public SerialStream {
   size_t ppos_,
          gpos_;
 
-  SerialFile(const std::string& file, InOut dir)
+  SerialFile(const string& file, InOut dir)
   : ppos_(0), gpos_(0)
   {
     int locktype;
@@ -115,7 +121,7 @@ public:
   gzFile out_;
   bool   err_;
 
-  SerialGZ(const std::string& file, InOut dir) {
+  SerialGZ(const string& file, InOut dir) {
     int fd;
     int locktype;
     out_ = 0;
@@ -176,7 +182,7 @@ SerialIn::SerialIn(DB *db, SerialStream *in)
 : db_(db), in_(*in), in_owning_(in), ver8_refs_(false)
 { }
 
-SerialIn* SerialIn::Open(DB *db, const std::string& file, bool gz) {
+SerialIn* SerialIn::Open(DB *db, const string& file, bool gz) {
   SerialStream*
     in = gz ? (SerialStream*)new SerialGZ  (file, SerialStream::in)
             : (SerialStream*)new SerialFile(file, SerialStream::in);
@@ -196,7 +202,7 @@ SerialOut::SerialOut(DB *db, SerialStream *out)
 : db_(db), out_(*out), out_owning_(out)
 { }
 
-SerialOut* SerialOut::Open(DB *db, const std::string& file, bool gz)
+SerialOut* SerialOut::Open(DB *db, const string& file, bool gz)
 {
   SerialStream*
     out = gz ? (SerialStream*)new SerialGZ  (file, SerialStream::out)
@@ -289,7 +295,7 @@ bool read_objset(SerialIn &in, ObjectSet& list) {
   return in.in_;
 }
 
-bool write_stringlist(SerialOut &out, const std::vector<std::string> &list) {
+bool write_stringlist(SerialOut &out, const vec<string> &list) {
   auto len = static_cast<uint32_t>(list.size());
   out.out_.Write((const char*)&len, sizeof(len));
   for (auto &s : list)
@@ -297,14 +303,14 @@ bool write_stringlist(SerialOut &out, const std::vector<std::string> &list) {
   return out.out_;
 }
 
-bool read_stringlist(SerialIn &in, std::vector<std::string> &list) {
-  static std::string s;
+bool read_stringlist(SerialIn &in, vec<string> &list) {
+  static string s;
   uint32_t len;
   in >= len;
   list.reserve(len);
   for (uint32_t i = 0; i != len; ++i) {
     in >= s;
-    list.emplace_back(std::move(s));
+    list.emplace_back(move(s));
   }
   return in.in_;
 }
@@ -330,9 +336,9 @@ bool read_stringset(SerialIn &in, StringSet &list) {
   in >= len;
   StringSet::iterator hint = list.end();
   for (uint32_t i = 0; i != len; ++i) {
-    std::string str;
+    string str;
     in >= str;
-    hint = list.emplace_hint(hint, std::move(str));
+    hint = list.emplace_hint(hint, move(str));
   }
 #endif
   return in.in_;
@@ -545,15 +551,15 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
   return true;
 }
 
-static inline bool ends_with_gz(const std::string& str) {
+static inline bool ends_with_gz(const string& str) {
   size_t pos = str.find_last_of('.');
   return (pos == str.length()-3 &&
           str.compare(pos, 3, ".gz") == 0);
 }
 
-static bool db_store(DB *db, const std::string& filename) {
+static bool db_store(DB *db, const string& filename) {
   bool mkgzip = ends_with_gz(filename);
-  std::unique_ptr<SerialOut> sout(SerialOut::Open(db, filename, mkgzip));
+  uniq<SerialOut> sout(SerialOut::Open(db, filename, mkgzip));
 
   if (mkgzip)
     log(Message, "writing compressed database\n");
@@ -680,9 +686,9 @@ static bool db_store(DB *db, const std::string& filename) {
   return out.out_;
 }
 
-static bool db_read(DB *db, const std::string& filename) {
+static bool db_read(DB *db, const string& filename) {
   bool gzip = ends_with_gz(filename);
-  std::unique_ptr<SerialIn> sin(SerialIn::Open(db, filename, gzip));
+  uniq<SerialIn> sin(SerialIn::Open(db, filename, gzip));
 
   if (gzip)
     log(Message, "reading compressed database\n");
@@ -781,7 +787,7 @@ static bool db_read(DB *db, const std::string& filename) {
   if (hdr.flags & DBFlags::PackageLDPath) {
     in >= len;
     for (uint32_t i = 0; i != len; ++i) {
-      std::string pkg;
+      string pkg;
       in >= pkg;
       if (!read_stringlist(in, db->package_library_path_[pkg]))
         return false;
@@ -799,14 +805,16 @@ static bool db_read(DB *db, const std::string& filename) {
 
 // There we go:
 
-bool DB::Store(const std::string& filename) {
+bool DB::Store(const string& filename) {
   return db_store(this, filename);
 }
 
-bool DB::Read(const std::string& filename) {
+bool DB::Read(const string& filename) {
   if (!Empty()) {
     log(Error, "internal usage error: DB::read on a non-empty db!\n");
     return false;
   }
   return db_read(this, filename);
 }
+
+} // ::pkgdepdb

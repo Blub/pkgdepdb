@@ -4,7 +4,11 @@
 #include <elf.h>
 
 #include "main.h"
+#include "pkgdepdb.h"
 #include "endian.h"
+#include "elf.h"
+
+namespace pkgdepdb {
 
 Elf::Elf()
 : ei_class_   (0),
@@ -33,7 +37,7 @@ Elf::Elf(const Elf& cp)
 template<bool BE,
          typename HDR, typename SecHDR, typename ProgHDR, typename Dyn>
 Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
-  std::unique_ptr<Elf> object(new Elf);
+  uniq<Elf> object(new Elf);
 
   auto checksize = [size,name](ssize_t ioff, size_t sz, const char *msg)
   -> bool {
@@ -91,7 +95,7 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name) {
   {
     return 0;
   }
-  auto findsec = [=](std::function<bool(const SecHDR*)> cond) -> const SecHDR* {
+  auto findsec = [=](function<bool(const SecHDR*)> cond) -> const SecHDR* {
     for (size_t i = 0; i != shnum; ++i) {
       auto s = sec_start + i;
       if (cond(s))
@@ -280,11 +284,11 @@ Elf* Elf::Open(const char *data, size_t size, bool *waserror, const char *name)
   return e;
 }
 
-void fixpath(std::string& path) {
+void fixpath(string& path) {
   size_t at = 0;
   do {
     at = path.find("//", at);
-    if (at == std::string::npos)
+    if (at == string::npos)
       break;
     path.erase(at, 1);
   } while(true);
@@ -292,7 +296,7 @@ void fixpath(std::string& path) {
   at = 0;
   do {
     at = path.find("/./", at);
-    if (at == std::string::npos)
+    if (at == string::npos)
       break;
     path.erase(at, 2);
   } while(true);
@@ -309,19 +313,19 @@ void fixpath(std::string& path) {
   at = 0;
   do {
     at = path.find("/../", at);
-    if (at == std::string::npos)
+    if (at == string::npos)
       break;
     if (!at) { // beginning
-      path = std::move(path.substr(3));
+      path = move(path.substr(3));
       continue;
     }
     if (at + 4 == path.length()) { //end
-      path.erase(at, std::string::npos);
+      path.erase(at, string::npos);
       continue;
     }
     //otherwise cut out the previous path:
     size_t prev = path.rfind('/', at-1);
-    if (prev == std::string::npos) {
+    if (prev == string::npos) {
       // no previous dir
       // eg with ../../ so just skip this path
       ++at;
@@ -332,34 +336,34 @@ void fixpath(std::string& path) {
 
   while (path.length() > 1 && path[path.length()-1] == '/') {
     at = path.find_last_not_of('/');
-    if (at > 0 && at != std::string::npos)
+    if (at > 0 && at != string::npos)
       path.erase(at+1);
   }
 }
 
-void fixpathlist(std::string& list) {
-  std::string old(std::move(list));
+void fixpathlist(string& list) {
+  string old(move(list));
   list = "";
   size_t at = 0;
   size_t to = old.find_first_of(':', 0);
-  while (to != std::string::npos) {
-    std::string sub(old.substr(at, to-at));
+  while (to != string::npos) {
+    string sub(old.substr(at, to-at));
     fixpath(sub);
-    list.append(std::move(sub));
+    list.append(move(sub));
     list.append(1, ':');
     at = to+1;
     to = old.find_first_of(':', at);
   }
-  std::string sub(old.substr(at, to-at));
+  string sub(old.substr(at, to-at));
   fixpath(sub);
-  list.append(std::move(sub));
+  list.append(move(sub));
 }
 
-static void replace_origin(std::string& path, const std::string& origin) {
+static void replace_origin(string& path, const string& origin) {
   size_t at = 0;
   do {
     at = path.find("$ORIGIN", at);
-    if (at == std::string::npos)
+    if (at == string::npos)
       break;
     path.replace(at, 7, origin);
     // skip this portion
@@ -368,7 +372,7 @@ static void replace_origin(std::string& path, const std::string& origin) {
   fixpathlist(path);
 }
 
-void Elf::SolvePaths(const std::string& origin) {
+void Elf::SolvePaths(const string& origin) {
   if (rpath_set_)
     replace_origin(rpath_, origin);
   if (runpath_set_)
@@ -426,3 +430,5 @@ bool Elf::CanUse(const Elf &other, bool strict) const {
   return (ei_osabi_ == other.ei_osabi_) ||
          (!strict && (!ei_osabi_ || !other.ei_osabi_));
 }
+
+} // ::pkgdepdb

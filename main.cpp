@@ -11,12 +11,10 @@
 
 #include "main.h"
 
-std::string strref::empty("");
-
 static int LogLevel = Message;
 static const char *arg0 = 0;
 
-std::string   opt_default_db = "";
+string   opt_default_db = "";
 unsigned int  opt_verbosity = 0;
 unsigned int  opt_json      = 0;
 unsigned int  opt_max_jobs  = 0;
@@ -120,7 +118,7 @@ static void help [[noreturn]] (int x) {
     "  --depends=<YES|NO> enable or disable package dependencies\n"
     "  --files=<YES|NO>   whether to store all non-object files of packages\n"
     "  -J, --json=PART    activate json mode for parts of the program\n"
-#ifdef ENABLE_THREADS
+#ifdef PKGDEPDB_ENABLE_THREADS
     "  -j N               limit to at most N threads\n"
 #endif
                );
@@ -210,7 +208,7 @@ class ArgArg {
  public:
   bool        on_;
   bool       *mode_;
-  std::vector<std::string> arg_;
+  vec<string> arg_;
 
   ArgArg(bool *om) {
     mode_ = om;
@@ -230,8 +228,8 @@ class ArgArg {
   }
 };
 
-static bool parse_rule(DB *db, const std::string& rule);
-static bool parse_filter(const std::string &filter,
+static bool parse_rule(DB *db, const string& rule);
+static bool parse_filter(const string &filter,
                          FilterList&,
                          ObjFilterList&,
                          StrFilterList&);
@@ -242,29 +240,29 @@ int main(int argc, char **argv) {
   if (argc < 2)
     help(1);
 
-  std::string dbfile,
-              newname;
-  bool        do_install    = false;
-  bool        do_delete     = false;
-  bool        do_wipe       = false;
-  bool        do_wipefiles  = false;
-  bool        has_db        = false;
-  bool        modified      = false;
-  bool        show_info     = false;
-  bool        show_list     = false;
-  bool        show_missing  = false;
-  bool        show_found    = false;
-  bool        show_packages = false;
-  bool        show_filelist = false;
-  bool        do_rename     = false;
-  bool        do_relink     = false;
-  bool        do_fixpaths   = false;
-  bool        dryrun        = false;
-  bool        filter_broken = false;
-  bool        filter_nempty = false;
-  bool        do_integrity  = false;
+  string dbfile,
+         newname;
+  bool   do_install    = false;
+  bool   do_delete     = false;
+  bool   do_wipe       = false;
+  bool   do_wipefiles  = false;
+  bool   has_db        = false;
+  bool   modified      = false;
+  bool   show_info     = false;
+  bool   show_list     = false;
+  bool   show_missing  = false;
+  bool   show_found    = false;
+  bool   show_packages = false;
+  bool   show_filelist = false;
+  bool   do_rename     = false;
+  bool   do_relink     = false;
+  bool   do_fixpaths   = false;
+  bool   dryrun        = false;
+  bool   filter_broken = false;
+  bool   filter_nempty = false;
+  bool   do_integrity  = false;
 
-  bool        oldmode       = true;
+  bool   oldmode       = true;
 
   // library path options
   ArgArg ld_append (&oldmode),
@@ -272,7 +270,7 @@ int main(int argc, char **argv) {
          ld_delete (&oldmode),
          ld_clear  (&oldmode),
          rulemod   (&oldmode);
-  std::vector<std::tuple<std::string,size_t>> ld_insert;
+  vec<std::tuple<string,size_t>> ld_insert;
 
   FilterList pkg_filters;
   ObjFilterList obj_filters;
@@ -364,19 +362,19 @@ int main(int argc, char **argv) {
       case -'I':
       {
         oldmode = false;
-        std::string str(optarg);
+        string str(optarg);
         if (!isdigit(str[0])) {
           log(Error, "--ld-insert format wrong: has to start with a number\n");
           help(1);
           return 1;
         }
         size_t colon = str.find_first_of(':');
-        if (std::string::npos == colon) {
+        if (string::npos == colon) {
           log(Error, "--ld-insert format wrong, no colon found\n");
           help(1);
           return 1;
         }
-        ld_insert.push_back(std::make_tuple(std::move(str.substr(colon+1)),
+        ld_insert.push_back(std::make_tuple(move(str.substr(colon+1)),
                                             strtoul(str.c_str(), nullptr, 0)));
         break;
       }
@@ -429,7 +427,7 @@ int main(int argc, char **argv) {
     help(1);
   }
 
-  std::vector<Package*> packages;
+  vec<Package*> packages;
 
   if (oldmode) {
     // non-database mode!
@@ -446,7 +444,7 @@ int main(int argc, char **argv) {
   if (!has_db) {
     if (opt_default_db.length()) {
       has_db = true;
-      dbfile = std::move(opt_default_db);
+      dbfile = move(opt_default_db);
     }
   }
 
@@ -480,7 +478,7 @@ int main(int argc, char **argv) {
       log(Message, "packages loaded...\n");
   }
 
-  std::unique_ptr<DB> db(new DB);
+  uniq<DB> db(new DB);
   if (has_db) {
     if (!db->Read(dbfile)) {
       log(Error, "failed to read database\n");
@@ -530,7 +528,7 @@ int main(int argc, char **argv) {
     log(Message, "installing packages\n");
     for (auto pkg : packages) {
       modified = true;
-      if (!db->InstallPackage(std::move(pkg))) {
+      if (!db->InstallPackage(move(pkg))) {
         printf("failed to commit package %s to database\n",
                pkg->name_.c_str());
         break;
@@ -590,11 +588,11 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-static bool try_rule(const std::string                      &rule,
-                     const std::string                      &what,
-                     const char                             *usage,
-                     bool                                   *ret,
-                     std::function<bool(const std::string&)> fn)
+static bool try_rule(const string                 &rule,
+                     const string                 &what,
+                     const char                   *usage,
+                     bool                         *ret,
+                     function<bool(const string&)> fn)
 {
   if (rule.compare(0, what.length(), what) == 0) {
     if (rule.length() < what.length()+1) {
@@ -609,59 +607,59 @@ static bool try_rule(const std::string                      &rule,
   return false;
 }
 
-static bool parse_rule(DB *db, const std::string& rule) {
+static bool parse_rule(DB *db, const string& rule) {
   bool ret = false;
 
   if (try_rule(rule, "ignore:", "FILENAME", &ret,
-    [db](const std::string &cmd) {
+    [db](const string &cmd) {
       return db->IgnoreFile_Add(cmd);
     })
     || try_rule(rule, "strict:", "BOOL", &ret,
-    [db](const std::string &cmd) {
+    [db](const string &cmd) {
       bool old = db->strict_linking_;
       db->strict_linking_ = CfgStrToBool(cmd);
       return old == db->strict_linking_;
     })
     || try_rule(rule, "unignore:", "FILENAME", &ret,
-    [db](const std::string &cmd) {
+    [db](const string &cmd) {
       return db->IgnoreFile_Delete(cmd);
     })
     || try_rule(rule, "unignore-id:", "ID", &ret,
-    [db](const std::string &cmd) {
+    [db](const string &cmd) {
       return db->IgnoreFile_Delete(strtoul(cmd.c_str(), nullptr, 0));
     })
     || try_rule(rule, "assume-found:", "LIBNAME", &ret,
-    [db](const std::string &cmd) {
+    [db](const string &cmd) {
       return db->AssumeFound_Add(cmd);
     })
     || try_rule(rule, "unassume-found:", "LIBNAME", &ret,
-    [db](const std::string &cmd) {
+    [db](const string &cmd) {
       return db->AssumeFound_Delete(cmd);
     })
     || try_rule(rule, "unassume-found:", "ID", &ret,
-    [db](const std::string &cmd) {
+    [db](const string &cmd) {
       return db->AssumeFound_Delete(strtoul(cmd.c_str(), nullptr, 0));
     })
     || try_rule(rule, "pkg-ld-clear:", "PKG", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       return db->PKG_LD_Clear(cmd);
     })
     || try_rule(rule, "pkg-ld-append:", "PKG:PATH", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
-      if (s == std::string::npos) {
+      if (s == string::npos) {
         log(Error, "malformed rule: `%s`\n", rule.c_str());
         log(Error, "format: pkg-ld-append:PKG:PATH\n");
         return false;
       }
-      std::string pkg(cmd.substr(0, s));
+      string pkg(cmd.substr(0, s));
       StringList &lst(db->package_library_path_[pkg]);
       return db->PKG_LD_Insert(pkg, cmd.substr(s+1), lst.size());
     })
     || try_rule(rule, "pkg-ld-prepend:", "PKG:PATH", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
-      if (s == std::string::npos) {
+      if (s == string::npos) {
         log(Error, "malformed rule: `%s`\n", rule.c_str());
         log(Error, "format: pkg-ld-prepend:PKG:PATH\n");
         return false;
@@ -669,13 +667,13 @@ static bool parse_rule(DB *db, const std::string& rule) {
       return db->PKG_LD_Insert(cmd.substr(0, s), cmd.substr(s+1), 0);
     })
     || try_rule(rule, "pkg-ld-insert:", "PKG:ID:PATH", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       size_t s1, s2 = 0;
       s1 = cmd.find_first_of(':');
-      if (s1 != std::string::npos)
+      if (s1 != string::npos)
         s2 = cmd.find_first_of(':', s1+1);
-      if (s1 == std::string::npos ||
-          s2 == std::string::npos)
+      if (s1 == string::npos ||
+          s2 == string::npos)
       {
         log(Error, "malformed rule: `%s`\n", rule.c_str());
         log(Error, "format: pkg-ld-insert:PKG:ID:PATH\n");
@@ -687,9 +685,9 @@ static bool parse_rule(DB *db, const std::string& rule) {
                                        nullptr, 0));
     })
     || try_rule(rule, "pkg-ld-delete:", "PKG:PATH", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
-      if (s == std::string::npos) {
+      if (s == string::npos) {
         log(Error, "malformed rule: `%s`\n", rule.c_str());
         log(Error, "format: pkg-ld-delete:PKG:PATH\n");
         return false;
@@ -697,9 +695,9 @@ static bool parse_rule(DB *db, const std::string& rule) {
       return db->PKG_LD_Delete(cmd.substr(0, s), cmd.substr(s+1));
     })
     || try_rule(rule, "pkg-ld-delete-id:", "PKG:ID", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       size_t s = cmd.find_first_of(':');
-      if (s == std::string::npos) {
+      if (s == string::npos) {
         log(Error, "malformed rule: `%s`\n", rule.c_str());
         log(Error, "format: pkg-ld-delete-id:PKG:ID\n");
         return false;
@@ -708,15 +706,15 @@ static bool parse_rule(DB *db, const std::string& rule) {
                                strtoul(cmd.substr(s+1).c_str(), nullptr, 0));
     })
     || try_rule(rule, "base-add:", "PKG", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       return db->BasePackages_Add(cmd);
     })
     || try_rule(rule, "base-remove:", "PKG", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       return db->BasePackages_Delete(cmd);
     })
     || try_rule(rule, "base-remove-id:", "ID", &ret,
-    [db,&rule](const std::string &cmd) {
+    [db,&rule](const string &cmd) {
       return db->BasePackages_Delete(strtoul(cmd.c_str(), nullptr, 0));
     })
   ) {
@@ -726,10 +724,10 @@ static bool parse_rule(DB *db, const std::string& rule) {
   return false;
 }
 
-static bool parse_filter(const std::string &filter,
-                         FilterList        &pkg_filters,
-                         ObjFilterList     &obj_filters,
-                         StrFilterList     &str_filters)
+static bool parse_filter(const string  &filter,
+                         FilterList    &pkg_filters,
+                         ObjFilterList &obj_filters,
+                         StrFilterList &str_filters)
 {
   // -fname=foo exact
   // -fname:foo glob
@@ -744,7 +742,7 @@ static bool parse_filter(const std::string &filter,
     ++at;
   }
 
-  if (filter.compare(at, std::string::npos, "broken") == 0) {
+  if (filter.compare(at, string::npos, "broken") == 0) {
     auto pf = filter::PackageFilter::broken(neg);
     if (!pf)
       return false;
@@ -753,7 +751,7 @@ static bool parse_filter(const std::string &filter,
   }
 
 #ifdef WITH_REGEX
-  std::string regex;
+  string regex;
   bool icase = false;
   auto parse_regex = [&]() -> bool {
     if (static_cast<unsigned char>(filter[at] - 'a') > ('z'-'a') &&

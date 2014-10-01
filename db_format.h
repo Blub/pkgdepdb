@@ -1,7 +1,7 @@
 #ifndef PKGDEPDB_DB_FORMAT_H__
 #define PKGDEPDB_DB_FORMAT_H__
 
-// requires main.h
+namespace pkgdepdb {
 
 using PkgOutMap = std::map<Package*, size_t>;
 using ObjOutMap = std::map<Elf*,     size_t>;
@@ -31,8 +31,8 @@ class SerialIn {
   PkgInMap                      old_pkgref_;
   ObjInMap                      old_objref_;
 
-  std::vector<Elf*>             objref_;
-  std::vector<Package*>         pkgref_;
+  vec<Elf*>                     objref_;
+  vec<Package*>                 pkgref_;
   // whether objref and pkgref are used
   bool                          ver8_refs_ = false;
   uint16_t                      version_ = 0;
@@ -41,7 +41,7 @@ class SerialIn {
   SerialIn(DB*, SerialStream*);
 
  public:
-  static SerialIn* Open(DB *db, const std::string& file, bool gz);
+  static SerialIn* Open(DB *db, const string& file, bool gz);
 };
 
 class SerialOut {
@@ -62,7 +62,7 @@ class SerialOut {
   SerialOut(DB*, SerialStream*);
 
  public:
-  static SerialOut* Open(DB *db, const std::string& file, bool gz);
+  static SerialOut* Open(DB *db, const string& file, bool gz);
 };
 
 template<typename T>
@@ -78,14 +78,14 @@ static inline SerialIn& operator>=(SerialIn &in, T& r) {
 }
 
 // special for strings:
-static inline SerialOut& operator<=(SerialOut &out, const std::string& r) {
+static inline SerialOut& operator<=(SerialOut &out, const string& r) {
   auto len = static_cast<uint32_t>(r.length());
   out.out_.Write((const char*)&len, sizeof(len));
   out.out_.Write(r.c_str(), len);
   return out;
 }
 
-static inline SerialIn& operator>=(SerialIn &in, std::string& r) {
+static inline SerialIn& operator>=(SerialIn &in, string& r) {
   uint32_t len;
   in >= len;
   r.resize(len);
@@ -93,13 +93,15 @@ static inline SerialIn& operator>=(SerialIn &in, std::string& r) {
   return in;
 }
 
-bool write_objlist   (SerialOut &out, const ObjectList& list);
-bool read_objlist    (SerialIn  &in,  ObjectList& list);
-bool write_objset    (SerialOut &out, const ObjectSet& list);
-bool read_objset     (SerialIn  &in,  ObjectSet& list);
-bool write_stringlist(SerialOut &out, const std::vector<std::string> &list);
-bool read_stringlist (SerialIn  &in,  std::vector<std::string> &list);
-bool write_stringset (SerialOut &out, const StringSet &list);
-bool read_stringset  (SerialIn  &in,  StringSet &list);
+bool write_objlist   (SerialOut &out, const ObjectList  &list);
+bool read_objlist    (SerialIn  &in,        ObjectList  &list);
+bool write_objset    (SerialOut &out, const ObjectSet   &list);
+bool read_objset     (SerialIn  &in,        ObjectSet   &list);
+bool write_stringlist(SerialOut &out, const vec<string> &list);
+bool read_stringlist (SerialIn  &in,        vec<string> &list);
+bool write_stringset (SerialOut &out, const StringSet   &list);
+bool read_stringset  (SerialIn  &in,        StringSet   &list);
+
+} // ::pkgdepdb
 
 #endif

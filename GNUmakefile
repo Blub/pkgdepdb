@@ -18,8 +18,8 @@ endif
 
 ALPM ?= no
 ifeq ($(ALPM),yes)
-	CPPFLAGS += -DWITH_ALPM
-	LIBS += -lalpm
+ENABLE_ALPM := define
+LIBS += -lalpm
 endif
 
 REGEX ?= no
@@ -29,7 +29,7 @@ endif
 
 THREADS ?= no
 ifeq ($(THREADS),yes)
-CPPFLAGS += -DENABLE_THREADS
+ENABLE_THREADS:="#define PKGDEPDB_ENABLE_THREADS"
 endif
 
 #ifneq ($(strip $(ALLFLAGS)),$(strip $(?COMPAREFLAGS)))

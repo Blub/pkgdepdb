@@ -18,7 +18,7 @@ GITINFO != GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null ||
 
 ALPM ?= no
 .if $(ALPM) == yes
-CPPFLAGS += -DWITH_ALPM
+ENABLE_ALPM = define
 LIBS += -lalpm
 .endif
 
@@ -29,7 +29,7 @@ CPPFLAGS += -DWITH_REGEX
 
 THREADS ?= no
 .if $(THREADS) == yes
-CPPFLAGS += -DENABLE_THREADS
+ENABLE_THREADS := define
 .endif
 
 .include "Makefile"
