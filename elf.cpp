@@ -169,7 +169,7 @@ Elf* LoadElf(const char *data, size_t size, bool *waserror, const char *name,
   if (!checksize(dynstr_at, strsz, "looking for .dynstr section"))
     return 0;
 
-  auto get_string = [=](size_t off) -> const char* {
+  auto get_string = [=,&optconfig](size_t off) -> const char* {
     // range check
     if (off >= strsz) {
       optconfig.Log(Error, "%s: out of bounds string entry\n", name);
