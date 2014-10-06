@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <getopt.h>
 #include <ctype.h>
 #include <limits.h>
