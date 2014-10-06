@@ -7,6 +7,7 @@
 *.exe
 
 pkgdepdb
+config.h
 
 .localflags
 send.sh
