@@ -35,7 +35,7 @@ LIBS     += $(ZLIB_LIBS)
 
 OBJECTS  = config.o package.o elf.o db.o db_format.o db_json.o filter.o
 MAIN_OBJ = main.o
-LIB_OBJ  =
+LIB_OBJ  = capi_config.o capi_db.o
 
 OBJECTS_SRC = $(OBJECTS:.o=.cpp) $(MAIN_OBJ:.o=.cpp) $(LIB_OBJ:.o=.cpp)
 
@@ -79,7 +79,7 @@ $(STATIC_BINARY): $(MAIN_OBJ) $(OBJECTS)
 	@echo "NOTE:"
 	@echo "NOTE:"
 
-$(LIBPKGDEPDB_LA): $(OBJECTS)
+$(LIBPKGDEPDB_LA): $(LIB_OBJ) $(OBJECTS)
 	$(LTLD) $(LTVERSION) $(LDFLAGS) -o $@ $(LTLIB_OBJ) $(LTOBJECTS) -rpath $(LIBDIR) $(LIBS)
 
 pkgdepdb.1: pkgdepdb.1.in
@@ -112,11 +112,13 @@ depend:
 	-rm -f Makefile.bak
 # DO NOT DELETE
 
-main.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
-config.o: .cflags main.h util.h config.h pkgdepdb.h
-package.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h
-elf.o: .cflags elf.h main.h util.h config.h pkgdepdb.h endian.h
-db.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
-db_format.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h db_format.h
-db_json.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
-filter.o: .cflags main.h util.h config.h pkgdepdb.h elf.h package.h db.h filter.h
+config.o: .cflags main.h util.h config.h
+package.o: .cflags main.h util.h config.h elf.h package.h
+elf.o: .cflags elf.h main.h util.h config.h endian.h
+db.o: .cflags main.h util.h config.h elf.h package.h db.h filter.h
+db_format.o: .cflags main.h util.h config.h elf.h package.h db.h db_format.h
+db_json.o: .cflags main.h util.h config.h elf.h package.h db.h filter.h
+filter.o: .cflags main.h util.h config.h elf.h package.h db.h filter.h
+main.o: .cflags main.h util.h config.h elf.h package.h db.h filter.h
+capi_config.o: .cflags main.h util.h config.h elf.h package.h db.h pkgdepdb.h
+capi_db.o: .cflags main.h util.h config.h elf.h package.h db.h pkgdepdb.h

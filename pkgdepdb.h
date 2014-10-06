@@ -11,30 +11,28 @@ typedef struct pkgdepdb_config_ pkgdepdb_config;
 /*********
  * pkgdepdb::Config interface
  */
-pkgdepdb_config *pkgdepdb_config_new();
+pkgdepdb_config* pkgdepdb_config_new();
 void             pkgdepdb_config_delete(pkgdepdb_config*);
 int              pkgdepdb_config_load(pkgdepdb_config*, const char *filepath);
 int              pkgdepdb_config_load_default(pkgdepdb_config*);
-void             pkgdepdb_config_log(pkgdepdb_config*, int level,
-                                     const char *format, ...);
 
-const char      *pkgdepdb_config_database     (pkgdepdb_config*);
+const char*      pkgdepdb_config_database     (pkgdepdb_config*);
 void             pkgdepdb_config_set_database (pkgdepdb_config*, const char*);
 
-unsigned int    *pkgdepdb_config_verbosity    (pkgdepdb_config*);
-void            *pkgdepdb_config_set_verbosity(pkgdepdb_config*, unsigned int);
+unsigned int     pkgdepdb_config_verbosity    (pkgdepdb_config*);
+void             pkgdepdb_config_set_verbosity(pkgdepdb_config*, unsigned int);
 
 /* some boolean properties */
-int             *pkgdepdb_config_quiet                 (pkgdepdb_config*);
-void            *pkgdepdb_config_set_quiet             (pkgdepdb_config*, int);
-int             *pkgdepdb_config_package_depends       (pkgdepdb_config*);
-void            *pkgdepdb_config_set_package_depends   (pkgdepdb_config*, int);
-int             *pkgdepdb_config_package_file_lists    (pkgdepdb_config*);
-void            *pkgdepdb_config_set_package_file_lists(pkgdepdb_config*, int);
+int              pkgdepdb_config_quiet                 (pkgdepdb_config*);
+void             pkgdepdb_config_set_quiet             (pkgdepdb_config*, int);
+int              pkgdepdb_config_package_depends       (pkgdepdb_config*);
+void             pkgdepdb_config_set_package_depends   (pkgdepdb_config*, int);
+int              pkgdepdb_config_package_file_lists    (pkgdepdb_config*);
+void             pkgdepdb_config_set_package_file_lists(pkgdepdb_config*, int);
 
 /* threading */
-unsigned int    *pkgdepdb_config_max_jobs    (pkgdepdb_config*);
-void            *pkgdepdb_config_set_max_jobs(pkgdepdb_config*, unsigned int);
+unsigned int     pkgdepdb_config_max_jobs    (pkgdepdb_config*);
+void             pkgdepdb_config_set_max_jobs(pkgdepdb_config*, unsigned int);
 
 /* output */
 enum {
@@ -57,7 +55,7 @@ void   *pkgdepdb_config_set_json(pkgdepdb_config*, int);
  * pkgdepdb::DB interface
  */
 
-pkgdepdb_db *pkgdepdb_db_new   ();
+pkgdepdb_db *pkgdepdb_db_new   (pkgdepdb_config*);
 void         pkgdepdb_db_delete(pkgdepdb_db*);
 int          pkgdepdb_db_read  (pkgdepdb_db*, const char *filename);
 int          pkgdepdb_db_store (pkgdepdb_db*, const char *filename);
@@ -95,12 +93,12 @@ int    pkgdepdb_db_assume_found_add  (pkgdepdb_db*, const char*);
 int    pkgdepdb_db_assume_found_del_s(pkgdepdb_db*, const char*);
 int    pkgdepdb_db_assume_found_del_i(pkgdepdb_db*, size_t);
 
-void   pkgdepdb_db_delete_package_s(pkgdepdb_db*, const char*);
+int    pkgdepdb_db_delete_package_s(pkgdepdb_db*, const char*);
 
 void   pkgdepdb_db_relink_all     (pkgdepdb_db*);
 void   pkgdepdb_db_fix_paths      (pkgdepdb_db*);
-void   pkgdepdb_db_wipe_packages  (pkgdepdb_db*);
-void   pkgdepdb_db_wipe_file_lists(pkgdepdb_db*);
+int    pkgdepdb_db_wipe_packages  (pkgdepdb_db*);
+int    pkgdepdb_db_wipe_file_lists(pkgdepdb_db*);
 
 #ifdef __cplusplus
 } /* "C" */

@@ -98,6 +98,7 @@ struct Config {
   ~Config();
 
   bool ReadConfig();
+  bool ReadConfig(const char *path);
   void Log(uint level, const char *msg, ...) const;
 
   static const char *ParseJSONBit(const char *bit, uint &opt_json);

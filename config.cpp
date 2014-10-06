@@ -218,6 +218,13 @@ bool Config::ReadConfig(std::istream &in, const char *path) {
   return true;
 }
 
+bool Config::ReadConfig(const char *path) {
+  std::ifstream in(path);
+  if (!in)
+    return false;
+  return ReadConfig(in, path);
+}
+
 bool Config::ReadConfig() {
   string home(getenv("HOME"));
   string etcdir(PKGDEPDB_ETC);
