@@ -2,6 +2,8 @@
 	- new filter: -fcontains
 	- DB version 10: storing makedepends, new dependency list format: a tuple
 	  of string and version instead of just one string
+	- libpkgdepdb started
+	- Started implementing a C API for libpkgdepdb
 
 2014-07-12 Release 0.1.8
 	- integrity checks now honor replacement packages
