@@ -1,6 +1,8 @@
 2014-10-06 Blub
 
-	* - DB version 10: makedepends
+	* DB version 10: makedepends
+	* Databases with package dependencies now require DB version 10 as they will
+	  use a different dependency list structure.
 
 2014-10-01 Blub
 

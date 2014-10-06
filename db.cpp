@@ -750,6 +750,14 @@ bool DB::IsBroken(const Package *pkg) const {
   return false;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wno-format-nonliteral"
+static void ShowDependList(const char *fmt, const DependList& lst) {
+  for (const auto &dep : lst)
+    printf(fmt, std::get<0>(dep).c_str(), std::get<1>(dep).c_str());
+}
+#pragma clang diagnostic pop
+
 void DB::ShowPackages(bool                 filter_broken,
                       bool                 filter_notempty,
                       const FilterList    &pkg_filters,
@@ -775,18 +783,12 @@ void DB::ShowPackages(bool                 filter_broken,
     if (config_.verbosity_ >= 1) {
       for (auto &grp : pkg->groups_)
         printf("    is in group: %s\n", grp.c_str());
-      for (auto &dep : pkg->depends_)
-        printf("    depends on: %s\n", dep.c_str());
-      for (auto &dep : pkg->optdepends_)
-        printf("    depends optionally on: %s\n", dep.c_str());
-      for (auto &dep : pkg->makedepends_)
-        printf("    depends at compiletime on: %s\n", dep.c_str());
-      for (auto &ent : pkg->provides_)
-        printf("    provides: %s\n", ent.c_str());
-      for (auto &ent : pkg->replaces_)
-        printf("    replaces: %s\n", ent.c_str());
-      for (auto &ent : pkg->conflicts_)
-        printf("    conflicts with: %s\n", ent.c_str());
+      ShowDependList("    depends on: %s\n",                pkg->depends_);
+      ShowDependList("    depends optionally on: %s\n",     pkg->optdepends_);
+      ShowDependList("    depends at compiletime on: %s\n", pkg->makedepends_);
+      ShowDependList("    provides: %s\n",                  pkg->provides_);
+      ShowDependList("    replaces: %s\n",                  pkg->replaces_);
+      ShowDependList("    conflicts with: %s\n",            pkg->conflicts_);
       if (filter_broken) {
         for (auto &obj : pkg->objects_) {
           if (!util::all(obj_filters, *this, *obj))
@@ -920,37 +922,19 @@ void DB::ShowFilelist(const FilterList    &pkg_filters,
   }
 }
 
-static void strip_version(string &s) {
-  size_t from = s.find_first_of("=<>!");
-  if (from != string::npos)
-    s.erase(from);
-}
-
 #ifdef PKGDEPDB_ENABLE_ALPM
-bool split_depstring(const string &full,
-                     string       &name,
-                     string       &op,
-                     string       &ver)
-{
-  size_t opidx = full.find_first_of("=<>!");
-  if (opidx != string::npos) {
-    name = full.substr(0, opidx);
-
-    op.append(1, full[opidx++]);
-    if (opidx >= full.length())
-      return false;
-
-    if (full[opidx] == '=') {
-      op.append(1, '=');
-      ++opidx;
-    }
-    if (opidx >= full.length())
-      return false;
-    ver = full.substr(opidx);
+void split_constraint(const string &full, string &op, string &ver) {
+  op.clear();
+  ver.clear();
+  if (!full.length())
+    return;
+  op.append(1, full[0]);
+  if (full[1] == '=') {
+    op.append(1, full[1]);
+    ver = full.substr(2);
   }
   else
-    name = full;
-  return true;
+    ver = full.substr(1);
 }
 
 static bool version_op(const string &op, const char *v1, const char *v2) {
@@ -1027,18 +1011,18 @@ static bool version_satisfies(const string &dop,
   return false;
 }
 
-bool package_satisfies(const Package     *other,
-                       const string &dep,
-                       const string &op,
-                       const string &ver)
+bool package_satisfies(const Package *other,
+                       const string  &dep,
+                       const string  &op,
+                       const string  &ver)
 {
   if (version_op(op, other->version_.c_str(), ver.c_str()))
     return true;
   for (auto &p : other->provides_) {
-    string prov, pop, pver;
-    split_depstring(p, prov, pop, pver);
-    if (prov != dep)
+    if (std::get<0>(p) != dep)
       continue;
+    string pop, pver;
+    split_constraint(std::get<1>(p), pop, pver);
     if (version_satisfies(op, ver, pop, pver))
       return true;
   }
@@ -1047,6 +1031,7 @@ bool package_satisfies(const Package     *other,
 #endif
 
 static const Package* find_depend(const string     &dependency,
+                                  const string     &constraint,
                                   const PkgMap     &pkgmap,
                                   const PkgListMap &providemap,
                                   const PkgListMap &replacemap)
@@ -1055,29 +1040,26 @@ static const Package* find_depend(const string     &dependency,
     return 0;
 
 #ifdef PKGDEPDB_ENABLE_ALPM
-  string dep, op, ver;
-  split_depstring(dependency, dep, op, ver);
-#else
-  string dep(dependency);
-  strip_version(dep);
+  string op, ver;
+  split_constraint(constraint, op, ver);
 #endif
 
-  auto find = pkgmap.find(dep);
+  auto find = pkgmap.find(dependency);
   if (find != pkgmap.end()) {
 #ifdef PKGDEPDB_ENABLE_ALPM
     const Package *other = find->second;
-    if (!ver.length() || package_satisfies(other, dep, op, ver))
+    if (!ver.length() || package_satisfies(other, dependency, op, ver))
 #endif
       return find->second;
   }
   // check for a providing package
-  auto rep = replacemap.find(dep);
+  auto rep = replacemap.find(dependency);
   if (rep != replacemap.end()) {
 #ifdef PKGDEPDB_ENABLE_ALPM
     if (!ver.length())
       return rep->second[0];
     for (auto other : rep->second) {
-      if (package_satisfies(other, dep, op, ver))
+      if (package_satisfies(other, dependency, op, ver))
         return other;
     }
 #else
@@ -1085,14 +1067,14 @@ static const Package* find_depend(const string     &dependency,
 #endif
   }
 
-  rep = providemap.find(dep);
+  rep = providemap.find(dependency);
   if (rep != providemap.end()) {
 #ifdef PKGDEPDB_ENABLE_ALPM
     if (!ver.length())
       return rep->second[0];
 
     for (auto other : rep->second) {
-      if (package_satisfies(other, dep, op, ver))
+      if (package_satisfies(other, dependency, op, ver))
         return other;
     }
 #else
@@ -1115,19 +1097,15 @@ static void install_recursive(vec<const Package*>         &packages,
     return;
   installmap[pkg->name_] = pkg;
 
-  for (auto prov : pkg->provides_) {
-    strip_version(prov);
-    installmap[prov] = pkg;
-  }
-  for (auto repl : pkg->replaces_) {
-    strip_version(repl);
-    installmap[repl] = pkg;
-  }
+  for (auto prov : pkg->provides_)
+    installmap[std::get<0>(prov)] = pkg;
+  for (auto repl : pkg->replaces_)
+    installmap[std::get<0>(repl)] = pkg;
 #ifdef PKGDEPDB_ENABLE_ALPM
   for (auto &full : pkg->conflicts_) {
-    string conf, op, ver;
-    if (!split_depstring(full, conf, op, ver))
-      break;
+    const string& conf = std::get<0>(full);
+    string op, ver;
+    split_constraint(std::get<1>(full), op, ver);
 
     auto found = installmap.find(conf);
     const Package *other = found->second;
@@ -1141,25 +1119,26 @@ static void install_recursive(vec<const Package*>         &packages,
         continue;
     }
     if (showmsg) {
-      printf("%s%s conflicts with %s (%s-%s): { %s }\n",
+      printf("%s%s conflicts with %s (%s-%s): { %s%s }\n",
              (quiet ? "" : "\r"),
              pkg->name_.c_str(),
              conf.c_str(),
              other->name_.c_str(),
              other->version_.c_str(),
-             full.c_str());
+             conf.c_str(), std::get<1>(full).c_str());
     }
   }
 #endif
   packages.push_back(pkg);
   for (auto &dep : pkg->depends_) {
-    auto found = find_depend(dep, pkgmap, providemap, replacemap);
+    auto found = find_depend(std::get<0>(dep), std::get<1>(dep),
+                             pkgmap, providemap, replacemap);
     if (!found) {
       if (showmsg) {
-        printf("%smissing package: %s depends on %s\n",
+        printf("%smissing package: %s depends on %s%s\n",
                (quiet ? "" : "\r"),
                pkg->name_.c_str(),
-               dep.c_str());
+               std::get<0>(dep).c_str(), std::get<1>(dep).c_str());
       }
       continue;
     }
@@ -1167,13 +1146,14 @@ static void install_recursive(vec<const Package*>         &packages,
                       pkgmap, providemap, replacemap, false, quiet);
   }
   for (auto &dep : pkg->optdepends_) {
-    auto found = find_depend(dep, pkgmap, providemap, replacemap);
+    auto found = find_depend(std::get<0>(dep), std::get<1>(dep),
+                             pkgmap, providemap, replacemap);
     if (!found) {
       if (showmsg) {
-        printf("%smissing package: %s depends optionally on %s\n",
+        printf("%smissing package: %s depends optionally on %s%s\n",
                (quiet ? "" : "\r"),
                pkg->name_.c_str(),
-               dep.c_str());
+               std::get<0>(dep).c_str(), std::get<1>(dep).c_str());
       }
       continue;
     }
@@ -1254,10 +1234,9 @@ void DB::CheckIntegrity(const FilterList    &pkg_filters,
 
   for (auto &p: packages_) {
     pkgmap[p->name_] = p;
-    auto addit = [](const Package *pkg, string /*copy*/ name,
+    auto addit = [](const Package *pkg, const string& name,
                     PkgListMap &map)
     {
-      strip_version(name);
       auto fnd = map.find(name);
       if (fnd == map.end())
         map.emplace(name, move(vec<const Package*>({pkg})));
@@ -1265,9 +1244,9 @@ void DB::CheckIntegrity(const FilterList    &pkg_filters,
         fnd->second.push_back(pkg);
     };
     for (auto prov : p->provides_)
-      addit(p, prov, providemap);
+      addit(p, std::get<0>(prov), providemap);
     for (auto repl : p->replaces_)
-      addit(p, repl, replacemap);
+      addit(p, std::get<0>(repl), replacemap);
   }
 
   for (auto &o: objects_) {

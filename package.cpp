@@ -42,6 +42,18 @@ static bool ends_word(const char c) {
   return c_isspace(c) || c == '=';
 }
 
+static
+void split_depstring(const string &full, string &name, string &constraint) {
+  size_t opidx = full.find_first_of("=<>!");
+  if (opidx == string::npos) {
+    name = full;
+    constraint.clear();
+  } else {
+    name = full.substr(0, opidx);
+    constraint = full.substr(opidx);
+  }
+}
+
 // NOTE:
 // Judgding from pacman/libalpm source code this function
 // is way less strict about the formatting, as we skip whitespace
@@ -103,6 +115,7 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
   };
 
   string es;
+  string version, constraint;
   while (pos < size) {
     skipwhite();
     if (isentry("pkgname", sizeof("pkgname")-1)) {
@@ -124,13 +137,15 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
     if (isentry("depend", sizeof("depend")-1)) {
       if (!getvalue("depend", es))
         return false;
-      pkg->depends_.push_back(es);
+      split_depstring(es, version, constraint);
+      pkg->depends_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("makedepend", sizeof("makedepend")-1)) {
       if (!getvalue("makedepend", es))
         return false;
-      pkg->makedepends_.push_back(es);
+      split_depstring(es, version, constraint);
+      pkg->makedepends_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("optdepend", sizeof("optdepend")-1)) {
@@ -139,26 +154,31 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
       size_t c = es.find_first_of(':');
       if (c != string::npos)
         es.erase(c);
-      if (es.length())
-        pkg->optdepends_.push_back(es);
+      if (es.length()) {
+        split_depstring(es, version, constraint);
+        pkg->optdepends_.emplace_back(version, constraint);
+      }
       continue;
     }
     if (isentry("replace", sizeof("replaces")-1)) {
       if (!getvalue("replaces", es))
         return false;
-      pkg->replaces_.push_back(es);
+      split_depstring(es, version, constraint);
+      pkg->replaces_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("conflict", sizeof("conflict")-1)) {
       if (!getvalue("conflict", es))
         return false;
-      pkg->conflicts_.push_back(es);
+      split_depstring(es, version, constraint);
+      pkg->conflicts_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("provides", sizeof("provides")-1)) {
       if (!getvalue("provides", es))
         return false;
-      pkg->provides_.push_back(es);
+      split_depstring(es, version, constraint);
+      pkg->provides_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("group", sizeof("group")-1)) {
@@ -435,26 +455,19 @@ void Package::ShowNeeded() {
 
 bool Package::ConflictsWith(const Package &other) const {
   for (auto &conf : conflicts_) {
+    const string &name = std::get<0>(conf);
 #ifdef PKGDEPDB_ENABLE_ALPM
-    string name, op, ver;
-    split_depstring(conf, name, op, ver);
+    string op, ver;
+    split_constraint(std::get<1>(conf), op, ver);
     if (ver.length()) {
       if (package_satisfies(&other, name, op, ver))
         return true;
     } else {
-#else
-      string &name(conf);
 #endif
       if (other.name_ == name)
         return true;
       for (auto &prov : other.provides_) {
-#ifdef PKGDEPDB_ENABLE_ALPM
-        string provname;
-        split_depstring(prov, provname, op, ver);
-#else
-        string &provname(prov);
-#endif
-        if (provname == name)
+        if (std::get<0>(prov) == name)
           return true;
       }
 #ifdef PKGDEPDB_ENABLE_ALPM
@@ -466,26 +479,19 @@ bool Package::ConflictsWith(const Package &other) const {
 
 bool Package::Replaces(const Package &other) const {
   for (auto &conf : replaces_) {
+    const string &name = std::get<0>(conf);
 #ifdef PKGDEPDB_ENABLE_ALPM
-    string name, op, ver;
-    split_depstring(conf, name, op, ver);
+    string op, ver;
+    split_constraint(std::get<1>(conf), op, ver);
     if (ver.length()) {
       if (package_satisfies(&other, name, op, ver))
         return true;
     } else {
-#else
-      string &name(conf);
 #endif
       if (other.name_ == name)
         return true;
       for (auto &prov : other.provides_) {
-#ifdef PKGDEPDB_ENABLE_ALPM
-        string provname;
-        split_depstring(prov, provname, op, ver);
-#else
-        string &provname(prov);
-#endif
-        if (provname == name)
+        if (std::get<0>(prov) == name)
           return true;
       }
 #ifdef PKGDEPDB_ENABLE_ALPM

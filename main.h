@@ -46,7 +46,7 @@ struct Package;
 using PackageList = vec<Package*>;
 
 #ifdef PKGDEPDB_ENABLE_ALPM
-bool split_depstring  (const string &str, string &name, string &op, string &v);
+void split_constraint(const string &full, string &op, string &ver);
 bool package_satisfies(const Package *other,
                        const string &dep,
                        const string &op,

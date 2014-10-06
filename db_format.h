@@ -93,6 +93,15 @@ static inline SerialIn& operator>=(SerialIn &in, string& r) {
   return in;
 }
 
+// and for string tuples
+static inline
+SerialOut& operator<=(SerialOut &out, const tuple<string,string>& r) {
+  return (out <= std::get<0>(r)) <= std::get<1>(r);
+}
+static inline SerialIn& operator>=(SerialIn &in, tuple<string,string>& r) {
+  return (in >= std::get<0>(r)) >= std::get<1>(r);
+}
+
 bool write_objlist   (SerialOut &out, const ObjectList  &list);
 bool read_objlist    (SerialIn  &in,        ObjectList  &list, const Config&);
 bool write_objset    (SerialOut &out, const ObjectSet   &list);

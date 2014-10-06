@@ -40,6 +40,20 @@ static void print_objname(const Elf *obj) {
   putchar('"');
 }
 
+static inline void print_depend_list(const char *what, const DependList& lst) {
+  if (lst.empty())
+    return;
+  printf(",\n\t\t\t\"%s\": [", what);
+  const char *sep = "\n\t\t\t\t";
+  for (auto &dep : lst) {
+    printf("%s", sep); sep = ",\n\t\t\t\t";
+    string full = std::get<0>(dep);
+    full.append(std::get<1>(dep));
+    json_quote(stdout, full);
+  }
+  printf("\n\t\t\t]");
+}
+
 void DB::ShowPackages_json(bool                filter_broken,
                            bool                filter_notempty,
                            const FilterList   &pkg_filters,
@@ -81,33 +95,12 @@ void DB::ShowPackages_json(bool                filter_broken,
         }
         printf("\n\t\t\t]");
       }
-      if (!pkg->depends_.empty()) {
-        printf(",\n\t\t\t\"depends\": [");
-        const char *sep = "\n\t\t\t\t";
-        for (auto &dep : pkg->depends_) {
-          printf("%s", sep); sep = ",\n\t\t\t\t";
-          json_quote(stdout, dep);
-        }
-        printf("\n\t\t\t]");
-      }
-      if (!pkg->optdepends_.empty()) {
-        printf(",\n\t\t\t\"optdepends\": [");
-        const char *sep = "\n\t\t\t\t";
-        for (auto &dep : pkg->optdepends_) {
-          printf("%s", sep); sep = ",\n\t\t\t\t";
-          json_quote(stdout, dep);
-        }
-        printf("\n\t\t\t]");
-      }
-      if (!pkg->makedepends_.empty()) {
-        printf(",\n\t\t\t\"makedepends\": [");
-        const char *sep = "\n\t\t\t\t";
-        for (auto &dep : pkg->makedepends_) {
-          printf("%s", sep); sep = ",\n\t\t\t\t";
-          json_quote(stdout, dep);
-        }
-        printf("\n\t\t\t]");
-      }
+      print_depend_list("depends", pkg->depends_);
+      print_depend_list("optdepends", pkg->optdepends_);
+      print_depend_list("makedepends", pkg->makedepends_);
+      print_depend_list("provides", pkg->provides_);
+      print_depend_list("replaces", pkg->replaces_);
+      print_depend_list("conflicts", pkg->conflicts_);
       if (filter_broken) {
         printf(",\n\t\t\t\"broken\": [");
         const char *sep = "\n\t\t\t\t";

@@ -9,12 +9,12 @@ struct Package {
   vec<rptr<Elf>>          objects_;
 
   // DB version 3:
-  StringList              depends_;
-  StringList              optdepends_;
-  StringList              makedepends_;
-  StringList              provides_;
-  StringList              conflicts_;
-  StringList              replaces_;
+  DependList              depends_;
+  DependList              optdepends_;
+  DependList              makedepends_;
+  DependList              provides_;
+  DependList              conflicts_;
+  DependList              replaces_;
   // DB version 5:
   StringSet               groups_;
   // DB version 6:

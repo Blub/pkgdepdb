@@ -271,21 +271,39 @@ make_pkgfilter(rptr<Match> matcher, bool neg, CONT (Package::*member)) {
     return false;
   });
 }
+
+template<typename CONT>
+static uniq<PackageFilter>
+make_pkgdepfilter(rptr<Match> matcher, bool neg, CONT (Package::*member)) {
+  return mk_unique<PkgFilt>(neg, [matcher,member](const Package &pkg) {
+    for (auto &i : pkg.*member) {
+      if ((*matcher)(std::get<0>(i)))
+        return true;
+    }
+    return false;
+  });
+}
 #define MAKE_PKGFILTER(NAME,VAR)                         \
 uniq<PackageFilter>                                      \
 PackageFilter::NAME(rptr<Match> matcher, bool neg) {     \
   return make_pkgfilter(matcher, neg, &Package::VAR##_); \
 }
+#define MAKE_PKGDEPFILTER(NAME,VAR)                         \
+uniq<PackageFilter>                                         \
+PackageFilter::NAME(rptr<Match> matcher, bool neg) {        \
+  return make_pkgdepfilter(matcher, neg, &Package::VAR##_); \
+}
 
 #define MAKE_PKGFILTER1(NAME) MAKE_PKGFILTER(NAME,NAME)
+#define MAKE_PKGDEPFILTER1(NAME) MAKE_PKGDEPFILTER(NAME,NAME)
 
 MAKE_PKGFILTER(group,groups)
-MAKE_PKGFILTER1(depends)
-MAKE_PKGFILTER1(optdepends)
-MAKE_PKGFILTER1(makedepends)
-MAKE_PKGFILTER1(provides)
-MAKE_PKGFILTER1(conflicts)
-MAKE_PKGFILTER1(replaces)
+MAKE_PKGDEPFILTER1(depends)
+MAKE_PKGDEPFILTER1(optdepends)
+MAKE_PKGDEPFILTER1(makedepends)
+MAKE_PKGDEPFILTER1(provides)
+MAKE_PKGDEPFILTER1(conflicts)
+MAKE_PKGDEPFILTER1(replaces)
 MAKE_PKGFILTER(contains,filelist)
 
 #undef MAKE_PKGFILTER
@@ -295,13 +313,13 @@ uniq<PackageFilter>
 PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
   return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
     for (auto &i : pkg.depends_)
-      if ((*matcher)(i))
+      if ((*matcher)(std::get<0>(i)))
         return true;
     for (auto &i : pkg.makedepends_)
-      if ((*matcher)(i))
+      if ((*matcher)(std::get<0>(i)))
         return true;
     for (auto &i : pkg.optdepends_)
-      if ((*matcher)(i))
+      if ((*matcher)(std::get<0>(i)))
         return true;
     return false;
   });

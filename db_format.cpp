@@ -19,8 +19,7 @@
 namespace pkgdepdb {
 
 // version
-uint16_t
-DB::CURRENT = 10;
+uint16_t DB::CURRENT = 10;
 
 // magic header
 static const char
@@ -303,8 +302,28 @@ bool write_stringlist(SerialOut &out, const vec<string> &list) {
   return out.out_;
 }
 
+bool write_dependlist(SerialOut &out, const vec<tuple<string,string>> &list) {
+  auto len = static_cast<uint32_t>(list.size());
+  out.out_.Write((const char*)&len, sizeof(len));
+  for (auto &s : list)
+    out <= s;
+  return out.out_;
+}
+
 bool read_stringlist(SerialIn &in, vec<string> &list) {
-  static string s;
+  string s;
+  uint32_t len;
+  in >= len;
+  list.reserve(len);
+  for (uint32_t i = 0; i != len; ++i) {
+    in >= s;
+    list.emplace_back(move(s));
+  }
+  return in.in_;
+}
+
+bool read_dependlist(SerialIn &in, vec<tuple<string,string>> &list) {
+  tuple<string,string> s;
   uint32_t len;
   in >= len;
   list.reserve(len);
@@ -457,23 +476,23 @@ static bool write_pkg(SerialOut &out,    Package  *pkg,
     return false;
 
   if (hdrver >= 10) {
-    if (!write_stringlist(out, pkg->depends_) ||
-        !write_stringlist(out, pkg->makedepends_) ||
-        !write_stringlist(out, pkg->optdepends_))
+    if (!write_dependlist(out, pkg->depends_) ||
+        !write_dependlist(out, pkg->makedepends_) ||
+        !write_dependlist(out, pkg->optdepends_))
     {
       return false;
     }
   } else if (hdrver >= 3) {
-    if (!write_stringlist(out, pkg->depends_) ||
-        !write_stringlist(out, pkg->optdepends_))
+    if (!write_dependlist(out, pkg->depends_) ||
+        !write_dependlist(out, pkg->optdepends_))
     {
       return false;
     }
   }
   if (hdrver >= 4) {
-    if (!write_stringlist(out, pkg->provides_)  ||
-        !write_stringlist(out, pkg->conflicts_) ||
-        !write_stringlist(out, pkg->replaces_))
+    if (!write_dependlist(out, pkg->provides_)  ||
+        !write_dependlist(out, pkg->conflicts_) ||
+        !write_dependlist(out, pkg->replaces_))
     {
       return false;
     }
@@ -537,23 +556,23 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
     o->owner_ = pkg;
 
   if (hdrver >= 10) {
-    if (!read_stringlist(in, pkg->depends_) ||
-        !read_stringlist(in, pkg->makedepends_) ||
-        !read_stringlist(in, pkg->optdepends_))
+    if (!read_dependlist(in, pkg->depends_) ||
+        !read_dependlist(in, pkg->makedepends_) ||
+        !read_dependlist(in, pkg->optdepends_))
     {
       return false;
     }
   } else if (hdrver >= 3) {
-    if (!read_stringlist(in, pkg->depends_) ||
-        !read_stringlist(in, pkg->optdepends_))
+    if (!read_dependlist(in, pkg->depends_) ||
+        !read_dependlist(in, pkg->optdepends_))
     {
       return false;
     }
   }
   if (hdrver >= 4) {
-    if (!read_stringlist(in, pkg->provides_) ||
-        !read_stringlist(in, pkg->conflicts_) ||
-        !read_stringlist(in, pkg->replaces_))
+    if (!read_dependlist(in, pkg->provides_) ||
+        !read_dependlist(in, pkg->conflicts_) ||
+        !read_dependlist(in, pkg->replaces_))
     {
       return false;
     }
@@ -613,14 +632,14 @@ static bool db_store(DB *db, const string& filename) {
   // Figure out which database format version this will be
   if (db->contains_make_depends_)
     hdr.version = 10;
+  else if (db->contains_package_depends_)
+    hdr.version = 10; // used to be 4
   else if (hdr.flags & DBFlags::FileLists)
     hdr.version = 7;
   else if (hdr.flags & DBFlags::AssumeFound)
     hdr.version = 6;
   else if (db->contains_groups_)
     hdr.version = 5;
-  else if (db->contains_package_depends_)
-    hdr.version = 4;
   else if (hdr.flags)
       hdr.version = 2;
 
