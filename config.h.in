@@ -19,4 +19,8 @@
 #@@ENABLE_ALPM@@ PKGDEPDB_ENABLE_ALPM
 #@@ENABLE_REGEX@@ PKGDEPDB_ENABLE_REGEX
 
+extern unsigned int pkgdepdb_enable_threads;
+extern unsigned int pkgdepdb_enable_alpm;
+extern unsigned int pkgdepdb_enable_regex;
+
 #endif

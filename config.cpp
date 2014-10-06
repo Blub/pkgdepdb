@@ -10,6 +10,24 @@
 #include "main.h"
 #include "pkgdepdb.h"
 
+#ifdef PKGDEPDB_ENABLE_THREADS
+unsigned int pkgdepdb_enable_threads = 1;
+#else
+unsigned int pkgdepdb_enable_threads = 0;
+#endif
+
+#ifdef PKGDEPDB_ENABLE_ALPM
+unsigned int pkgdepdb_enable_alpm = 1;
+#else
+unsigned int pkgdepdb_enable_alpm = 0;
+#endif
+
+#ifdef PKGDEPDB_ENABLE_REGEX
+unsigned int pkgdepdb_enable_regex = 1;
+#else
+unsigned int pkgdepdb_enable_regex = 0;
+#endif
+
 namespace pkgdepdb {
 
 Config::Config()
