@@ -196,6 +196,8 @@ Only consider packages matching the provided name.
 Only consider packages part of the provided group.
 .It Fl f Ns depends= Ns Ar PACKAGENAME
 Only consider packages depending on the provided package.
+.It Fl f Ns makedepends= Ns Ar PACKAGENAME
+Only consider packages with the provided package as compile-time dependency
 .It Fl f Ns optdepends= Ns Ar PACKAGENAME
 Only consider packages with the provided package as optional dependency
 .It Fl f Ns alldepends= Ns Ar PACKAGENAME
@@ -399,7 +401,7 @@ verbosity = 1
 quiet = true
 # or:
 # quiet = false
-# read package 'depend' and 'optdepend' entries from .PKGINFO
+# read package 'depend', 'makedepend' and 'optdepend' entries from .PKGINFO
 # and use them if they are present in the database
 package_depends = true
 # or false

@@ -281,6 +281,7 @@ PackageFilter::NAME(rptr<Match> matcher, bool neg) {     \
 MAKE_PKGFILTER(group,groups)
 MAKE_PKGFILTER1(depends)
 MAKE_PKGFILTER1(optdepends)
+MAKE_PKGFILTER1(makedepends)
 MAKE_PKGFILTER1(provides)
 MAKE_PKGFILTER1(conflicts)
 MAKE_PKGFILTER1(replaces)
@@ -293,6 +294,9 @@ uniq<PackageFilter>
 PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
   return mk_unique<PkgFilt>(neg, [matcher](const Package &pkg) {
     for (auto &i : pkg.depends_)
+      if ((*matcher)(i))
+        return true;
+    for (auto &i : pkg.makedepends_)
       if ((*matcher)(i))
         return true;
     for (auto &i : pkg.optdepends_)
