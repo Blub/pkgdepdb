@@ -1,14 +1,18 @@
 .*.swp
 *.o
+*.lo
+*.la
 *.orig
 *.rej
 *.patch
 *.diff
 *.exe
+.libs
 
 pkgdepdb
 config.h
 
 .localflags
+.cflags
 send.sh
 *.gz
