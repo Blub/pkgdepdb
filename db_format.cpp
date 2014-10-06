@@ -20,7 +20,7 @@ namespace pkgdepdb {
 
 // version
 uint16_t
-DB::CURRENT = 9;
+DB::CURRENT = 10;
 
 // magic header
 static const char
@@ -456,7 +456,14 @@ static bool write_pkg(SerialOut &out,    Package  *pkg,
   if (!write_objlist(out, pkg->objects_))
     return false;
 
-  if (hdrver >= 3) {
+  if (hdrver >= 10) {
+    if (!write_stringlist(out, pkg->depends_) ||
+        !write_stringlist(out, pkg->makedepends_) ||
+        !write_stringlist(out, pkg->optdepends_))
+    {
+      return false;
+    }
+  } else if (hdrver >= 3) {
     if (!write_stringlist(out, pkg->depends_) ||
         !write_stringlist(out, pkg->optdepends_))
     {
@@ -529,7 +536,14 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
   for (auto &o : pkg->objects_)
     o->owner_ = pkg;
 
-  if (hdrver >= 3) {
+  if (hdrver >= 10) {
+    if (!read_stringlist(in, pkg->depends_) ||
+        !read_stringlist(in, pkg->makedepends_) ||
+        !read_stringlist(in, pkg->optdepends_))
+    {
+      return false;
+    }
+  } else if (hdrver >= 3) {
     if (!read_stringlist(in, pkg->depends_) ||
         !read_stringlist(in, pkg->optdepends_))
     {
@@ -597,7 +611,9 @@ static bool db_store(DB *db, const string& filename) {
     hdr.flags |= DBFlags::FileLists;
 
   // Figure out which database format version this will be
-  if (hdr.flags & DBFlags::FileLists)
+  if (db->contains_make_depends_)
+    hdr.version = 10;
+  else if (hdr.flags & DBFlags::FileLists)
     hdr.version = 7;
   else if (hdr.flags & DBFlags::AssumeFound)
     hdr.version = 6;
@@ -733,6 +749,8 @@ static bool db_read(DB *db, const string& filename) {
     db->contains_groups_ = true;
   if (hdr.flags & DBFlags::FileLists)
     db->contains_filelists_ = true;
+  if (hdr.version >= 10)
+    db->contains_make_depends_ = true;
 
   in >= db->name_;
   if (!read_stringlist(in, db->library_path_)) {

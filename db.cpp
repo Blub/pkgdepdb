@@ -29,6 +29,7 @@ DB::DB(const Config& optconfig)
 : config_(optconfig) {
   loaded_version_           = DB::CURRENT;
   contains_package_depends_ = false;
+  contains_make_depends_    = false;
   contains_groups_          = false;
   contains_filelists_       = false;
   strict_linking_           = false;
@@ -209,14 +210,16 @@ bool DB::InstallPackage(Package* &&pkg) {
     return false;
 
   packages_.push_back(pkg);
-  if (pkg->depends_.size()    ||
-      pkg->optdepends_.size() ||
-      pkg->replaces_.size()   ||
-      pkg->conflicts_.size()  ||
-      pkg->provides_.size())
+  if (!pkg->depends_.empty()    ||
+      !pkg->optdepends_.empty() ||
+      !pkg->replaces_.empty()   ||
+      !pkg->conflicts_.empty()  ||
+      !pkg->provides_.empty())
   {
     contains_package_depends_ = true;
   }
+  if (!pkg->makedepends_.empty())
+    contains_make_depends_ = true;
   if (pkg->groups_.size())
     contains_groups_ = true;
   if (pkg->filelist_.size())

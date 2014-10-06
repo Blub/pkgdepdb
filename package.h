@@ -11,6 +11,7 @@ struct Package {
   // DB version 3:
   StringList              depends_;
   StringList              optdepends_;
+  StringList              makedepends_;
   StringList              provides_;
   StringList              conflicts_;
   StringList              replaces_;

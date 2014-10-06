@@ -24,6 +24,7 @@ struct DB {
   const Config&                config_;
 
   bool contains_package_depends_;
+  bool contains_make_depends_;
   bool contains_groups_;
   bool contains_filelists_;
 // }

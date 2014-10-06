@@ -127,6 +127,12 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
       pkg->depends_.push_back(es);
       continue;
     }
+    if (isentry("makedepend", sizeof("makedepend")-1)) {
+      if (!getvalue("makedepend", es))
+        return false;
+      pkg->makedepends_.push_back(es);
+      continue;
+    }
     if (isentry("optdepend", sizeof("optdepend")-1)) {
       if (!getvalue("optdepend", es))
         return false;
