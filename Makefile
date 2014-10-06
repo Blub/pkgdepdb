@@ -33,9 +33,11 @@ LIBS     += $(LIBARCHIVE_LIBS)
 CPPFLAGS += $(ZLIB_CFLAGS)
 LIBS     += $(ZLIB_LIBS)
 
+OBJECTS  = config.o package.o elf.o db.o db_format.o db_json.o filter.o
 MAIN_OBJ = main.o
 LIB_OBJ  =
-OBJECTS = config.o package.o elf.o db.o db_format.o db_json.o filter.o
+
+OBJECTS_SRC = $(OBJECTS:.o=.cpp) $(MAIN_OBJ:.o=.cpp) $(LIB_OBJ:.o=.cpp)
 
 BINARY        = pkgdepdb
 STATIC_BINARY = $(BINARY)-static
