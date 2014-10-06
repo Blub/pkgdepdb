@@ -8,7 +8,6 @@
 #include <fstream>
 
 #include "main.h"
-#include "pkgdepdb.h"
 
 #ifdef PKGDEPDB_ENABLE_THREADS
 unsigned int pkgdepdb_enable_threads = 1;

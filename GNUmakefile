@@ -1,5 +1,7 @@
 OBJECTS_SRC = $(subst .o,.cpp,$(OBJECTS))
 
+GIT_INFO := $(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null || true)
+
 # For the local development environment
 # define your most precious flags in .localflags
 -include .localflags
@@ -10,9 +12,22 @@ OBJECTS_SRC = $(subst .o,.cpp,$(OBJECTS))
 ifeq ($(CXX),clang++)
 	CPPFLAGS+=$(CLANG_FLAGS)
 endif
--include Makefile
 
-GIT_INFO := $(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null || true)
+LIBPKGDEPDB_LA:=
+LTCXX = $(CXX)
+LTLD  = $(CXX)
+LTOBJECTS = $(OBJECTS)
+ifeq ($(WITH_LIBRARY),yes)
+HAVE_LIBTOOL := $(shell which $(LIBTOOL) >/dev/null && echo yes)
+ifeq ($(HAVE_LIBTOOL),yes)
+LIBPKGDEPDB_LA:=libpkgdepdb.la
+LTCXX = $(LIBTOOL) --mode=compile $(CXX)
+LTLD  = $(LIBTOOL) --mode=link $(CXX)
+LTOBJECTS = $(OBJECTS:.o=.lo)
+LTMAIN_OBJ = $(MAIN_OBJ:.o=.lo)
+LTLIB_OBJ = $(LIB_OBJ.o=.lo)
+endif
+endif
 
 ifeq ($(ALPM),yes)
 ENABLE_ALPM := define
@@ -26,6 +41,8 @@ endif
 ifeq ($(THREADS),yes)
 ENABLE_THREADS := define
 endif
+
+-include Makefile
 
 #ifneq ($(strip $(ALLFLAGS)),$(strip $(?COMPAREFLAGS)))
 ifneq ($(strip $(ALLFLAGS)),$(strip $(shell echo $(COMPAREFLAGS))))

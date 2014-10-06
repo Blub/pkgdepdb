@@ -7,7 +7,6 @@
 # include <regex.h>
 #endif
 
-#include "pkgdepdb.h"
 #include "elf.h"
 #include "package.h"
 #include "db.h"

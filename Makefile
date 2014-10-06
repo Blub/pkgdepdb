@@ -1,12 +1,17 @@
 DESTDIR    =
 PREFIX     = /usr/local
 BINDIR     = $(PREFIX)/bin
+LIBDIR     = $(PREFIX)/lib
 DATADIR    = $(PREFIX)/share
 SYSCONFDIR = $(PREFIX)/etc
 MANDIR     = $(DATADIR)/man
 MAN1DIR    = $(MANDIR)/man1
 
 PACKAGE_NAME := pkgdepdb
+
+API_VERSION  := 1
+API_REVISION := 0
+API_AGE      := 0
 
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
@@ -15,6 +20,8 @@ VERSION_PATCH := 9dev
 CXX ?= clang++
 CXXFLAGS += -std=c++11
 CXXFLAGS += -Wall -Wextra -Werror -Wno-unknown-pragmas -fno-rtti
+
+LTVERSION = -version-info $(API_VERSION):$(API_REVISION):$(API_AGE)
 
 LIBARCHIVE_CFLAGS =
 LIBARCHIVE_LIBS   = -larchive
@@ -26,17 +33,20 @@ LIBS     += $(LIBARCHIVE_LIBS)
 CPPFLAGS += $(ZLIB_CFLAGS)
 LIBS     += $(ZLIB_LIBS)
 
-OBJECTS = main.o config.o package.o elf.o db.o db_format.o db_json.o filter.o
+MAIN_OBJ = main.o
+LIB_OBJ  =
+OBJECTS = config.o package.o elf.o db.o db_format.o db_json.o filter.o
 
 BINARY        = pkgdepdb
 STATIC_BINARY = $(BINARY)-static
 MANPAGES      = pkgdepdb.1
 
-.PHONY: man manpages uninstall uninstall-bin uninstall-man static
+.PHONY: man manpages uninstall uninstall-bin uninstall-man static \
+        install install-bin install-man
 
 default: all
 
-all:      $(BINARY)
+all:      $(BINARY) $(LIBPKGDEPDB_LA)
 static:   $(STATIC_BINARY)
 man:      $(MANPAGES)
 manpages: $(MANPAGES)
@@ -54,18 +64,21 @@ config.h: config.h.in Makefile Makefile.pre BSDmakefile GNUmakefile
 	    config.h.in > config.h
 
 .cpp.o:
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(LTCXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(BINARY): $(OBJECTS)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
+$(BINARY): $(MAIN_OBJ) $(OBJECTS)
+	$(LTLD) $(LDFLAGS) -o $@ $(LTMAIN_OBJ) $(LTOBJECTS) $(LIBS)
 
-$(STATIC_BINARY): $(OBJECTS)
-	libtool --mode=link $(CXX) $(LDFLAGS) -o $@ $(OBJECTS) -all-static $(LIBS)
+$(STATIC_BINARY): $(MAIN_OBJ) $(OBJECTS)
+	$(LTLD) $(LDFLAGS) -o $@ $(LTMAIN_OBJ) $(LTOBJECTS) -all-static $(LIBS)
 	@echo "NOTE:"
 	@echo "NOTE:"
 	@echo "NOTE: The static version will NOT work with threads enabled!!!"
 	@echo "NOTE:"
 	@echo "NOTE:"
+
+$(LIBPKGDEPDB_LA): $(OBJECTS)
+	$(LTLD) $(LTVERSION) $(LDFLAGS) -o $@ $(LTLIB_OBJ) $(LTOBJECTS) -rpath $(LIBDIR) $(LIBS)
 
 pkgdepdb.1: pkgdepdb.1.in
 	sed -e "s,%%SYSCONFDIR%%,$(SYSCONFDIR),g" \
@@ -73,8 +86,9 @@ pkgdepdb.1: pkgdepdb.1.in
 	    > pkgdepdb.1
 
 clean:
-	-rm -f *.o $(BINARY) $(BINARY)-static
+	-rm -f *.o *.lo *.la $(BINARY) $(BINARY)-static $(LIBPKGDEPDB_LA)
 	-rm -f .cflags
+	-rm -rf .libs
 
 install: install-bin install-man
 uninstall: uninstall-bin uninstall-man

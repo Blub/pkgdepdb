@@ -4,7 +4,6 @@
 #include <elf.h>
 
 #include "main.h"
-#include "pkgdepdb.h"
 #include "endian.h"
 #include "elf.h"
 

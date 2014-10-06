@@ -9,7 +9,6 @@
 #include <archive_entry.h>
 
 #include "main.h"
-#include "pkgdepdb.h"
 #include "elf.h"
 #include "package.h"
 #include "db.h"
