@@ -779,6 +779,8 @@ void DB::ShowPackages(bool                 filter_broken,
         printf("    depends on: %s\n", dep.c_str());
       for (auto &dep : pkg->optdepends_)
         printf("    depends optionally on: %s\n", dep.c_str());
+      for (auto &dep : pkg->makedepends_)
+        printf("    depends at compiletime on: %s\n", dep.c_str());
       for (auto &ent : pkg->provides_)
         printf("    provides: %s\n", ent.c_str());
       for (auto &ent : pkg->replaces_)

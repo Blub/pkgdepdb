@@ -99,6 +99,15 @@ void DB::ShowPackages_json(bool                filter_broken,
         }
         printf("\n\t\t\t]");
       }
+      if (pkg->makedepends_.size()) {
+        printf(",\n\t\t\t\"makedepends\": [");
+        const char *sep = "\n\t\t\t\t";
+        for (auto &dep : pkg->makedepends_) {
+          printf("%s", sep); sep = ",\n\t\t\t\t";
+          json_quote(stdout, dep);
+        }
+        printf("\n\t\t\t]");
+      }
       if (filter_broken) {
         printf(",\n\t\t\t\"broken\": [");
         const char *sep = "\n\t\t\t\t";
