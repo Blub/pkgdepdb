@@ -5,14 +5,18 @@
 extern "C" {
 #endif
 
+/* ELF objects are reference counted pointers */
+typedef struct pkgdepdb_elf_*   pkgdepdb_elf;
+typedef struct pkgdepdb_pkg_    pkgdepdb_pkg;
 typedef struct pkgdepdb_db_     pkgdepdb_db;
 typedef struct pkgdepdb_config_ pkgdepdb_config;
 
 /*********
  * pkgdepdb::Config interface
  */
-pkgdepdb_config* pkgdepdb_config_new();
+pkgdepdb_config* pkgdepdb_config_new   (void);
 void             pkgdepdb_config_delete(pkgdepdb_config*);
+
 int              pkgdepdb_config_load(pkgdepdb_config*, const char *filepath);
 int              pkgdepdb_config_load_default(pkgdepdb_config*);
 
@@ -99,6 +103,62 @@ void   pkgdepdb_db_relink_all     (pkgdepdb_db*);
 void   pkgdepdb_db_fix_paths      (pkgdepdb_db*);
 int    pkgdepdb_db_wipe_packages  (pkgdepdb_db*);
 int    pkgdepdb_db_wipe_file_lists(pkgdepdb_db*);
+
+/*********
+ * pkgdepdb::Package interface
+ */
+
+pkgdepdb_pkg* pkgdepdb_pkg_new   (void);
+void          pkgdepdb_pkg_delete(pkgdepdb_pkg*);
+
+/*********
+ * pkgdepdb::Elf interface
+ */
+
+pkgdepdb_elf  pkgdepdb_elf_new  (void);
+void          pkgdepdb_elf_unref(pkgdepdb_elf);
+pkgdepdb_elf  pkgdepdb_elf_open (const char *file, int *err, pkgdepdb_config*);
+pkgdepdb_elf  pkgdepdb_elf_read (const char *data, size_t size,
+                                 const char *basename, const char *dirname,
+                                 int *err, pkgdepdb_config*);
+
+const char*   pkgdepdb_elf_dirname     (pkgdepdb_elf);
+const char*   pkgdepdb_elf_basename    (pkgdepdb_elf);
+void          pkgdepdb_elf_set_dirname (pkgdepdb_elf, const char*);
+void          pkgdepdb_elf_set_basename(pkgdepdb_elf, const char*);
+
+unsigned char pkgdepdb_elf_class(pkgdepdb_elf);
+unsigned char pkgdepdb_elf_data (pkgdepdb_elf);
+unsigned char pkgdepdb_elf_osabi(pkgdepdb_elf);
+/* shouldn't really be set manually but what the heck... */
+void          pkgdepdb_elf_set_class(pkgdepdb_elf, unsigned char);
+void          pkgdepdb_elf_set_data (pkgdepdb_elf, unsigned char);
+void          pkgdepdb_elf_set_osabi(pkgdepdb_elf, unsigned char);
+
+/* convenience interface */
+const char*   pkgdepdb_elf_class_string(pkgdepdb_elf);
+const char*   pkgdepdb_elf_data_string (pkgdepdb_elf);
+const char*   pkgdepdb_elf_osabi_string(pkgdepdb_elf);
+
+const char*   pkgdepdb_elf_rpath      (pkgdepdb_elf);
+const char*   pkgdepdb_elf_runpath    (pkgdepdb_elf);
+const char*   pkgdepdb_elf_interpreter(pkgdepdb_elf);
+/* also shouldn't be set manually */
+void          pkgdepdb_elf_set_rpath      (pkgdepdb_elf, const char*);
+void          pkgdepdb_elf_set_runpath    (pkgdepdb_elf, const char*);
+void          pkgdepdb_elf_set_interpreter(pkgdepdb_elf, const char*);
+
+size_t        pkgdepdb_elf_needed_count(pkgdepdb_elf);
+size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf, const char**, size_t);
+
+/* for completeness */
+int           pkgdepdb_elf_needed_contains(pkgdepdb_elf, const char*);
+void          pkgdepdb_elf_needed_add     (pkgdepdb_elf, const char*);
+int           pkgdepdb_elf_needed_del_s   (pkgdepdb_elf, const char*);
+void          pkgdepdb_elf_needed_del_i   (pkgdepdb_elf, size_t);
+
+/* OSABI/class/data compatibility check */
+int           pkgdepdb_elf_can_use(pkgdepdb_elf, pkgdepdb_elf obj, int strict);
 
 #ifdef __cplusplus
 } /* "C" */
