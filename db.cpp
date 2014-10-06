@@ -11,7 +11,7 @@
 #  include <unistd.h>
 #endif
 
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
 #  include <alpm.h>
 #endif
 
@@ -926,7 +926,7 @@ static void strip_version(string &s) {
     s.erase(from);
 }
 
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
 bool split_depstring(const string &full,
                      string       &name,
                      string       &op,
@@ -1054,7 +1054,7 @@ static const Package* find_depend(const string     &dependency,
   if (!dependency.length())
     return 0;
 
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
   string dep, op, ver;
   split_depstring(dependency, dep, op, ver);
 #else
@@ -1064,7 +1064,7 @@ static const Package* find_depend(const string     &dependency,
 
   auto find = pkgmap.find(dep);
   if (find != pkgmap.end()) {
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
     const Package *other = find->second;
     if (!ver.length() || package_satisfies(other, dep, op, ver))
 #endif
@@ -1073,7 +1073,7 @@ static const Package* find_depend(const string     &dependency,
   // check for a providing package
   auto rep = replacemap.find(dep);
   if (rep != replacemap.end()) {
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
     if (!ver.length())
       return rep->second[0];
     for (auto other : rep->second) {
@@ -1087,7 +1087,7 @@ static const Package* find_depend(const string     &dependency,
 
   rep = providemap.find(dep);
   if (rep != providemap.end()) {
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
     if (!ver.length())
       return rep->second[0];
 
@@ -1123,7 +1123,7 @@ static void install_recursive(vec<const Package*>         &packages,
     strip_version(repl);
     installmap[repl] = pkg;
   }
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
   for (auto &full : pkg->conflicts_) {
     string conf, op, ver;
     if (!split_depstring(full, conf, op, ver))

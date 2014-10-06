@@ -14,18 +14,15 @@ endif
 
 GIT_INFO := $(shell GIT_CEILING_DIRECTORIES=`pwd`/.. git describe --always 2>/dev/null || true)
 
-ALPM ?= no
 ifeq ($(ALPM),yes)
 ENABLE_ALPM := define
 LIBS += -lalpm
 endif
 
-REGEX ?= no
 ifeq ($(REGEX),yes)
-CPPFLAGS += -DWITH_REGEX
+ENABLE_REGEX := define
 endif
 
-THREADS ?= no
 ifeq ($(THREADS),yes)
 ENABLE_THREADS := define
 endif

@@ -174,15 +174,15 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
 }
 
 static inline
-std::tuple<string, string> splitpath(const string& path)
+tuple<string, string> splitpath(const string& path)
 {
   size_t slash = path.find_last_of('/');
   if (slash == string::npos)
-    return std::make_tuple("/", path);
+    return make_tuple("/", path);
   if (path[0] != '/')
-    return std::make_tuple(move(string("/") + path.substr(0, slash)),
+    return make_tuple(move(string("/") + path.substr(0, slash)),
                            path.substr(slash+1));
-  return std::make_tuple(path.substr(0, slash), path.substr(slash+1));
+  return make_tuple(path.substr(0, slash), path.substr(slash+1));
 }
 
 static bool read_object(Package         *pkg,
@@ -435,7 +435,7 @@ void Package::ShowNeeded() {
 
 bool Package::ConflictsWith(const Package &other) const {
   for (auto &conf : conflicts_) {
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
     string name, op, ver;
     split_depstring(conf, name, op, ver);
     if (ver.length()) {
@@ -448,7 +448,7 @@ bool Package::ConflictsWith(const Package &other) const {
       if (other.name_ == name)
         return true;
       for (auto &prov : other.provides_) {
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
         string provname;
         split_depstring(prov, provname, op, ver);
 #else
@@ -457,7 +457,7 @@ bool Package::ConflictsWith(const Package &other) const {
         if (provname == name)
           return true;
       }
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
     }
 #endif
   }
@@ -466,7 +466,7 @@ bool Package::ConflictsWith(const Package &other) const {
 
 bool Package::Replaces(const Package &other) const {
   for (auto &conf : replaces_) {
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
     string name, op, ver;
     split_depstring(conf, name, op, ver);
     if (ver.length()) {
@@ -479,7 +479,7 @@ bool Package::Replaces(const Package &other) const {
       if (other.name_ == name)
         return true;
       for (auto &prov : other.provides_) {
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
         string provname;
         split_depstring(prov, provname, op, ver);
 #else
@@ -488,7 +488,7 @@ bool Package::Replaces(const Package &other) const {
         if (provname == name)
           return true;
       }
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
     }
 #endif
   }

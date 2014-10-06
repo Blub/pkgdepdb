@@ -9,6 +9,10 @@ CLANG_FLAGS := -Weverything \
                -Wno-sign-conversion \
                -Werror
 
+ALPM ?= no
+REGEX ?= no
+THREADS ?= no
 ENABLE_THREADS := undef
 ENABLE_ALPM := undef
+ENABLE_REGEX := undef
 GIT_INFO ?=

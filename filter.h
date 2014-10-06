@@ -14,7 +14,7 @@ class Match {
 
   static rptr<Match> CreateExact(string &&text);
   static rptr<Match> CreateGlob (string &&text);
-#ifdef WITH_REGEX
+#ifdef PKGDEPDB_ENABLE_REGEX
   static rptr<Match> CreateRegex(string &&text, bool icase);
 #endif
 };

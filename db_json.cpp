@@ -51,7 +51,7 @@ void DB::ShowPackages_json(bool                filter_broken,
   else
     printf("\n\t\"filters\": [],");
 
-  if (!packages_.size()) {
+  if (packages_.empty()) {
     printf("\n\t\"packages\": []\n}\n");
     return;
   }
@@ -72,7 +72,7 @@ void DB::ShowPackages_json(bool                filter_broken,
     printf(",\n\t\t\t\"version\": ");
     json_quote(stdout, pkg->version_);
     if (config_.verbosity_ >= 1) {
-      if (pkg->groups_.size()) {
+      if (!pkg->groups_.empty()) {
         printf(",\n\t\t\t\"groups\": [");
         const char *sep = "\n\t\t\t\t";
         for (auto &grp : pkg->groups_) {
@@ -81,7 +81,7 @@ void DB::ShowPackages_json(bool                filter_broken,
         }
         printf("\n\t\t\t]");
       }
-      if (pkg->depends_.size()) {
+      if (!pkg->depends_.empty()) {
         printf(",\n\t\t\t\"depends\": [");
         const char *sep = "\n\t\t\t\t";
         for (auto &dep : pkg->depends_) {
@@ -90,7 +90,7 @@ void DB::ShowPackages_json(bool                filter_broken,
         }
         printf("\n\t\t\t]");
       }
-      if (pkg->optdepends_.size()) {
+      if (!pkg->optdepends_.empty()) {
         printf(",\n\t\t\t\"optdepends\": [");
         const char *sep = "\n\t\t\t\t";
         for (auto &dep : pkg->optdepends_) {
@@ -99,7 +99,7 @@ void DB::ShowPackages_json(bool                filter_broken,
         }
         printf("\n\t\t\t]");
       }
-      if (pkg->makedepends_.size()) {
+      if (!pkg->makedepends_.empty()) {
         printf(",\n\t\t\t\"makedepends\": [");
         const char *sep = "\n\t\t\t\t";
         for (auto &dep : pkg->makedepends_) {
@@ -140,7 +140,7 @@ void DB::ShowPackages_json(bool                filter_broken,
         printf("\n\t\t\t]");
       }
       else {
-        if (!pkg->objects_.size())
+        if (pkg->objects_.empty())
           printf(",\n\t\t\t\"contains\": []");
         else {
           printf(",\n\t\t\t\"contains\": [");
@@ -167,7 +167,7 @@ void DB::ShowInfo_json() {
   printf(",\n\t\"db_name\": "); json_quote(stdout, name_);
   printf(",\n\t\"strict\": %s", (strict_linking_ ? "true" : "false"));
   printf(",\n\t\"library_path\": [");
-  if (!library_path_.size()) {
+  if (library_path_.empty()) {
     printf("]\n}\n");
     return;
   }
@@ -184,7 +184,7 @@ void DB::ShowInfo_json() {
   printf("\n\t]");
 
   unsigned id;
-  if (ignore_file_rules_.size()) {
+  if (!ignore_file_rules_.empty()) {
     printf(",\n\t\"ignore_files\": [");
     id = 0;
     for (auto &p : ignore_file_rules_) {
@@ -197,7 +197,7 @@ void DB::ShowInfo_json() {
     }
     printf("\n\t]");
   }
-  if (assume_found_rules_.size()) {
+  if (!assume_found_rules_.empty()) {
     printf(",\n\t\"assume_found\": [");
     id = 0;
     for (auto &p : assume_found_rules_) {
@@ -211,7 +211,7 @@ void DB::ShowInfo_json() {
     printf("\n\t]");
   }
   const char *sep;
-  if (package_library_path_.size()) {
+  if (!package_library_path_.empty()) {
     printf(",\n\t\"package_libray_paths\": {");
     sep = "\n\t\t";
     for (auto &iter : package_library_path_) {
@@ -227,7 +227,7 @@ void DB::ShowInfo_json() {
     }
     printf("\n\t}");
   }
-  if (base_packages_.size()) {
+  if (!base_packages_.empty()) {
     printf(",\n\t\"base_packages\": [");
     id = 0;
     for (auto &p : base_packages_) {
@@ -247,7 +247,7 @@ void DB::ShowInfo_json() {
 void DB::ShowObjects_json(const FilterList    &pkg_filters,
                           const ObjFilterList &obj_filters)
 {
-  if (!objects_.size()) {
+  if (objects_.empty()) {
     printf("{ \"objects\": [] }\n");
     return;
   }
@@ -257,7 +257,7 @@ void DB::ShowObjects_json(const FilterList    &pkg_filters,
   for (auto &obj : objects_) {
     if (!util::all(obj_filters, *this, *obj))
       continue;
-    if (pkg_filters.size() &&
+    if (!pkg_filters.empty() &&
         (!obj->owner_ || !util::all(pkg_filters, *this, *obj->owner_)))
       continue;
     printf("%s{\n\t\t\"file\":  ", mainsep); mainsep = ",\n\t";
@@ -403,7 +403,7 @@ static void json_obj(size_t id, FILE *out, const Elf *obj) {
   }
   fprintf(out, ",\n\t\t\t\"interpreter\": ");
   json_quote(out, obj->interpreter_);
-  if (obj->needed_.size()) {
+  if (!obj->needed_.empty()) {
     fprintf(out, ",\n\t\t\t\"needed\": [");
     bool comma = false;
     for (auto &need : obj->needed_) {
@@ -420,7 +420,7 @@ static void json_obj(size_t id, FILE *out, const Elf *obj) {
 
 template<class OBJLIST>
 static void json_objlist(FILE *out, const OBJLIST &list) {
-  if (!list.size())
+  if (list.empty())
     return;
   // let's group them...
   size_t i = 0;
@@ -460,7 +460,7 @@ static void json_pkg(FILE *out, const Package *pkg) {
     json_quote(out, pkg->version_);
     sep = ",\n";
   }
-  if (pkg->objects_.size()) {
+  if (!pkg->objects_.empty()) {
     fprintf(out, "%s\t\t\t\"objects\": [", sep);
     json_objlist(out, pkg->objects_);
     fprintf(out, "\n\t\t\t]");

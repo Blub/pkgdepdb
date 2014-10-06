@@ -50,6 +50,7 @@ config.h: config.h.in Makefile Makefile.pre BSDmakefile GNUmakefile
 	    -e 's/@@GIT_INFO@@/"$(GIT_INFO)"/g' \
 	    -e 's/@@ENABLE_THREADS@@/$(ENABLE_THREADS)/g' \
 	    -e 's/@@ENABLE_ALPM@@/$(ENABLE_ALPM)/g' \
+	    -e 's/@@ENABLE_REGEX@@/$(ENABLE_REGEX)/g' \
 	    config.h.in > config.h
 
 .cpp.o:

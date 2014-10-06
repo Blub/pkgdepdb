@@ -12,18 +12,15 @@ GIT_INFO != GIT_CEILING_DIRECTORIES="`pwd`/.." git describe --always 2>/dev/null
 
 .include "Makefile.pre"
 
-ALPM ?= no
 .if $(ALPM) == yes
-ENABLE_ALPM = define
+ENABLE_ALPM := define
 LIBS += -lalpm
 .endif
 
-REGEX ?= no
 .if $(REGEX) == yes
-CPPFLAGS += -DWITH_REGEX
+ENABLE_REGEX := define
 .endif
 
-THREADS ?= no
 .if $(THREADS) == yes
 ENABLE_THREADS := define
 .endif

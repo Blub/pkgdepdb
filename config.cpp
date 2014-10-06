@@ -148,15 +148,15 @@ const char *Config::ParseJSONBit(const char *bit, uint &opt_json) {
 bool Config::ReadConfig(std::istream &in, const char *path) {
   string line, errstr="";
 
-  std::tuple<string, function<bool(string&)>>
+  tuple<string, function<bool(string&)>>
   rules[] = {
-    std::make_tuple("database",         cfg_path(database_)),
-    std::make_tuple("verbosity",        cfg_numeric(verbosity_)),
-    std::make_tuple("quiet",            cfg_bool(quiet_)),
-    std::make_tuple("package_depends",  cfg_bool(package_depends_)),
-    std::make_tuple("json",             cfg_json(json_,errstr)),
-    std::make_tuple("jobs",             cfg_numeric(max_jobs_)),
-    std::make_tuple("file_lists",       cfg_bool(package_filelist_)),
+    make_tuple("database",         cfg_path(database_)),
+    make_tuple("verbosity",        cfg_numeric(verbosity_)),
+    make_tuple("quiet",            cfg_bool(quiet_)),
+    make_tuple("package_depends",  cfg_bool(package_depends_)),
+    make_tuple("json",             cfg_json(json_,errstr)),
+    make_tuple("jobs",             cfg_numeric(max_jobs_)),
+    make_tuple("file_lists",       cfg_bool(package_filelist_)),
   };
 
   size_t lineno = 0;

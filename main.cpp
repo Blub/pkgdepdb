@@ -342,8 +342,8 @@ int main(int argc, char **argv) {
           help(1);
           return 1;
         }
-        ld_insert.push_back(std::make_tuple(move(str.substr(colon+1)),
-                                            strtoul(str.c_str(), nullptr, 0)));
+        ld_insert.push_back(make_tuple(move(str.substr(colon+1)),
+                                       strtoul(str.c_str(), nullptr, 0)));
         break;
       }
 
@@ -718,7 +718,7 @@ static bool parse_filter(const string  &filter,
     return true;
   }
 
-#ifdef WITH_REGEX
+#ifdef PKGDEPDB_ENABLE_REGEX
   string regex;
   bool icase = false;
   auto parse_regex = [&]() -> bool {
@@ -757,7 +757,7 @@ static bool parse_filter(const string  &filter,
       return filter::Match::CreateExact(move(filter.substr(at+1)));
     else if (filter[at] == ':')
       return filter::Match::CreateGlob(move(filter.substr(at+1)));
-#ifdef WITH_REGEX
+#ifdef PKGDEPDB_ENABLE_REGEX
     else if (parse_regex())
       return filter::Match::CreateRegex(move(regex), icase);
 #endif

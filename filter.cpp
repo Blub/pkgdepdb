@@ -1,11 +1,12 @@
-#ifdef WITH_REGEX
+#include <algorithm>
+
+#include "main.h"
+
+#ifdef PKGDEPDB_ENABLE_REGEX
 # include <sys/types.h>
 # include <regex.h>
 #endif
 
-#include <algorithm>
-
-#include "main.h"
 #include "pkgdepdb.h"
 #include "elf.h"
 #include "package.h"
@@ -55,7 +56,7 @@ rptr<Match> Match::CreateGlob (string &&text) {
   return new GlobMatch(move(text));
 }
 
-#ifdef WITH_REGEX
+#ifdef PKGDEPDB_ENABLE_REGEX
 class RegexMatch : public Match {
  public:
   string  pattern_;
@@ -397,7 +398,7 @@ bool GlobMatch::operator()(const string &other) const {
   return match_glob(glob_, 0, other, 0);
 }
 
-#ifdef WITH_REGEX
+#ifdef PKGDEPDB_ENABLE_REGEX
 bool RegexMatch::operator()(const string &other) const {
   regmatch_t rm;
   return 0 == regexec(&regex_, other.c_str(), 0, &rm, 0);

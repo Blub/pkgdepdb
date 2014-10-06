@@ -17,6 +17,12 @@ template<class T, class Alloc = ::std::allocator<T>>
 using vec = ::std::vector<T,Alloc>;
 using StringList = vec<string>;
 
+#include <tuple>
+using std::tuple;
+using std::make_tuple;
+using Depend     = tuple<string,string>;
+using DependList = vec<Depend>;
+
 #include <map>
 
 #include <set>
@@ -39,7 +45,7 @@ using ObjectList  = vec<rptr<Elf>>;
 struct Package;
 using PackageList = vec<Package*>;
 
-#ifdef PKGDEPDB_WITH_ALPM
+#ifdef PKGDEPDB_ENABLE_ALPM
 bool split_depstring  (const string &str, string &name, string &op, string &v);
 bool package_satisfies(const Package *other,
                        const string &dep,
