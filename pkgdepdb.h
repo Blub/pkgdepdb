@@ -11,6 +11,13 @@ typedef struct pkgdepdb_pkg_    pkgdepdb_pkg;
 typedef struct pkgdepdb_db_     pkgdepdb_db;
 typedef struct pkgdepdb_config_ pkgdepdb_config;
 
+/* core library interface */
+void          pkgdepdb_init(void);
+const char*   pkgdepdb_error(void);
+void          pkgdepdb_set_error(const char*, ...);
+void          pkgdepdb_clear_error(void);
+void          pkgdepdb_finalize(void);
+
 /*********
  * pkgdepdb::Config interface
  */

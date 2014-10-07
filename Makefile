@@ -35,7 +35,7 @@ LIBS     += $(ZLIB_LIBS)
 
 OBJECTS  = config.o package.o elf.o db.o db_format.o db_json.o filter.o
 MAIN_OBJ = main.o
-LIB_OBJ  = capi_config.o capi_elf.o capi_package.o capi_db.o
+LIB_OBJ  = capi_common.o capi_config.o capi_elf.o capi_package.o capi_db.o
 
 TEST_SRC = tests/ca_config.c tests/ca_elf.c
 TEST_OBJ = $(TEST_SRC:.c=.o)

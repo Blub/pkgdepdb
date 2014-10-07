@@ -1,5 +1,6 @@
 #include <check.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <elf.h>
 
@@ -56,53 +57,71 @@ pkgdepdb_elf create_elf(const char *dirname, const char *basename,
 
 START_TEST (test_ca_elf)
 {
-  pkgdepdb_config *cfg = pkgdepdb_config_new();
-  ck_assert(cfg);
-
-  pkgdepdb_elf elf1 = create_elf("usr/lib", "libfoo.so",
+  pkgdepdb_elf libfoo = create_elf("usr/lib", "libfoo.so",
                                  ELFCLASS64, ELFDATA2LSB, 0,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,
                                  "/lib/ld-elf.so");
-  ck_assert(elf1);
+  if (!libfoo)
+    ck_abort_msg("failed to create a simple elf object");
 
-  pkgdepdb_elf_needed_add     (elf1, "libbar1.so");
-  pkgdepdb_elf_needed_add     (elf1, "libbar2.so");
-  ck_assert_int_eq(pkgdepdb_elf_needed_count(elf1), 2);
+  pkgdepdb_elf_needed_add     (libfoo, "libbar1.so");
+  pkgdepdb_elf_needed_add     (libfoo, "libbar2.so");
+  ck_assert_int_eq(pkgdepdb_elf_needed_count(libfoo), 2);
 
   const char *needed[2];
-  ck_assert_int_eq(pkgdepdb_elf_needed_get(elf1, needed, 0, 2), 2);
+  ck_assert_int_eq(pkgdepdb_elf_needed_get(libfoo, needed, 0, 2), 2);
   ck_assert_str_eq(needed[0], "libbar1.so");
   ck_assert_str_eq(needed[1], "libbar2.so");
 
-  pkgdepdb_elf elf2 = create_elf("usr/lib", "libbar1.so",
+  pkgdepdb_elf libbar1 = create_elf("usr/lib", "libbar1.so",
                                  ELFCLASS64, ELFDATA2LSB, 0,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,
                                  "/lib/ld-elf.so");
 
-  pkgdepdb_elf elf3 = create_elf("usr/lib", "libbar1.so",
+  pkgdepdb_elf libbar1_32 = create_elf("usr/lib", "libbar1.so",
                                  ELFCLASS32, ELFDATA2LSB, 0,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,
                                  "/lib/ld-elf.so");
 
-  pkgdepdb_elf elf4 = create_elf("usr/lib", "libbar1.so",
+  pkgdepdb_elf libbar1_abi = create_elf("usr/lib", "libbar1.so",
                                  ELFCLASS64, ELFDATA2LSB, 1,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,
                                  "/lib/ld-elf.so");
 
-  ck_assert( pkgdepdb_elf_can_use(elf1, elf2, 1));
-  ck_assert(!pkgdepdb_elf_can_use(elf1, elf3, 1));
-  ck_assert( pkgdepdb_elf_can_use(elf1, elf4, 0));
-  ck_assert(!pkgdepdb_elf_can_use(elf1, elf4, 1));
-  ck_assert( pkgdepdb_elf_can_use(elf4, elf1, 0));
-  ck_assert(!pkgdepdb_elf_can_use(elf4, elf1, 1));
+  ck_assert( pkgdepdb_elf_can_use(libfoo, libbar1, 1));
+  ck_assert(!pkgdepdb_elf_can_use(libfoo, libbar1_32, 1));
+  ck_assert( pkgdepdb_elf_can_use(libfoo, libbar1_abi, 0));
+  ck_assert(!pkgdepdb_elf_can_use(libfoo, libbar1_abi, 1));
+  ck_assert( pkgdepdb_elf_can_use(libbar1_abi, libfoo, 0));
+  ck_assert(!pkgdepdb_elf_can_use(libbar1_abi, libfoo, 1));
 
-  pkgdepdb_elf_unref(elf3);
-  pkgdepdb_elf_unref(elf2);
-  pkgdepdb_elf_unref(elf1);
+  pkgdepdb_elf_unref(libbar1_abi);
+  pkgdepdb_elf_unref(libbar1_32);
+  pkgdepdb_elf_unref(libbar1);
+  pkgdepdb_elf_unref(libfoo);
+}
+END_TEST
+
+START_TEST (test_ca_libpkgdepdb)
+{
+  pkgdepdb_config *cfg = pkgdepdb_config_new();
+  ck_assert(cfg);
+
+  int err = 0;
+  pkgdepdb_elf elf = pkgdepdb_elf_open(".libs/libpkgdepdb.so", &err, cfg);
+  if (!elf) {
+    if (err)
+      ck_abort_msg("error reading libpkgdepdb.so - cannot read own shared library?");
+    else
+      perror("open");
+    ck_abort_msg("failed to read libpkgdepdb.so: %s", pkgdepdb_error());
+  }
+  ck_assert_int_eq(err, 0);
+  ck_assert_str_eq(pkgdepdb_elf_basename(elf), "libpkgdepdb.so");
 
   pkgdepdb_config_delete(cfg);
 }
@@ -116,6 +135,7 @@ Suite *elf_suite() {
   tc_case = tcase_create("ca_elf");
 
   tcase_add_test(tc_case, test_ca_elf);
+  tcase_add_test(tc_case, test_ca_libpkgdepdb);
 
   suite_add_tcase(s, tc_case);
 

@@ -7,7 +7,8 @@
 START_TEST (test_ca_config)
 {
   pkgdepdb_config *cfg = pkgdepdb_config_new();
-  ck_assert(cfg);
+  if (!cfg)
+    ck_abort_msg("failed to instantiate a config structure");
 
   pkgdepdb_config_set_database          (cfg, "test.db.gz");
   pkgdepdb_config_set_verbosity         (cfg, 3);

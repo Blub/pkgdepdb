@@ -1,3 +1,6 @@
+#include <errno.h>
+#include <string.h>
+
 #include <fstream>
 
 #include "main.h"
@@ -26,29 +29,42 @@ void pkgdepdb_elf_unref(pkgdepdb_elf elf_) {
 pkgdepdb_elf pkgdepdb_elf_open(const char *file, int *err,
                                pkgdepdb_config *cfg_)
 {
-  auto cfg = reinterpret_cast<Config*>(cfg_);
+  if (err)
+    *err = 0;
   std::ifstream in(file, std::ios::binary);
-  if (!in)
+  if (!in) {
+    pkgdepdb_set_error("open failed: %s", strerror(errno));
     return nullptr;
-  if (!in.seekg(0, std::ios::end))
+  }
+  if (!in.seekg(0, std::ios::end)) {
+    pkgdepdb_set_error("seek failed: %s", strerror(errno));
     return nullptr;
+  }
   auto size = in.tellg();
-  if (!in.seekg(0, std::ios::beg))
-    return nullptr;
-
-  auto data = new char[size];
-  if (!in.read((char*)&data, size)) {
-    delete[] data;
+  if (!in.seekg(0, std::ios::beg)) {
+    pkgdepdb_set_error("seek failed: %s", strerror(errno));
     return nullptr;
   }
 
+  auto data = new char[size];
+  if (!in.read((char*)data, size)) {
+    pkgdepdb_set_error("read failed: %s", strerror(errno));
+    delete[] data;
+    return nullptr;
+  }
+  in.close();
+
   bool waserror = false;
+  auto cfg = reinterpret_cast<Config*>(cfg_);
   auto out = new rptr<Elf>(Elf::Open(data, size, &waserror, file, *cfg));
   delete[] data;
 
   if (!*out) {
     delete out;
-    *err = waserror;
+    if (err) {
+      pkgdepdb_set_error("error parsing ELF data");
+      *err = waserror;
+    }
     return nullptr;
   }
 
@@ -69,13 +85,17 @@ pkgdepdb_elf pkgdepdb_elf_read(const char *data, size_t size,
                                const char *basename, const char *dirname,
                                int *err, pkgdepdb_config *cfg_)
 {
+  if (err)
+    *err = 0;
+
   auto cfg = reinterpret_cast<Config*>(cfg_);
   bool waserror = false;
   auto out = new rptr<Elf>(Elf::Open(data, size, &waserror, basename, *cfg));
 
   if (!*out) {
     delete out;
-    *err = waserror;
+    if (err)
+      *err = waserror;
     return nullptr;
   }
 
