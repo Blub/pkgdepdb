@@ -171,6 +171,7 @@ START_TEST (test_ca_pkginfo)
 
   ck_assert_str_eq(pkgdepdb_pkg_name(pkg),    "libfoo");
   ck_assert_str_eq(pkgdepdb_pkg_version(pkg), "1.0-1");
+  ck_assert_str_eq(pkgdepdb_pkg_pkgbase(pkg), "foobase");
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_DEPENDS),    2);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_OPTDEPENDS), 1);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_MAKEDEPENDS),1);
