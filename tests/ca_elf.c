@@ -57,7 +57,7 @@ pkgdepdb_elf create_elf(const char *dirname, const char *basename,
 
 START_TEST (test_ca_elf)
 {
-  pkgdepdb_elf libfoo = create_elf("usr/lib", "libfoo.so",
+  pkgdepdb_elf libfoo = create_elf("/usr/lib", "libfoo.so",
                                  ELFCLASS64, ELFDATA2LSB, 0,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,
@@ -74,19 +74,19 @@ START_TEST (test_ca_elf)
   ck_assert_str_eq(needed[0], "libbar1.so");
   ck_assert_str_eq(needed[1], "libbar2.so");
 
-  pkgdepdb_elf libbar1 = create_elf("usr/lib", "libbar1.so",
+  pkgdepdb_elf libbar1 = create_elf("/usr/lib", "libbar1.so",
                                  ELFCLASS64, ELFDATA2LSB, 0,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,
                                  "/lib/ld-elf.so");
 
-  pkgdepdb_elf libbar1_32 = create_elf("usr/lib", "libbar1.so",
+  pkgdepdb_elf libbar1_32 = create_elf("/usr/lib", "libbar1.so",
                                  ELFCLASS32, ELFDATA2LSB, 0,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,
                                  "/lib/ld-elf.so");
 
-  pkgdepdb_elf libbar1_abi = create_elf("usr/lib", "libbar1.so",
+  pkgdepdb_elf libbar1_abi = create_elf("/usr/lib", "libbar1.so",
                                  ELFCLASS64, ELFDATA2LSB, 1,
                                  "/usr/lib:/usr/local/lib",
                                  NULL,

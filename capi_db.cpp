@@ -36,14 +36,23 @@ unsigned int pkgdepdb_db_loaded_version(pkgdepdb_db *db_) {
   return db->loaded_version_;
 }
 
-unsigned int pkgdepdb_db_strict_linking(pkgdepdb_db *db_) {
+int pkgdepdb_db_strict_linking(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->strict_linking_;
+}
+
+void pkgdepdb_db_set_strict_linking(pkgdepdb_db *db_, int v) {
+  auto db = reinterpret_cast<DB*>(db_);
+  db->strict_linking_ = v;
 }
 
 const char* pkgdepdb_db_name(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->name_.c_str();
+}
+void pkgdepdb_db_set_name(pkgdepdb_db *db_, const char *v) {
+  auto db = reinterpret_cast<DB*>(db_);
+  db->name_ = v;
 }
 
 size_t pkgdepdb_db_library_path_count(pkgdepdb_db *db_) {
@@ -78,14 +87,60 @@ size_t pkgdepdb_db_package_count(pkgdepdb_db *db_) {
   return db->packages_.size();
 }
 
-int pkgdepdb_db_delete_package_s(pkgdepdb_db *db_, const char *name) {
+size_t pkgdepdb_db_package_install(pkgdepdb_db *db_, pkgdepdb_pkg *pkg_) {
   auto db = reinterpret_cast<DB*>(db_);
-  return db->DeletePackage(name);
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return db->InstallPackage(move(pkg)) ? 1 : 0;
+}
+
+size_t pkgdepdb_db_package_delete_p(pkgdepdb_db *db_, pkgdepdb_pkg *pkg_) {
+  auto db = reinterpret_cast<DB*>(db_);
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto pkgiter = std::find(db->packages_.begin(), db->packages_.end(), pkg);
+  return db->DeletePackage(pkgiter) ? 1 : 0;
+}
+
+size_t pkgdepdb_db_package_remove(pkgdepdb_db *db_, pkgdepdb_pkg *pkg_) {
+  auto db = reinterpret_cast<DB*>(db_);
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto pkgiter = std::find(db->packages_.begin(), db->packages_.end(), pkg);
+  return db->DeletePackage(pkgiter, false) ? 1 : 0;
+}
+
+size_t pkgdepdb_db_package_delete_i(pkgdepdb_db *db_, size_t index) {
+  auto db = reinterpret_cast<DB*>(db_);
+  if (index >= db->packages_.size())
+    return 0;
+  return db->DeletePackage(db->packages_.begin() + index) ? 1 : 0;
+}
+
+size_t pkgdepdb_db_package_delete_s(pkgdepdb_db *db_, const char *name) {
+  auto db = reinterpret_cast<DB*>(db_);
+  return db->DeletePackage(name) ? 1 : 0;
 }
 
 size_t pkgdepdb_db_object_count(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->objects_.size();
+}
+
+size_t pkgdepdb_db_object_get(pkgdepdb_db *db_, pkgdepdb_elf *out,
+                              size_t off, size_t count)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  if (off >= db->objects_.size())
+    return 0;
+  size_t got = 0;
+  for (auto i = db->objects_.begin() + off; i != db->objects_.end(); ++i) {
+    if (!count--)
+      return got;
+    rptr<Elf> **dest = reinterpret_cast<rptr<Elf>**>(&out[got]);
+    if (*dest)
+      **dest = *i;
+    else
+      *dest = new rptr<Elf>(*i);
+  }
+  return got;
 }
 
 size_t pkgdepdb_db_ignored_files_count(pkgdepdb_db *db_) {
@@ -187,6 +242,18 @@ int pkgdepdb_db_wipe_packages(pkgdepdb_db *db_) {
 int pkgdepdb_db_wipe_file_lists(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->WipeFilelists();
+}
+
+int pkgdepdb_db_package_is_broken(pkgdepdb_db *db_, pkgdepdb_pkg *pkg_) {
+  auto db = reinterpret_cast<DB*>(db_);
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return db->IsBroken(pkg) ? 1 : 0;
+}
+
+int pkgdepdb_db_object_is_broken(pkgdepdb_db *db_, pkgdepdb_elf elf_) {
+  auto db = reinterpret_cast<DB*>(db_);
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  return db->IsBroken(elf) ? 1 : 0;
 }
 
 } /* extern "C" */

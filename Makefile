@@ -122,6 +122,8 @@ check: .libs/libpkgdepdb.a
 	tests/ca_elf
 	$(CXX) -o tests/ca_package tests/ca_package.c .libs/libpkgdepdb.a -lcheck $(LIBS)
 	tests/ca_package
+	$(CXX) -o tests/ca_db tests/ca_db.c .libs/libpkgdepdb.a -lcheck $(LIBS)
+	tests/ca_db
 
 # DO NOT DELETE
 

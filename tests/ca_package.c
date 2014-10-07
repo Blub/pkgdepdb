@@ -91,8 +91,9 @@ START_TEST (test_ca_package)
   ck_assert_str_eq(deps[2], "usr/lib/libfoo.so.1.0");
   ck_assert_str_eq(deps[3], "usr/lib/libfoo.so.1.0.0");
 
-  pkgdepdb_pkg_set_name    (oldfoo, "foo");
-  pkgdepdb_pkg_set_version (oldfoo, "0.9-1");
+  pkgdepdb_pkg_set_name     (oldfoo, "foo");
+  pkgdepdb_pkg_guess_version(oldfoo, "foo-0.9-1-x86_64.pkg.tar.xz");
+
   ck_assert_str_eq(pkgdepdb_pkg_name(oldfoo),    "foo");
   ck_assert_str_eq(pkgdepdb_pkg_version(oldfoo), "0.9-1");
 
@@ -101,6 +102,30 @@ START_TEST (test_ca_package)
   ck_assert( pkgdepdb_pkg_replaces(libfoo, oldfoo));
   ck_assert(!pkgdepdb_pkg_replaces(oldfoo, libfoo));
 
+  pkgdepdb_elf elf1 = pkgdepdb_elf_new();
+  ck_assert(elf1);
+  pkgdepdb_elf elf2 = pkgdepdb_elf_new();
+  ck_assert(elf2);
+  pkgdepdb_elf_set_basename(elf1, "lib1.so");
+  pkgdepdb_elf_set_basename(elf2, "lib2.so");
+  pkgdepdb_pkg_elf_add(libfoo, elf1);
+  pkgdepdb_pkg_elf_add(libfoo, elf2);
+  ck_assert_int_eq(pkgdepdb_pkg_elf_count(libfoo), 2);
+  pkgdepdb_elf elfs[3] = { NULL };
+  ck_assert_int_eq(pkgdepdb_pkg_elf_get(libfoo, elfs, 0, 3), 2);
+  ck_assert(!elfs[2]);
+  ck_assert_str_eq(pkgdepdb_elf_basename(elfs[0]), "lib1.so");
+  ck_assert_str_eq(pkgdepdb_elf_basename(elfs[1]), "lib2.so");
+  pkgdepdb_elf_unref(elfs[0]);
+  pkgdepdb_elf_unref(elfs[1]);
+
+  ck_assert_int_eq(pkgdepdb_pkg_elf_del_i(libfoo, 1), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_elf_get(libfoo, elfs, 0, 3), 1);
+  ck_assert_str_eq(pkgdepdb_elf_basename(elfs[0]), "lib1.so");
+  pkgdepdb_elf_unref(elfs[0]);
+
+  pkgdepdb_elf_unref(elf2);
+  pkgdepdb_elf_unref(elf1);
   pkgdepdb_pkg_delete(oldfoo);
   pkgdepdb_pkg_delete(libfoo);
 }

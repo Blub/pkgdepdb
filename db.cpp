@@ -105,16 +105,16 @@ const StringList* DB::GetPackageLibPath(const Package *pkg) const {
   return nullptr;
 }
 
-bool DB::DeletePackage(const string& name)
-{
-  const Package *old; {
-    auto pkgiter = FindPkg_i(name);
-    if (pkgiter == packages_.end())
-      return true;
+bool DB::DeletePackage(const string& name, bool destroy) {
+  return DeletePackage(FindPkg_i(name), destroy);
+}
 
-    old = *pkgiter;
-    packages_.erase(packages_.begin() + (pkgiter - packages_.begin()));
-  }
+bool DB::DeletePackage(PackageList::const_iterator pkgiter, bool destroy) {
+  if (pkgiter == packages_.end())
+    return true;
+
+  const Package *old = *pkgiter;
+  packages_.erase(packages_.begin() + (pkgiter - packages_.begin()));
 
   for (auto &elfsp : old->objects_) {
     Elf *elf = elfsp.get();
@@ -143,7 +143,8 @@ bool DB::DeletePackage(const string& name)
     }
   }
 
-  delete old;
+  if (destroy)
+    delete old;
 
   objects_.erase(
     std::remove_if(objects_.begin(), objects_.end(),

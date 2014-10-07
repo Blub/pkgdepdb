@@ -73,9 +73,11 @@ int          pkgdepdb_db_store (pkgdepdb_db*, const char *filename);
 
 unsigned int  pkgdepdb_db_loaded_version(pkgdepdb_db*);
 
-unsigned int  pkgdepdb_db_strict_linking(pkgdepdb_db*);
+int           pkgdepdb_db_strict_linking(pkgdepdb_db*);
+void          pkgdepdb_db_set_strict_linking(pkgdepdb_db*, int);
 
 const char*   pkgdepdb_db_name(pkgdepdb_db*);
+void          pkgdepdb_db_set_name(pkgdepdb_db*, const char*);
 
 size_t pkgdepdb_db_library_path_count(pkgdepdb_db*);
 size_t pkgdepdb_db_library_path_get  (pkgdepdb_db*, const char**, size_t,
@@ -84,8 +86,23 @@ int    pkgdepdb_db_library_path_add  (pkgdepdb_db*, const char*);
 int    pkgdepdb_db_library_path_del_s(pkgdepdb_db*, const char*);
 int    pkgdepdb_db_library_path_del_i(pkgdepdb_db*, size_t);
 
-size_t pkgdepdb_db_package_count(pkgdepdb_db*);
-size_t pkgdepdb_db_object_count (pkgdepdb_db*);
+/* the package delete functions "uninstall" the package from the db */
+size_t pkgdepdb_db_package_count   (pkgdepdb_db*);
+size_t pkgdepdb_db_package_install (pkgdepdb_db*, pkgdepdb_pkg*);
+size_t pkgdepdb_db_package_delete_p(pkgdepdb_db*, pkgdepdb_pkg*);
+size_t pkgdepdb_db_package_delete_s(pkgdepdb_db*, const char*);
+size_t pkgdepdb_db_package_delete_i(pkgdepdb_db*, size_t);
+
+/* remove a package without destroying it */
+size_t pkgdepdb_db_package_remove(pkgdepdb_db*, pkgdepdb_pkg*);
+
+int    pkgdepdb_db_package_is_broken(pkgdepdb_db*, pkgdepdb_pkg*);
+
+/* the DB's object list is read-only */
+size_t pkgdepdb_db_object_count(pkgdepdb_db*);
+size_t pkgdepdb_db_object_get  (pkgdepdb_db*, pkgdepdb_elf*, size_t, size_t);
+
+int    pkgdepdb_db_object_is_broken(pkgdepdb_db*, pkgdepdb_elf);
 
 size_t pkgdepdb_db_ignored_files_count(pkgdepdb_db*);
 size_t pkgdepdb_db_ignored_files_get  (pkgdepdb_db*, const char**, size_t,
@@ -107,8 +124,6 @@ size_t pkgdepdb_db_assume_found_get  (pkgdepdb_db*, const char**, size_t,
 int    pkgdepdb_db_assume_found_add  (pkgdepdb_db*, const char*);
 int    pkgdepdb_db_assume_found_del_s(pkgdepdb_db*, const char*);
 int    pkgdepdb_db_assume_found_del_i(pkgdepdb_db*, size_t);
-
-int    pkgdepdb_db_delete_package_s(pkgdepdb_db*, const char*);
 
 void   pkgdepdb_db_relink_all     (pkgdepdb_db*);
 void   pkgdepdb_db_fix_paths      (pkgdepdb_db*);
@@ -162,6 +177,13 @@ size_t        pkgdepdb_pkg_filelist_get  (pkgdepdb_pkg*,
 size_t        pkgdepdb_pkg_filelist_add  (pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_s(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg*, size_t);
+
+size_t        pkgdepdb_pkg_elf_count(pkgdepdb_pkg*);
+size_t        pkgdepdb_pkg_elf_get  (pkgdepdb_pkg*, pkgdepdb_elf*, size_t,
+                                     size_t);
+size_t        pkgdepdb_pkg_elf_add  (pkgdepdb_pkg*, pkgdepdb_elf);
+size_t        pkgdepdb_pkg_elf_del_e(pkgdepdb_pkg*, pkgdepdb_elf);
+size_t        pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg*, size_t);
 
 /* some exposed utility functions */
 void          pkgdepdb_pkg_guess_version(pkgdepdb_pkg*, const char *filename);

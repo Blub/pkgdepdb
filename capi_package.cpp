@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 
 #include "main.h"
@@ -248,6 +249,60 @@ int pkgdepdb_pkg_replaces(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
   auto pkg = reinterpret_cast<Package*>(subj_);
   auto obj = reinterpret_cast<Package*>(obj_);
   return pkg->Replaces(*obj);
+}
+
+size_t pkgdepdb_pkg_elf_count(pkgdepdb_pkg *pkg_) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkg->objects_.size();
+}
+
+size_t pkgdepdb_pkg_elf_get  (pkgdepdb_pkg *pkg_, pkgdepdb_elf *out,
+                              size_t off, size_t count)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  if (off >= pkg->objects_.size())
+    return 0;
+  auto i   = pkg->objects_.begin() + off;
+  auto end = pkg->objects_.end();
+  size_t got = 0;
+  for (; i != end; ++i) {
+    rptr<Elf> **dest;
+    if (!count--)
+      return got;
+    dest = reinterpret_cast<rptr<Elf>**>(&out[got++]);
+    if (*dest)
+      **dest = *i;
+    else
+      *dest = new rptr<Elf>(*i);
+  }
+  return got;
+}
+
+size_t pkgdepdb_pkg_elf_add  (pkgdepdb_pkg *pkg_, pkgdepdb_elf elf_) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto elf = reinterpret_cast<rptr<Elf>*>(elf_);
+  if (!elf || !*elf)
+    return 0;
+  pkg->objects_.push_back(*elf);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_elf_del_e(pkgdepdb_pkg *pkg_, pkgdepdb_elf elf_) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto elf = reinterpret_cast<rptr<Elf>*>(elf_);
+  auto it  = std::find(pkg->objects_.begin(), pkg->objects_.end(), *elf);
+  if (it == pkg->objects_.end())
+    return 0;
+  pkg->objects_.erase(it);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg *pkg_, size_t index) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  if (index >= pkg->objects_.size())
+    return 0;
+  pkg->objects_.erase(pkg->objects_.begin() + index);
+  return 1;
 }
 
 } // extern "C"

@@ -36,7 +36,8 @@ struct DB {
 
 
   bool InstallPackage(Package* &&pkg);
-  bool DeletePackage (const string& name);
+  bool DeletePackage (const string& name, bool destroy = true);
+  bool DeletePackage (PackageList::const_iterator, bool destroy = true);
   Elf *FindFor       (const Elf*, const string& lib,
                       const StringList *extrapath) const;
   void LinkObject    (Elf*, const Package *owner,
