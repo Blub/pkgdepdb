@@ -110,6 +110,11 @@ uninstall-man:
 depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null
 	-rm -f Makefile.bak
+
+check: .libs/libpkgdepdb.a
+	$(CXX) -o tests/ca_config tests/ca_config.c .libs/libpkgdepdb.a -lcheck
+	tests/ca_config
+
 # DO NOT DELETE
 
 config.o: .cflags main.h util.h config.h
