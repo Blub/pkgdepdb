@@ -59,6 +59,14 @@ void pkgdepdb_pkg_set_pkgbase(pkgdepdb_pkg *pkg_, const char *v) {
   pkg->pkgbase_ = v;
 }
 
+int pkgdepdb_pkg_read_info(pkgdepdb_pkg *pkg_, const char *data, size_t size,
+                           pkgdepdb_config *cfg_)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  return pkg->ReadInfo(string(data, size), size, *cfg);
+}
+
 static DependList Package::* const kDepMember[] = {
   &Package::depends_,
   &Package::optdepends_,

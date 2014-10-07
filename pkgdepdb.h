@@ -147,6 +147,9 @@ void          pkgdepdb_pkg_set_name   (pkgdepdb_pkg*, const char*);
 void          pkgdepdb_pkg_set_version(pkgdepdb_pkg*, const char*);
 void          pkgdepdb_pkg_set_pkgbase(pkgdepdb_pkg*, const char*);
 
+int           pkgdepdb_pkg_read_info(pkgdepdb_pkg*, const char*, size_t,
+                                     pkgdepdb_config*);
+
 enum {
   PKGDEPDB_PKG_DEPENDS,
   PKGDEPDB_PKG_OPTDEPENDS,

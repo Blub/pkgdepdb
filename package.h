@@ -44,6 +44,9 @@ struct Package {
 
   // Output function:
   void ShowNeeded();
+
+  // parsing a .PKGINFO file in a string
+  bool ReadInfo(const string&, const size_t size, const Config& optconfig);
 };
 
 } // ::pkgdepdb

@@ -69,6 +69,12 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
 
   string str(&data[0], data.size());
 
+  return pkg->ReadInfo(str, size, optconfig);
+}
+
+bool Package::ReadInfo(const string& str, const size_t size,
+                       const Config& optconfig)
+{
   size_t pos = 0;
   auto skipwhite = [&]() {
     while (pos < size && c_isspace(str[pos]))
@@ -132,7 +138,7 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
     skipline();
     if (valuepos != pos) {
       auto value = str.substr(valuepos, pos-valuepos);
-      pkg->info_[key].emplace_back(value);
+      this->info_[key].emplace_back(value);
     }
   };
 
@@ -141,18 +147,18 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
   while (pos < size) {
     skipwhite();
     if (isentry("pkgname", sizeof("pkgname")-1)) {
-      if (!getvalue("pkgname", pkg->name_))
+      if (!getvalue("pkgname", name_))
         return false;
       continue;
     }
     if (isentry("pkgver", sizeof("pkgver")-1)) {
-      if (!getvalue("pkgver", pkg->version_))
+      if (!getvalue("pkgver", version_))
         return false;
       continue;
     }
     if (isentry("pkgbase", sizeof("pkgbase")-1)) {
-      if (pkg->pkgbase_.empty()) {
-        if (!getvalue("pkgbase", pkg->pkgbase_))
+      if (pkgbase_.empty()) {
+        if (!getvalue("pkgbase", pkgbase_))
           return false;
         continue;
       }
@@ -173,14 +179,14 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
       if (!getvalue("depend", es))
         return false;
       split_depstring(es, version, constraint);
-      pkg->depends_.emplace_back(version, constraint);
+      depends_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("makedepend", sizeof("makedepend")-1)) {
       if (!getvalue("makedepend", es))
         return false;
       split_depstring(es, version, constraint);
-      pkg->makedepends_.emplace_back(version, constraint);
+      makedepends_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("optdepend", sizeof("optdepend")-1)) {
@@ -191,7 +197,7 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
         es.erase(c);
       if (es.length()) {
         split_depstring(es, version, constraint);
-        pkg->optdepends_.emplace_back(version, constraint);
+        optdepends_.emplace_back(version, constraint);
       }
       continue;
     }
@@ -199,27 +205,27 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
       if (!getvalue("replaces", es))
         return false;
       split_depstring(es, version, constraint);
-      pkg->replaces_.emplace_back(version, constraint);
+      replaces_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("conflict", sizeof("conflict")-1)) {
       if (!getvalue("conflict", es))
         return false;
       split_depstring(es, version, constraint);
-      pkg->conflicts_.emplace_back(version, constraint);
+      conflicts_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("provides", sizeof("provides")-1)) {
       if (!getvalue("provides", es))
         return false;
       split_depstring(es, version, constraint);
-      pkg->provides_.emplace_back(version, constraint);
+      provides_.emplace_back(version, constraint);
       continue;
     }
     if (isentry("group", sizeof("group")-1)) {
       if (!getvalue("group", es))
         return false;
-      pkg->groups_.insert(es);
+      groups_.insert(es);
       continue;
     }
 
