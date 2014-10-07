@@ -46,14 +46,14 @@ enum {
   PKGDEPDB_CONFIG_LOG_LEVEL_WARN,
   PKGDEPDB_CONFIG_LOG_LEVEL_ERROR,
 };
-int    *pkgdepdb_config_log_level    (pkgdepdb_config*);
-void   *pkgdepdb_config_set_log_level(pkgdepdb_config*, int);
+unsigned int     pkgdepdb_config_log_level    (pkgdepdb_config*);
+void             pkgdepdb_config_set_log_level(pkgdepdb_config*, unsigned int);
 
 /* json - this part of the interface should not usually be required... */
 #define PKGDEPDB_JSONBITS_QUERY (1<<0)
 #define PKGDEPDB_JSONBITS_DB    (1<<1)
-int    *pkgdepdb_config_json    (pkgdepdb_config*);
-void   *pkgdepdb_config_set_json(pkgdepdb_config*, int);
+unsigned int     pkgdepdb_config_json    (pkgdepdb_config*);
+void             pkgdepdb_config_set_json(pkgdepdb_config*, unsigned int);
 
 /*********
  * pkgdepdb::DB interface

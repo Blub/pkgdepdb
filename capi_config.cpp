@@ -88,4 +88,24 @@ void pkgdepdb_config_set_max_jobs(pkgdepdb_config *cfg_, unsigned int v) {
   cfg->max_jobs_ = v;
 }
 
+unsigned int pkgdepdb_config_log_level(pkgdepdb_config *cfg_) {
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  return cfg->log_level_;
+}
+
+void pkgdepdb_config_set_log_level(pkgdepdb_config *cfg_, unsigned int v) {
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  cfg->log_level_ = v;
+}
+
+unsigned int pkgdepdb_config_json(pkgdepdb_config *cfg_) {
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  return cfg->json_;
+}
+
+void pkgdepdb_config_set_json(pkgdepdb_config *cfg_, unsigned int v) {
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  cfg->json_ = v;
+}
+
 } // extern "C"
