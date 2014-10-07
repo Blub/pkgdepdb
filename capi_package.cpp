@@ -76,8 +76,9 @@ size_t pkg_dependlist_get(const Package& pkg, DependList Package::*member,
   for (; i != end; ++i) {
     if (!n--)
       return got;
-    on[got++] = std::get<0>(*i).c_str();
-    oc[got++] = std::get<1>(*i).c_str();
+    on[got] = std::get<0>(*i).c_str();
+    oc[got] = std::get<1>(*i).c_str();
+    ++got;
   }
   return got;
 }
@@ -119,7 +120,6 @@ int pkg_dependlist_del_full(Package& pkg, DependList Package::*member,
   }
   return 0;
 }
-
 
 static inline
 int pkg_dependlist_del_i(Package& pkg, DependList Package::*member, size_t i) {
