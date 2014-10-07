@@ -120,7 +120,6 @@ bool Package::ReadInfo(const string& str, const size_t size,
   };
 
   auto addinfo = [&]() {
-    skipwhite();
     if (pos >= size)
       return;
     auto keypos = pos;
@@ -129,7 +128,9 @@ bool Package::ReadInfo(const string& str, const size_t size,
     auto key = str.substr(keypos, pos-keypos);
     skipwhite();
     if (pos >= size || str[pos] != '=') {
-      optconfig.Log(Error, "invalid entry in .PKGINFO");
+      optconfig.Log(Error, "invalid entry in .PKGINFO\n");
+      if (pos < size)
+        skipline();
       return;
     }
     ++pos;
@@ -146,6 +147,11 @@ bool Package::ReadInfo(const string& str, const size_t size,
   string version, constraint;
   while (pos < size) {
     skipwhite();
+    if (str[pos] == '#') {
+      skipline();
+      continue;
+    }
+
     if (isentry("pkgname", sizeof("pkgname")-1)) {
       if (!getvalue("pkgname", name_))
         return false;
@@ -201,7 +207,7 @@ bool Package::ReadInfo(const string& str, const size_t size,
       }
       continue;
     }
-    if (isentry("replace", sizeof("replaces")-1)) {
+    if (isentry("replaces", sizeof("replaces")-1)) {
       if (!getvalue("replaces", es))
         return false;
       split_depstring(es, version, constraint);
