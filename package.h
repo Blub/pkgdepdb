@@ -28,7 +28,6 @@ struct Package {
   } load_;
 // }
 
-
   static Package* Open(const string& path, const Config&);
   Elf* Find(const string &dirname, const string &basename) const;
 

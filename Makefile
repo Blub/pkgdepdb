@@ -35,7 +35,7 @@ LIBS     += $(ZLIB_LIBS)
 
 OBJECTS  = config.o package.o elf.o db.o db_format.o db_json.o filter.o
 MAIN_OBJ = main.o
-LIB_OBJ  = capi_config.o capi_elf.o capi_db.o
+LIB_OBJ  = capi_config.o capi_elf.o capi_package.o capi_db.o
 
 OBJECTS_SRC = $(OBJECTS:.o=.cpp) $(MAIN_OBJ:.o=.cpp) $(LIB_OBJ:.o=.cpp)
 

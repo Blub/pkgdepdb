@@ -5,6 +5,8 @@
 
 #include "pkgdepdb.h"
 
+#include "capi_algorithm.h"
+
 using namespace pkgdepdb;
 
 pkgdepdb_db *pkgdepdb_db_new(pkgdepdb_config *cfg_) {
@@ -47,23 +49,11 @@ size_t pkgdepdb_db_library_path_count(pkgdepdb_db *db_) {
   return db->library_path_.size();
 }
 
-template<class STRINGLIST>
-static size_t pkgdepdb_db_string_list(const DB& db, const char **o, size_t n,
-                                      STRINGLIST DB::*member)
-{
-  size_t got = 0;
-  for (const auto& i : db.*member) {
-    if (!n--)
-      return got;
-    o[got++] = i.c_str();
-  }
-  return got;
-}
-
-size_t pkgdepdb_db_library_path_get(pkgdepdb_db *db_, const char** o, size_t n)
+size_t pkgdepdb_db_library_path_get(pkgdepdb_db *db_, const char **out,
+                                    size_t off, size_t count)
 {
   auto db = reinterpret_cast<DB*>(db_);
-  return pkgdepdb_db_string_list(*db, o, n, &DB::library_path_);
+  return pkgdepdb_strlist_get(*db, &DB::library_path_, out, off, count);
 }
 
 int pkgdepdb_db_library_path_add(pkgdepdb_db *db_, const char *path) {
@@ -101,10 +91,11 @@ size_t pkgdepdb_db_ignored_files_count(pkgdepdb_db *db_) {
   return db->ignore_file_rules_.size();
 }
 
-size_t pkgdepdb_db_ignored_files_get(pkgdepdb_db *d_, const char **o, size_t n)
+size_t pkgdepdb_db_ignored_files_get(pkgdepdb_db *d_, const char **out,
+                                     size_t off, size_t count)
 {
   auto db = reinterpret_cast<DB*>(d_);
-  return pkgdepdb_db_string_list(*db, o, n, &DB::ignore_file_rules_);
+  return pkgdepdb_strlist_get(*db, &DB::ignore_file_rules_, out, off, count);
 }
 
 int pkgdepdb_db_ignored_files_add(pkgdepdb_db *db_, const char *file) {
@@ -127,10 +118,11 @@ size_t pkgdepdb_db_base_packages_count(pkgdepdb_db *db_) {
   return db->base_packages_.size();
 }
 
-size_t pkgdepdb_db_base_packages_get(pkgdepdb_db *d_, const char **o, size_t n)
+size_t pkgdepdb_db_base_packages_get(pkgdepdb_db *d_, const char **out,
+                                     size_t off, size_t count)
 {
   auto db = reinterpret_cast<DB*>(d_);
-  return pkgdepdb_db_string_list(*db, o, n, &DB::base_packages_);
+  return pkgdepdb_strlist_get(*db, &DB::base_packages_, out, off, count);
 }
 
 size_t pkgdepdb_db_base_packages_add(pkgdepdb_db *db_, const char *name) {
@@ -153,10 +145,11 @@ size_t pkgdepdb_db_assume_found_count(pkgdepdb_db *db_) {
   return db->assume_found_rules_.size();
 }
 
-size_t pkgdepdb_db_assume_found_get(pkgdepdb_db *db_, const char **o, size_t n)
+size_t pkgdepdb_db_assume_found_get(pkgdepdb_db *db_, const char **out,
+                                     size_t off, size_t count)
 {
   auto db = reinterpret_cast<DB*>(db_);
-  return pkgdepdb_db_string_list(*db, o, n, &DB::assume_found_rules_);
+  return pkgdepdb_strlist_get(*db, &DB::assume_found_rules_, out, off, count);
 }
 
 int pkgdepdb_db_assume_found_add(pkgdepdb_db *db_, const char *lib) {
