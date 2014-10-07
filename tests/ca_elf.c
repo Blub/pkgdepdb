@@ -69,8 +69,8 @@ START_TEST (test_ca_elf)
   pkgdepdb_elf_needed_add     (libfoo, "libbar2.so");
   ck_assert_int_eq(pkgdepdb_elf_needed_count(libfoo), 2);
 
-  const char *needed[2];
-  ck_assert_int_eq(pkgdepdb_elf_needed_get(libfoo, needed, 0, 2), 2);
+  const char *needed[3];
+  ck_assert_int_eq(pkgdepdb_elf_needed_get(libfoo, needed, 0, 3), 2);
   ck_assert_str_eq(needed[0], "libbar1.so");
   ck_assert_str_eq(needed[1], "libbar2.so");
 

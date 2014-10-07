@@ -37,7 +37,7 @@ OBJECTS  = config.o package.o elf.o db.o db_format.o db_json.o filter.o
 MAIN_OBJ = main.o
 LIB_OBJ  = capi_common.o capi_config.o capi_elf.o capi_package.o capi_db.o
 
-TEST_SRC = tests/ca_config.c tests/ca_elf.c
+TEST_SRC = tests/ca_config.c tests/ca_elf.c tests/ca_package.c
 TEST_OBJ = $(TEST_SRC:.c=.o)
 
 OBJECTS_SRC = $(OBJECTS:.o=.cpp) $(MAIN_OBJ:.o=.cpp) $(LIB_OBJ:.o=.cpp)
@@ -116,10 +116,12 @@ depend:
 
 .libs/libpkgdepdb.a: $(LIBPKGDEPDB_LA)
 check: .libs/libpkgdepdb.a
-	$(CXX) -o tests/ca_config tests/ca_config.c .libs/libpkgdepdb.a -lcheck
+	$(CXX) -o tests/ca_config tests/ca_config.c .libs/libpkgdepdb.a -lcheck $(LIBS)
 	tests/ca_config
-	$(CXX) -o tests/ca_elf tests/ca_elf.c .libs/libpkgdepdb.a -lcheck
+	$(CXX) -o tests/ca_elf tests/ca_elf.c .libs/libpkgdepdb.a -lcheck $(LIBS)
 	tests/ca_elf
+	$(CXX) -o tests/ca_package tests/ca_package.c .libs/libpkgdepdb.a -lcheck $(LIBS)
+	tests/ca_package
 
 # DO NOT DELETE
 
