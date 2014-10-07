@@ -199,7 +199,8 @@ void          pkgdepdb_elf_set_runpath    (pkgdepdb_elf, const char*);
 void          pkgdepdb_elf_set_interpreter(pkgdepdb_elf, const char*);
 
 size_t        pkgdepdb_elf_needed_count(pkgdepdb_elf);
-size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf, const char**, size_t);
+size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf, const char**, size_t,
+                                        size_t);
 
 /* for completeness */
 int           pkgdepdb_elf_needed_contains(pkgdepdb_elf, const char*);

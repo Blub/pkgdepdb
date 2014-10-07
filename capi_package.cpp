@@ -11,6 +11,8 @@
 
 using namespace pkgdepdb;
 
+extern "C" {
+
 pkgdepdb_pkg* pkgdepdb_pkg_new(void) {
   return reinterpret_cast<pkgdepdb_pkg*>(new Package);
 }
@@ -246,3 +248,5 @@ int pkgdepdb_pkg_replaces(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
   auto obj = reinterpret_cast<Package*>(obj_);
   return pkg->Replaces(*obj);
 }
+
+} // extern "C"

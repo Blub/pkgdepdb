@@ -7,7 +7,11 @@
 
 #include "pkgdepdb.h"
 
+#include "capi_algorithm.h"
+
 using namespace pkgdepdb;
+
+extern "C" {
 
 pkgdepdb_elf pkgdepdb_elf_new() {
   auto out = new rptr<Elf>(new Elf);
@@ -193,23 +197,11 @@ size_t pkgdepdb_elf_needed_count(pkgdepdb_elf elf_) {
   return elf->needed_.size();
 }
 
-template<class STRINGLIST>
-static size_t pkgdepdb_elf_string_list(const Elf& elf,
-                                       const char **o, size_t n,
-                                       STRINGLIST Elf::*member)
+size_t pkgdepdb_elf_needed_get(pkgdepdb_elf elf_, const char **out, size_t off,
+                               size_t count)
 {
-  size_t got = 0;
-  for (const auto& i : elf.*member) {
-    if (!n--)
-      return got;
-    o[got++] = i.c_str();
-  }
-  return got;
-}
-
-size_t pkgdepdb_elf_needed_get(pkgdepdb_elf elf_, const char **o, size_t n) {
   auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
-  return pkgdepdb_elf_string_list(*elf, o, n, &Elf::needed_);
+  return pkgdepdb_strlist_get(*elf, &Elf::needed_, out, off, count);
 }
 
 int pkgdepdb_elf_needed_contains(pkgdepdb_elf elf_, const char *v) {
@@ -247,3 +239,5 @@ int pkgdepdb_elf_can_use(pkgdepdb_elf subject, pkgdepdb_elf object, int strict)
   auto other = *reinterpret_cast<rptr<Elf>*>(object);
   return elf->CanUse(*other, strict);
 }
+
+} // extern "C"

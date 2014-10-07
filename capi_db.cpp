@@ -9,6 +9,8 @@
 
 using namespace pkgdepdb;
 
+extern "C" {
+
 pkgdepdb_db *pkgdepdb_db_new(pkgdepdb_config *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return reinterpret_cast<pkgdepdb_db*>(new DB(*cfg));
@@ -186,3 +188,5 @@ int pkgdepdb_db_wipe_file_lists(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->WipeFilelists();
 }
+
+} /* extern "C" */
