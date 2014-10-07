@@ -113,6 +113,7 @@ int    pkgdepdb_db_wipe_file_lists(pkgdepdb_db*);
  */
 
 pkgdepdb_pkg* pkgdepdb_pkg_new   (void);
+pkgdepdb_pkg* pkgdepdb_pkg_load  (const char *filename, pkgdepdb_config*);
 void          pkgdepdb_pkg_delete(pkgdepdb_pkg*);
 
 const char*   pkgdepdb_pkg_name   (pkgdepdb_pkg*);

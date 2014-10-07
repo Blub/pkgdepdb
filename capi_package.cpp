@@ -15,6 +15,12 @@ pkgdepdb_pkg* pkgdepdb_pkg_new(void) {
   return reinterpret_cast<pkgdepdb_pkg*>(new Package);
 }
 
+pkgdepdb_pkg* pkgdepdb_pkg_load(const char *filename, pkgdepdb_config *cfg_) {
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  auto pkg = Package::Open(filename, *cfg);
+  return reinterpret_cast<pkgdepdb_pkg*>(pkg);
+}
+
 void pkgdepdb_pkg_delete(pkgdepdb_pkg *pkg_) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   delete pkg;
