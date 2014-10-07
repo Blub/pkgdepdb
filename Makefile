@@ -37,6 +37,9 @@ OBJECTS  = config.o package.o elf.o db.o db_format.o db_json.o filter.o
 MAIN_OBJ = main.o
 LIB_OBJ  = capi_config.o capi_elf.o capi_package.o capi_db.o
 
+TEST_SRC = tests/ca_config.c tests/ca_elf.c
+TEST_OBJ = $(TEST_SRC:.c=.o)
+
 OBJECTS_SRC = $(OBJECTS:.o=.cpp) $(MAIN_OBJ:.o=.cpp) $(LIB_OBJ:.o=.cpp)
 
 BINARY        = pkgdepdb
@@ -111,9 +114,12 @@ depend:
 	makedepend -include .cflags -Y $(OBJECTS_SRC) -w300 2> /dev/null
 	-rm -f Makefile.bak
 
+.libs/libpkgdepdb.a: $(LIBPKGDEPDB_LA)
 check: .libs/libpkgdepdb.a
 	$(CXX) -o tests/ca_config tests/ca_config.c .libs/libpkgdepdb.a -lcheck
 	tests/ca_config
+	$(CXX) -o tests/ca_elf tests/ca_elf.c .libs/libpkgdepdb.a -lcheck
+	tests/ca_elf
 
 # DO NOT DELETE
 
