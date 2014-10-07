@@ -185,9 +185,10 @@ size_t pkgdepdb_pkg_groups_count(pkgdepdb_pkg *pkg_) {
   return pkgdepdb_strlist_count(*pkg, &Package::groups_);
 }
 
-size_t pkgdepdb_pkg_groups_get(pkgdepdb_pkg *pkg_, const char **o, size_t n) {
+size_t pkgdepdb_pkg_groups_get(pkgdepdb_pkg *pkg_, const char **out,
+                               size_t off, size_t count) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
-  return pkgdepdb_strlist_get(*pkg, &Package::groups_, o, 0, n);
+  return pkgdepdb_strlist_get(*pkg, &Package::groups_, out, off, count);
 }
 
 size_t pkgdepdb_pkg_groups_add(pkgdepdb_pkg *pkg_, const char *v) {

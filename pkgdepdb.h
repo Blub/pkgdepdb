@@ -150,7 +150,8 @@ int           pkgdepdb_pkg_dep_del_i   (pkgdepdb_pkg*, unsigned int what,
                                         size_t);
 
 size_t        pkgdepdb_pkg_groups_count(pkgdepdb_pkg*);
-size_t        pkgdepdb_pkg_groups_get  (pkgdepdb_pkg*, const char**, size_t);
+size_t        pkgdepdb_pkg_groups_get  (pkgdepdb_pkg*, const char**, size_t,
+                                        size_t);
 size_t        pkgdepdb_pkg_groups_add  (pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_groups_del_s(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_groups_del_i(pkgdepdb_pkg*, size_t);
