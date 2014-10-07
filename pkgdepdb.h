@@ -154,6 +154,12 @@ size_t        pkgdepdb_pkg_filelist_add  (pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_s(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg*, size_t);
 
+/* some exposed utility functions */
+void          pkgdepdb_pkg_guess_version(pkgdepdb_pkg*, const char *filename);
+
+int           pkgdepdb_pkg_conflict(pkgdepdb_pkg*, pkgdepdb_pkg*);
+int           pkgdepdb_pkg_replaces(pkgdepdb_pkg*, pkgdepdb_pkg*);
+
 /*********
  * pkgdepdb::Elf interface
  */

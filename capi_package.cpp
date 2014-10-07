@@ -223,3 +223,20 @@ size_t pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg *pkg_, size_t index) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_del_i(*pkg, &Package::filelist_, index);
 }
+
+void pkgdepdb_pkg_guess_version(pkgdepdb_pkg *pkg_, const char *filename) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  pkg->Guess(filename);
+}
+
+int pkgdepdb_pkg_conflict(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
+  auto pkg = reinterpret_cast<Package*>(subj_);
+  auto obj = reinterpret_cast<Package*>(obj_);
+  return pkg->ConflictsWith(*obj);
+}
+
+int pkgdepdb_pkg_replaces(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
+  auto pkg = reinterpret_cast<Package*>(subj_);
+  auto obj = reinterpret_cast<Package*>(obj_);
+  return pkg->Replaces(*obj);
+}
