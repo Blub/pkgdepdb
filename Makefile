@@ -121,4 +121,6 @@ db_json.o: .cflags main.h util.h config.h elf.h package.h db.h filter.h
 filter.o: .cflags main.h util.h config.h elf.h package.h db.h filter.h
 main.o: .cflags main.h util.h config.h elf.h package.h db.h filter.h
 capi_config.o: .cflags main.h util.h config.h elf.h package.h db.h pkgdepdb.h
-capi_db.o: .cflags main.h util.h config.h elf.h package.h db.h pkgdepdb.h
+capi_elf.o: .cflags main.h util.h config.h elf.h package.h db.h pkgdepdb.h
+capi_package.o: .cflags main.h util.h config.h elf.h package.h db.h pkgdepdb.h capi_algorithm.h
+capi_db.o: .cflags main.h util.h config.h elf.h package.h db.h pkgdepdb.h capi_algorithm.h
