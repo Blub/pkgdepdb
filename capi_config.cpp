@@ -78,6 +78,16 @@ void pkgdepdb_config_set_package_file_lists(pkgdepdb_config *cfg_, int v) {
   cfg->package_filelist_ = !!v;
 }
 
+int pkgdepdb_config_package_info(pkgdepdb_config *cfg_) {
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  return cfg->package_info_;
+}
+
+void pkgdepdb_config_set_package_info(pkgdepdb_config *cfg_, int v) {
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  cfg->package_info_ = !!v;
+}
+
 unsigned int pkgdepdb_config_max_jobs(pkgdepdb_config *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->max_jobs_;

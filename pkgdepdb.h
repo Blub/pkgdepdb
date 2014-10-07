@@ -40,6 +40,8 @@ int              pkgdepdb_config_package_depends       (pkgdepdb_config*);
 void             pkgdepdb_config_set_package_depends   (pkgdepdb_config*, int);
 int              pkgdepdb_config_package_file_lists    (pkgdepdb_config*);
 void             pkgdepdb_config_set_package_file_lists(pkgdepdb_config*, int);
+int              pkgdepdb_config_package_info          (pkgdepdb_config*);
+void             pkgdepdb_config_set_package_info      (pkgdepdb_config*, int);
 
 /* threading */
 unsigned int     pkgdepdb_config_max_jobs    (pkgdepdb_config*);
@@ -140,8 +142,10 @@ void          pkgdepdb_pkg_delete(pkgdepdb_pkg*);
 
 const char*   pkgdepdb_pkg_name   (pkgdepdb_pkg*);
 const char*   pkgdepdb_pkg_version(pkgdepdb_pkg*);
+const char*   pkgdepdb_pkg_pkgbase(pkgdepdb_pkg*);
 void          pkgdepdb_pkg_set_name   (pkgdepdb_pkg*, const char*);
 void          pkgdepdb_pkg_set_version(pkgdepdb_pkg*, const char*);
+void          pkgdepdb_pkg_set_pkgbase(pkgdepdb_pkg*, const char*);
 
 enum {
   PKGDEPDB_PKG_DEPENDS,
@@ -177,6 +181,14 @@ size_t        pkgdepdb_pkg_filelist_get  (pkgdepdb_pkg*,
 size_t        pkgdepdb_pkg_filelist_add  (pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_s(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg*, size_t);
+
+size_t        pkgdepdb_pkg_info_count_keys  (pkgdepdb_pkg*);
+size_t        pkgdepdb_pkg_info_get_keys    (pkgdepdb_pkg*, const char**, size_t, size_t);
+size_t        pkgdepdb_pkg_info_count_values(pkgdepdb_pkg*, const char *key);
+size_t        pkgdepdb_pkg_info_get_values  (pkgdepdb_pkg*, const char *key, const char**, size_t, size_t);
+size_t        pkgdepdb_pkg_info_add  (pkgdepdb_pkg*, const char*, const char*);
+size_t        pkgdepdb_pkg_info_del_s(pkgdepdb_pkg*, const char*, const char*);
+size_t        pkgdepdb_pkg_info_del_i(pkgdepdb_pkg*, const char*, size_t);
 
 size_t        pkgdepdb_pkg_elf_count(pkgdepdb_pkg*);
 size_t        pkgdepdb_pkg_elf_get  (pkgdepdb_pkg*, pkgdepdb_elf*, size_t,

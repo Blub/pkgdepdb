@@ -113,6 +113,29 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
     return false;
   };
 
+  auto addinfo = [&]() {
+    skipwhite();
+    if (pos >= size)
+      return;
+    auto keypos = pos;
+    while (pos < size && str[pos] != '=' && str[pos] != c_isspace(str[pos]))
+      ++pos;
+    auto key = str.substr(keypos, pos-keypos);
+    skipwhite();
+    if (pos >= size || str[pos] != '=') {
+      optconfig.Log(Error, "invalid entry in .PKGINFO");
+      return;
+    }
+    ++pos;
+    skipwhite();
+    auto valuepos = pos;
+    skipline();
+    if (valuepos != pos) {
+      auto value = str.substr(valuepos, pos-valuepos);
+      pkg->info_[key].emplace_back(value);
+    }
+  };
+
   string es;
   string version, constraint;
   while (pos < size) {
@@ -127,9 +150,22 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
         return false;
       continue;
     }
+    if (isentry("pkgbase", sizeof("pkgbase")-1)) {
+      if (pkg->pkgbase_.empty()) {
+        if (!getvalue("pkgbase", pkg->pkgbase_))
+          return false;
+        continue;
+      }
+      // if we already had a pkgbase line, fall through to the info_ case
+    }
+
+    if (!optconfig.package_depends_ && !optconfig.package_info_) {
+      skipline();
+      continue;
+    }
 
     if (!optconfig.package_depends_) {
-      skipline();
+      addinfo();
       continue;
     }
 
@@ -187,7 +223,10 @@ static bool read_info(Package *pkg, struct archive *tar, const size_t size,
       continue;
     }
 
-    skipline();
+    if (optconfig.package_info_)
+      addinfo();
+    else
+      skipline();
   }
   return true;
 }

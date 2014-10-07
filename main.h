@@ -88,6 +88,7 @@ struct Config {
   bool   quiet_            = false;
   bool   package_depends_  = true;
   bool   package_filelist_ = true;
+  bool   package_info_     = true;
   uint   json_             = 0;
   uint   max_jobs_         = 0;
   uint   log_level_        = LogLevel::Message;

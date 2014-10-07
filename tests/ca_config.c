@@ -15,6 +15,7 @@ START_TEST (test_ca_config)
   pkgdepdb_config_set_quiet             (cfg, 1);
   pkgdepdb_config_set_package_depends   (cfg, 0);
   pkgdepdb_config_set_package_file_lists(cfg, 1);
+  pkgdepdb_config_set_package_info      (cfg, 1);
   pkgdepdb_config_set_max_jobs          (cfg, 4);
   pkgdepdb_config_set_log_level         (cfg, PKGDEPDB_CONFIG_LOG_LEVEL_PRINT);
   pkgdepdb_config_set_json              (cfg, PKGDEPDB_JSONBITS_QUERY);
@@ -23,6 +24,7 @@ START_TEST (test_ca_config)
   ck_assert_int_eq(pkgdepdb_config_quiet(cfg),              1);
   ck_assert_int_eq(pkgdepdb_config_package_depends(cfg),    0);
   ck_assert_int_eq(pkgdepdb_config_package_file_lists(cfg), 1);
+  ck_assert_int_eq(pkgdepdb_config_package_info(cfg),       1);
   ck_assert_int_eq(pkgdepdb_config_max_jobs(cfg),           4);
   ck_assert_int_eq(pkgdepdb_config_log_level(cfg),
                    PKGDEPDB_CONFIG_LOG_LEVEL_PRINT);
@@ -34,6 +36,7 @@ START_TEST (test_ca_config)
   pkgdepdb_config_set_quiet             (cfg, 0);
   pkgdepdb_config_set_package_depends   (cfg, 1);
   pkgdepdb_config_set_package_file_lists(cfg, 0);
+  pkgdepdb_config_set_package_info      (cfg, 0);
   pkgdepdb_config_set_max_jobs          (cfg, 1);
   pkgdepdb_config_set_log_level         (cfg, PKGDEPDB_CONFIG_LOG_LEVEL_DEBUG);
   pkgdepdb_config_set_json              (cfg, PKGDEPDB_JSONBITS_DB);
@@ -42,6 +45,7 @@ START_TEST (test_ca_config)
   ck_assert_int_eq(pkgdepdb_config_quiet(cfg),              0);
   ck_assert_int_eq(pkgdepdb_config_package_depends(cfg),    1);
   ck_assert_int_eq(pkgdepdb_config_package_file_lists(cfg), 0);
+  ck_assert_int_eq(pkgdepdb_config_package_info(cfg),       0);
   ck_assert_int_eq(pkgdepdb_config_max_jobs(cfg),           1);
   ck_assert_int_eq(pkgdepdb_config_log_level(cfg),
                    PKGDEPDB_CONFIG_LOG_LEVEL_DEBUG);

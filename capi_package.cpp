@@ -39,6 +39,11 @@ const char* pkgdepdb_pkg_version(pkgdepdb_pkg *pkg_) {
   return pkg->version_.c_str();
 }
 
+const char* pkgdepdb_pkg_pkgbase(pkgdepdb_pkg *pkg_) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkg->pkgbase_.c_str();
+}
+
 void pkgdepdb_pkg_set_name(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   pkg->name_ = v;
@@ -47,6 +52,11 @@ void pkgdepdb_pkg_set_name(pkgdepdb_pkg *pkg_, const char *v) {
 void pkgdepdb_pkg_set_version(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   pkg->version_ = v;
+}
+
+void pkgdepdb_pkg_set_pkgbase(pkgdepdb_pkg *pkg_, const char *v) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  pkg->pkgbase_ = v;
 }
 
 static DependList Package::* const kDepMember[] = {
@@ -302,6 +312,79 @@ size_t pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg *pkg_, size_t index) {
   if (index >= pkg->objects_.size())
     return 0;
   pkg->objects_.erase(pkg->objects_.begin() + index);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_info_count_keys(pkgdepdb_pkg *pkg_) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkg->info_.size();
+}
+
+size_t pkgdepdb_pkg_info_get_keys(pkgdepdb_pkg *pkg_, const char **out,
+                                  size_t off, size_t count)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto size = pkg->info_.size();
+  if (off >= size)
+    return 0;
+
+  auto i    = pkg->info_.begin();
+  auto end  = pkg->info_.end();
+
+  while (off--)
+    ++i;
+
+  size_t got = 0;
+  for (; i != end; ++i) {
+    if (!count--)
+      return got;
+    out[got++] = i->first.c_str();
+  }
+  return got;
+}
+
+size_t pkgdepdb_pkg_info_count_values(pkgdepdb_pkg *pkg_, const char *key) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto info = pkg->info_.find(key);
+  return (info != pkg->info_.end()) ? info->second.size() : 0;
+}
+
+size_t pkgdepdb_pkg_info_get_values(pkgdepdb_pkg *pkg_, const char *key,
+                                    const char **out, size_t off, size_t count)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto info = pkg->info_.find(key);
+  if (info == pkg->info_.end())
+    return 0;
+  return pkgdepdb_strlist_get(info->second, out, off, count);
+}
+
+size_t pkgdepdb_pkg_info_add(pkgdepdb_pkg *pkg_, const char *k, const char *v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  pkg->info_[k].emplace_back(v);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_info_del_s(pkgdepdb_pkg *pkg_, const char *k,
+                               const char *v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto info = pkg->info_.find(k);
+  if (info == pkg->info_.end())
+    return 0;
+  return pkgdepdb_strlist_del_s_all(info->second, v);
+}
+
+size_t pkgdepdb_pkg_info_del_i(pkgdepdb_pkg *pkg_, const char *k, size_t idx) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto info = pkg->info_.find(k);
+  if (info == pkg->info_.end())
+    return 0;
+  auto &lst = info->second;
+  if (idx >= lst.size())
+    return 0;
+  lst.erase(lst.begin() + idx);
   return 1;
 }
 

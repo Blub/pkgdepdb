@@ -11,7 +11,7 @@ struct Package {
   // DB version 3:
   DependList              depends_;
   DependList              optdepends_;
-  DependList              makedepends_;
+  DependList              makedepends_; // DB version 10
   DependList              provides_;
   DependList              conflicts_;
   DependList              replaces_;
@@ -20,6 +20,12 @@ struct Package {
   // DB version 6:
   // the filelist includes object files in v6 - makes things easier
   StringList              filelist_;
+
+  // DB version 11:
+  string                  description_;
+  string                  pkgbase_;
+  std::map<string,vec<string>>
+                          info_; // generic info - everything not caught above
 
 // non-serialized {
   // used only while loading an archive

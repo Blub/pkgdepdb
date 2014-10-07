@@ -174,6 +174,7 @@ bool Config::ReadConfig(std::istream &in, const char *path) {
     make_tuple("json",             cfg_json(json_,errstr)),
     make_tuple("jobs",             cfg_numeric(max_jobs_)),
     make_tuple("file_lists",       cfg_bool(package_filelist_)),
+    make_tuple("package_info",     cfg_bool(package_info_)),
   };
 
   size_t lineno = 0;
