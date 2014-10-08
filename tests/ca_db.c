@@ -131,7 +131,7 @@ START_TEST (test_ca_db)
 {
   const char *paths[8];
 
-  pkgdepdb_config *cfg = pkgdepdb_config_new();
+  pkgdepdb_cfg *cfg = pkgdepdb_cfg_new();
   ck_assert(cfg);
 
   pkgdepdb_db *db = pkgdepdb_db_new(cfg);
@@ -156,7 +156,7 @@ START_TEST (test_ca_db)
   ck_assert_int_eq(pkgdepdb_db_package_is_broken(db, libfoopkg), 0);
 
   pkgdepdb_db_delete(db);
-  pkgdepdb_config_delete(cfg);
+  pkgdepdb_cfg_delete(cfg);
 }
 END_TEST
 

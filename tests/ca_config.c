@@ -6,53 +6,50 @@
 
 START_TEST (test_ca_config)
 {
-  pkgdepdb_config *cfg = pkgdepdb_config_new();
+  pkgdepdb_cfg *cfg = pkgdepdb_cfg_new();
   if (!cfg)
     ck_abort_msg("failed to instantiate a config structure");
 
-  pkgdepdb_config_set_database          (cfg, "test.db.gz");
-  pkgdepdb_config_set_verbosity         (cfg, 3);
-  pkgdepdb_config_set_quiet             (cfg, 1);
-  pkgdepdb_config_set_package_depends   (cfg, 0);
-  pkgdepdb_config_set_package_file_lists(cfg, 1);
-  pkgdepdb_config_set_package_info      (cfg, 1);
-  pkgdepdb_config_set_max_jobs          (cfg, 4);
-  pkgdepdb_config_set_log_level         (cfg, PKGDEPDB_CONFIG_LOG_LEVEL_PRINT);
-  pkgdepdb_config_set_json              (cfg, PKGDEPDB_JSONBITS_QUERY);
-  ck_assert_str_eq(pkgdepdb_config_database(cfg),           "test.db.gz");
-  ck_assert_int_eq(pkgdepdb_config_verbosity(cfg),          3);
-  ck_assert_int_eq(pkgdepdb_config_quiet(cfg),              1);
-  ck_assert_int_eq(pkgdepdb_config_package_depends(cfg),    0);
-  ck_assert_int_eq(pkgdepdb_config_package_file_lists(cfg), 1);
-  ck_assert_int_eq(pkgdepdb_config_package_info(cfg),       1);
-  ck_assert_int_eq(pkgdepdb_config_max_jobs(cfg),           4);
-  ck_assert_int_eq(pkgdepdb_config_log_level(cfg),
-                   PKGDEPDB_CONFIG_LOG_LEVEL_PRINT);
-  ck_assert_int_eq(pkgdepdb_config_json(cfg),
-                   PKGDEPDB_JSONBITS_QUERY);
+  pkgdepdb_cfg_set_database          (cfg, "test.db.gz");
+  pkgdepdb_cfg_set_verbosity         (cfg, 3);
+  pkgdepdb_cfg_set_quiet             (cfg, 1);
+  pkgdepdb_cfg_set_package_depends   (cfg, 0);
+  pkgdepdb_cfg_set_package_file_lists(cfg, 1);
+  pkgdepdb_cfg_set_package_info      (cfg, 1);
+  pkgdepdb_cfg_set_max_jobs          (cfg, 4);
+  pkgdepdb_cfg_set_log_level         (cfg, PKGDEPDB_CFG_LOG_LEVEL_PRINT);
+  pkgdepdb_cfg_set_json              (cfg, PKGDEPDB_JSONBITS_QUERY);
+  ck_assert_str_eq(pkgdepdb_cfg_database(cfg),           "test.db.gz");
+  ck_assert_int_eq(pkgdepdb_cfg_verbosity(cfg),          3);
+  ck_assert_int_eq(pkgdepdb_cfg_quiet(cfg),              1);
+  ck_assert_int_eq(pkgdepdb_cfg_package_depends(cfg),    0);
+  ck_assert_int_eq(pkgdepdb_cfg_package_file_lists(cfg), 1);
+  ck_assert_int_eq(pkgdepdb_cfg_package_info(cfg),       1);
+  ck_assert_int_eq(pkgdepdb_cfg_max_jobs(cfg),           4);
+  ck_assert_int_eq(pkgdepdb_cfg_log_level(cfg), PKGDEPDB_CFG_LOG_LEVEL_PRINT);
+  ck_assert_int_eq(pkgdepdb_cfg_json(cfg),      PKGDEPDB_JSONBITS_QUERY);
 
-  pkgdepdb_config_set_database          (cfg, "other.db.gz");
-  pkgdepdb_config_set_verbosity         (cfg, 0);
-  pkgdepdb_config_set_quiet             (cfg, 0);
-  pkgdepdb_config_set_package_depends   (cfg, 1);
-  pkgdepdb_config_set_package_file_lists(cfg, 0);
-  pkgdepdb_config_set_package_info      (cfg, 0);
-  pkgdepdb_config_set_max_jobs          (cfg, 1);
-  pkgdepdb_config_set_log_level         (cfg, PKGDEPDB_CONFIG_LOG_LEVEL_DEBUG);
-  pkgdepdb_config_set_json              (cfg, PKGDEPDB_JSONBITS_DB);
-  ck_assert_str_eq(pkgdepdb_config_database(cfg),           "other.db.gz");
-  ck_assert_int_eq(pkgdepdb_config_verbosity(cfg),          0);
-  ck_assert_int_eq(pkgdepdb_config_quiet(cfg),              0);
-  ck_assert_int_eq(pkgdepdb_config_package_depends(cfg),    1);
-  ck_assert_int_eq(pkgdepdb_config_package_file_lists(cfg), 0);
-  ck_assert_int_eq(pkgdepdb_config_package_info(cfg),       0);
-  ck_assert_int_eq(pkgdepdb_config_max_jobs(cfg),           1);
-  ck_assert_int_eq(pkgdepdb_config_log_level(cfg),
-                   PKGDEPDB_CONFIG_LOG_LEVEL_DEBUG);
-  ck_assert_int_eq(pkgdepdb_config_json(cfg),
+  pkgdepdb_cfg_set_database          (cfg, "other.db.gz");
+  pkgdepdb_cfg_set_verbosity         (cfg, 0);
+  pkgdepdb_cfg_set_quiet             (cfg, 0);
+  pkgdepdb_cfg_set_package_depends   (cfg, 1);
+  pkgdepdb_cfg_set_package_file_lists(cfg, 0);
+  pkgdepdb_cfg_set_package_info      (cfg, 0);
+  pkgdepdb_cfg_set_max_jobs          (cfg, 1);
+  pkgdepdb_cfg_set_log_level         (cfg, PKGDEPDB_CFG_LOG_LEVEL_DEBUG);
+  pkgdepdb_cfg_set_json              (cfg, PKGDEPDB_JSONBITS_DB);
+  ck_assert_str_eq(pkgdepdb_cfg_database(cfg),           "other.db.gz");
+  ck_assert_int_eq(pkgdepdb_cfg_verbosity(cfg),          0);
+  ck_assert_int_eq(pkgdepdb_cfg_quiet(cfg),              0);
+  ck_assert_int_eq(pkgdepdb_cfg_package_depends(cfg),    1);
+  ck_assert_int_eq(pkgdepdb_cfg_package_file_lists(cfg), 0);
+  ck_assert_int_eq(pkgdepdb_cfg_package_info(cfg),       0);
+  ck_assert_int_eq(pkgdepdb_cfg_max_jobs(cfg),           1);
+  ck_assert_int_eq(pkgdepdb_cfg_log_level(cfg), PKGDEPDB_CFG_LOG_LEVEL_DEBUG);
+  ck_assert_int_eq(pkgdepdb_cfg_json(cfg),
                    PKGDEPDB_JSONBITS_DB);
 
-  pkgdepdb_config_delete(cfg);
+  pkgdepdb_cfg_delete(cfg);
 }
 END_TEST
 

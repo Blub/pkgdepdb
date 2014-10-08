@@ -108,7 +108,7 @@ END_TEST
 
 START_TEST (test_ca_libpkgdepdb)
 {
-  pkgdepdb_config *cfg = pkgdepdb_config_new();
+  pkgdepdb_cfg *cfg = pkgdepdb_cfg_new();
   ck_assert(cfg);
 
   int err = 0;
@@ -123,7 +123,7 @@ START_TEST (test_ca_libpkgdepdb)
   ck_assert_int_eq(err, 0);
   ck_assert_str_eq(pkgdepdb_elf_basename(elf), "libpkgdepdb.so");
 
-  pkgdepdb_config_delete(cfg);
+  pkgdepdb_cfg_delete(cfg);
 }
 END_TEST
 

@@ -27,7 +27,7 @@ void pkgdepdb_elf_unref(pkgdepdb_elf elf_) {
 }
 
 pkgdepdb_elf pkgdepdb_elf_open(const char *file, int *err,
-                               pkgdepdb_config *cfg_)
+                               pkgdepdb_cfg *cfg_)
 {
   if (err)
     *err = 0;
@@ -83,7 +83,7 @@ pkgdepdb_elf pkgdepdb_elf_open(const char *file, int *err,
 
 pkgdepdb_elf pkgdepdb_elf_read(const char *data, size_t size,
                                const char *basename, const char *dirname,
-                               int *err, pkgdepdb_config *cfg_)
+                               int *err, pkgdepdb_cfg *cfg_)
 {
   if (err)
     *err = 0;

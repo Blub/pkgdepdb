@@ -18,7 +18,7 @@ pkgdepdb_pkg* pkgdepdb_pkg_new(void) {
   return reinterpret_cast<pkgdepdb_pkg*>(new Package);
 }
 
-pkgdepdb_pkg* pkgdepdb_pkg_load(const char *filename, pkgdepdb_config *cfg_) {
+pkgdepdb_pkg* pkgdepdb_pkg_load(const char *filename, pkgdepdb_cfg *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   auto pkg = Package::Open(filename, *cfg);
   return reinterpret_cast<pkgdepdb_pkg*>(pkg);
@@ -70,7 +70,7 @@ void pkgdepdb_pkg_set_description(pkgdepdb_pkg *pkg_, const char *v) {
 }
 
 pkgdepdb_bool pkgdepdb_pkg_read_info(pkgdepdb_pkg *pkg_, const char *data,
-                                     size_t size, pkgdepdb_config *cfg_)
+                                     size_t size, pkgdepdb_cfg *cfg_)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   auto cfg = reinterpret_cast<Config*>(cfg_);

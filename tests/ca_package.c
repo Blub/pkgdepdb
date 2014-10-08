@@ -200,10 +200,10 @@ START_TEST (test_ca_pkginfo)
 "group = devel\n"
 "group = foogroup\n";
 
-  pkgdepdb_config *cfg = pkgdepdb_config_new();
+  pkgdepdb_cfg *cfg = pkgdepdb_cfg_new();
   ck_assert(cfg);
   pkgdepdb_pkg_read_info(pkg, pkginfo, sizeof(pkginfo)-1, cfg);
-  pkgdepdb_config_delete(cfg);
+  pkgdepdb_cfg_delete(cfg);
 
   ck_assert_str_eq(pkgdepdb_pkg_name(pkg),    "libfoo");
   ck_assert_str_eq(pkgdepdb_pkg_version(pkg), "1.0-1");

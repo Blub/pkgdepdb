@@ -11,7 +11,7 @@ using namespace pkgdepdb;
 
 extern "C" {
 
-pkgdepdb_db *pkgdepdb_db_new(pkgdepdb_config *cfg_) {
+pkgdepdb_db *pkgdepdb_db_new(pkgdepdb_cfg *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return reinterpret_cast<pkgdepdb_db*>(new DB(*cfg));
 }
