@@ -26,7 +26,7 @@ void          pkgdepdb_finalize(void);
 pkgdepdb_cfg*    pkgdepdb_cfg_new   (void);
 void             pkgdepdb_cfg_delete(pkgdepdb_cfg*);
 
-pkgdepdb_bool    pkgdepdb_cfg_load(pkgdepdb_cfg*, const char *filepath);
+pkgdepdb_bool    pkgdepdb_cfg_load        (pkgdepdb_cfg*, const char *file);
 pkgdepdb_bool    pkgdepdb_cfg_load_default(pkgdepdb_cfg*);
 
 const char*      pkgdepdb_cfg_database     (pkgdepdb_cfg*);
