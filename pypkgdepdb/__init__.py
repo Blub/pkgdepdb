@@ -13,12 +13,13 @@ class LogLevel(object):
     Error   = 4
 
 class PkgEntry(object):
-    Depends     = 0
-    OptDepends  = 1
-    MakeDepends = 2
-    Provides    = 3
-    Conflicts   = 4
-    Replaces    = 5
+    Depends      = 0
+    OptDepends   = 1
+    MakeDepends  = 2
+    CheckDepends = 3
+    Provides     = 4
+    Conflicts    = 5
+    Replaces     = 6
 
 class JSON(object):
     Query = 1

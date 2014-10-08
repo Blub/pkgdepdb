@@ -97,6 +97,7 @@ void DB::ShowPackages_json(bool                filter_broken,
       print_depend_list("depends", pkg->depends_);
       print_depend_list("optdepends", pkg->optdepends_);
       print_depend_list("makedepends", pkg->makedepends_);
+      print_depend_list("checkdepends", pkg->checkdepends_);
       print_depend_list("provides", pkg->provides_);
       print_depend_list("replaces", pkg->replaces_);
       print_depend_list("conflicts", pkg->conflicts_);

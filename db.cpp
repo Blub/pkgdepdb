@@ -29,6 +29,7 @@ DB::DB(const Config& optconfig)
   loaded_version_           = DB::CURRENT;
   contains_package_depends_ = false;
   contains_make_depends_    = false;
+  contains_check_depends_   = false;
   contains_groups_          = false;
   contains_filelists_       = false;
   strict_linking_           = false;
@@ -220,6 +221,8 @@ bool DB::InstallPackage(Package* &&pkg) {
   }
   if (!pkg->makedepends_.empty())
     contains_make_depends_ = true;
+  if (!pkg->checkdepends_.empty())
+    contains_check_depends_ = true;
   if (pkg->groups_.size())
     contains_groups_ = true;
   if (pkg->filelist_.size())
@@ -783,12 +786,13 @@ void DB::ShowPackages(bool                 filter_broken,
     if (config_.verbosity_ >= 1) {
       for (auto &grp : pkg->groups_)
         printf("    is in group: %s\n", grp.c_str());
-      ShowDependList("    depends on: %s\n",                pkg->depends_);
-      ShowDependList("    depends optionally on: %s\n",     pkg->optdepends_);
-      ShowDependList("    depends at compiletime on: %s\n", pkg->makedepends_);
-      ShowDependList("    provides: %s\n",                  pkg->provides_);
-      ShowDependList("    replaces: %s\n",                  pkg->replaces_);
-      ShowDependList("    conflicts with: %s\n",            pkg->conflicts_);
+      ShowDependList("    depends on: %s\n",               pkg->depends_);
+      ShowDependList("    depends optionally on: %s\n",    pkg->optdepends_);
+      ShowDependList("    depends at compiletime on: %s\n",pkg->makedepends_);
+      ShowDependList("    check depends on: %s\n",         pkg->checkdepends_);
+      ShowDependList("    provides: %s\n",                 pkg->provides_);
+      ShowDependList("    replaces: %s\n",                 pkg->replaces_);
+      ShowDependList("    conflicts with: %s\n",           pkg->conflicts_);
       if (filter_broken) {
         for (auto &obj : pkg->objects_) {
           if (!util::all(obj_filters, *this, *obj))

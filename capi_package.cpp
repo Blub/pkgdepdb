@@ -81,6 +81,7 @@ static DependList Package::* const kDepMember[] = {
   &Package::depends_,
   &Package::optdepends_,
   &Package::makedepends_,
+  &Package::checkdepends_,
   &Package::provides_,
   &Package::conflicts_,
   &Package::replaces_,

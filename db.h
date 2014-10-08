@@ -25,6 +25,7 @@ struct DB {
 
   bool contains_package_depends_;
   bool contains_make_depends_;
+  bool contains_check_depends_;
   bool contains_groups_;
   bool contains_filelists_;
 // }

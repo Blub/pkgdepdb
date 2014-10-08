@@ -474,15 +474,10 @@ static bool write_pkg(SerialOut &out,    Package  *pkg,
   if (!write_objlist(out, pkg->objects_))
     return false;
 
-  if (hdrver >= 10) {
+  if (hdrver >= 3) {
     if (!write_dependlist(out, pkg->depends_) ||
-        !write_dependlist(out, pkg->makedepends_) ||
-        !write_dependlist(out, pkg->optdepends_))
-    {
-      return false;
-    }
-  } else if (hdrver >= 3) {
-    if (!write_dependlist(out, pkg->depends_) ||
+        (hdrver >= 10 && !write_dependlist(out, pkg->makedepends_)) ||
+        (hdrver >= 12 && !write_dependlist(out, pkg->checkdepends_)) ||
         !write_dependlist(out, pkg->optdepends_))
     {
       return false;
@@ -554,15 +549,10 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
   for (auto &o : pkg->objects_)
     o->owner_ = pkg;
 
-  if (hdrver >= 10) {
+  if (hdrver >= 3) {
     if (!read_dependlist(in, pkg->depends_) ||
-        !read_dependlist(in, pkg->makedepends_) ||
-        !read_dependlist(in, pkg->optdepends_))
-    {
-      return false;
-    }
-  } else if (hdrver >= 3) {
-    if (!read_dependlist(in, pkg->depends_) ||
+        (hdrver >= 10 && !read_dependlist(in, pkg->makedepends_)) ||
+        (hdrver >= 12 && !read_dependlist(in, pkg->checkdepends_)) ||
         !read_dependlist(in, pkg->optdepends_))
     {
       return false;
@@ -629,7 +619,9 @@ static bool db_store(DB *db, const string& filename) {
     hdr.flags |= DBFlags::FileLists;
 
   // Figure out which database format version this will be
-  if (db->contains_make_depends_)
+  if (db->contains_check_depends_)
+    hdr.version = 12;
+  else if (db->contains_make_depends_)
     hdr.version = 10;
   else if (db->contains_package_depends_)
     hdr.version = 10; // used to be 4
@@ -769,6 +761,8 @@ static bool db_read(DB *db, const string& filename) {
     db->contains_filelists_ = true;
   if (hdr.version >= 10)
     db->contains_make_depends_ = true;
+  if (hdr.version >= 12)
+    db->contains_check_depends_ = true;
 
   in >= db->name_;
   if (!read_stringlist(in, db->library_path_)) {

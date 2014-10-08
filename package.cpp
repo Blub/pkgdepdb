@@ -204,6 +204,13 @@ bool Package::ReadInfo(const string& str, const size_t size,
       makedepends_.emplace_back(version, constraint);
       continue;
     }
+    if (isentry("checkdepend", sizeof("checkdepend")-1)) {
+      if (!getvalue("checkdepend", es))
+        return false;
+      split_depstring(es, version, constraint);
+      checkdepends_.emplace_back(version, constraint);
+      continue;
+    }
     if (isentry("optdepend", sizeof("optdepend")-1)) {
       if (!getvalue("optdepend", es))
         return false;

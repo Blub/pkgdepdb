@@ -12,6 +12,7 @@ struct Package {
   DependList              depends_;
   DependList              optdepends_;
   DependList              makedepends_; // DB version 10
+  DependList              checkdepends_; // DB version 12
   DependList              provides_;
   DependList              conflicts_;
   DependList              replaces_;

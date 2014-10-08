@@ -29,7 +29,8 @@ START_TEST (test_ca_package)
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_DEPENDS,     "libc", NULL);
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_DEPENDS,     "libbar1", NULL);
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_OPTDEPENDS,  "libbar2", ">1");
-  pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_MAKEDEPENDS, "check", NULL);
+  pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_MAKEDEPENDS, "make", NULL);
+  pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_CHECKDEPENDS,"check", NULL);
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_CONFLICTS,   "foo", NULL);
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_REPLACES,    "foo", NULL);
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_PROVIDES,    "foo", "=1.0");
@@ -37,6 +38,8 @@ START_TEST (test_ca_package)
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(libfoo, PKGDEPDB_PKG_DEPENDS),    2);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(libfoo, PKGDEPDB_PKG_OPTDEPENDS), 1);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(libfoo, PKGDEPDB_PKG_MAKEDEPENDS),1);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(libfoo, PKGDEPDB_PKG_CHECKDEPENDS),
+                   1);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(libfoo, PKGDEPDB_PKG_CONFLICTS),  1);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(libfoo, PKGDEPDB_PKG_REPLACES),   1);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(libfoo, PKGDEPDB_PKG_PROVIDES),   1);
@@ -52,6 +55,10 @@ START_TEST (test_ca_package)
   ck_assert_str_eq(deps[0], "libbar2");
   ck_assert_str_eq(vers[0], ">1");
   ck_assert_int_eq(pkgdepdb_pkg_dep_get(libfoo, PKGDEPDB_PKG_MAKEDEPENDS,
+                                        deps, vers, 0, 3),                  1);
+  ck_assert_str_eq(deps[0], "make");
+  ck_assert_str_eq(vers[0], "");
+  ck_assert_int_eq(pkgdepdb_pkg_dep_get(libfoo, PKGDEPDB_PKG_CHECKDEPENDS,
                                         deps, vers, 0, 3),                  1);
   ck_assert_str_eq(deps[0], "check");
   ck_assert_str_eq(vers[0], "");
@@ -195,7 +202,8 @@ START_TEST (test_ca_pkginfo)
 "depend = libc\n"
 "depend = libbar1\n"
 "optdepend = libbar2>1: for libbar\n"
-"makedepend = check\n"
+"makedepend = make\n"
+"checkdepend = check\n"
 "group = base\n"
 "group = devel\n"
 "group = foogroup\n";
@@ -208,12 +216,13 @@ START_TEST (test_ca_pkginfo)
   ck_assert_str_eq(pkgdepdb_pkg_name(pkg),    "libfoo");
   ck_assert_str_eq(pkgdepdb_pkg_version(pkg), "1.0-1");
   ck_assert_str_eq(pkgdepdb_pkg_pkgbase(pkg), "foobase");
-  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_DEPENDS),    2);
-  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_OPTDEPENDS), 1);
-  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_MAKEDEPENDS),1);
-  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_CONFLICTS),  1);
-  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_REPLACES),   1);
-  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_PROVIDES),   1);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_DEPENDS),      2);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_OPTDEPENDS),   1);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_MAKEDEPENDS),  1);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_CHECKDEPENDS), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_CONFLICTS),    1);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_REPLACES),     1);
+  ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_PROVIDES),     1);
 
   ck_assert_int_eq(pkgdepdb_pkg_dep_get(pkg, PKGDEPDB_PKG_DEPENDS,
                                         deps, vers, 0, 3),                  2);
@@ -226,6 +235,10 @@ START_TEST (test_ca_pkginfo)
   ck_assert_str_eq(deps[0], "libbar2");
   ck_assert_str_eq(vers[0], ">1");
   ck_assert_int_eq(pkgdepdb_pkg_dep_get(pkg, PKGDEPDB_PKG_MAKEDEPENDS,
+                                        deps, vers, 0, 3),                  1);
+  ck_assert_str_eq(deps[0], "make");
+  ck_assert_str_eq(vers[0], "");
+  ck_assert_int_eq(pkgdepdb_pkg_dep_get(pkg, PKGDEPDB_PKG_CHECKDEPENDS,
                                         deps, vers, 0, 3),                  1);
   ck_assert_str_eq(deps[0], "check");
   ck_assert_str_eq(vers[0], "");

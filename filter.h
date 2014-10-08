@@ -41,6 +41,7 @@ class PackageFilter {
   static uniq<PackageFilter> group        (rptr<Match>, bool neg);
   static uniq<PackageFilter> depends      (rptr<Match>, bool neg);
   static uniq<PackageFilter> makedepends  (rptr<Match>, bool neg);
+  static uniq<PackageFilter> checkdepends (rptr<Match>, bool neg);
   static uniq<PackageFilter> optdepends   (rptr<Match>, bool neg);
   static uniq<PackageFilter> alldepends   (rptr<Match>, bool neg);
   static uniq<PackageFilter> provides     (rptr<Match>, bool neg);

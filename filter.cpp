@@ -300,6 +300,7 @@ MAKE_PKGFILTER(group,groups)
 MAKE_PKGDEPFILTER1(depends)
 MAKE_PKGDEPFILTER1(optdepends)
 MAKE_PKGDEPFILTER1(makedepends)
+MAKE_PKGDEPFILTER1(checkdepends)
 MAKE_PKGDEPFILTER1(provides)
 MAKE_PKGDEPFILTER1(conflicts)
 MAKE_PKGDEPFILTER1(replaces)
@@ -315,6 +316,9 @@ PackageFilter::alldepends(rptr<Match> matcher, bool neg) {
       if ((*matcher)(std::get<0>(i)))
         return true;
     for (auto &i : pkg.makedepends_)
+      if ((*matcher)(std::get<0>(i)))
+        return true;
+    for (auto &i : pkg.checkdepends_)
       if ((*matcher)(std::get<0>(i)))
         return true;
     for (auto &i : pkg.optdepends_)

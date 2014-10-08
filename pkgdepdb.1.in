@@ -197,9 +197,11 @@ Only consider packages part of the provided group.
 .It Fl f Ns depends= Ns Ar PACKAGENAME
 Only consider packages depending on the provided package.
 .It Fl f Ns makedepends= Ns Ar PACKAGENAME
-Only consider packages with the provided package as compile-time dependency
+Only consider packages with the provided package as compile-time dependency.
+.It Fl f Ns checkdepends= Ns Ar PACKAGENAME
+Only consider packages with the provided package as check dependency.
 .It Fl f Ns optdepends= Ns Ar PACKAGENAME
-Only consider packages with the provided package as optional dependency
+Only consider packages with the provided package as optional dependency.
 .It Fl f Ns alldepends= Ns Ar PACKAGENAME
 Only consider packages with the provided package as dependency or optional
 dependency.

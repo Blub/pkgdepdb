@@ -781,6 +781,7 @@ static bool parse_filter(const string  &filter,
   MAKE_PKGFILTER(depends);
   MAKE_PKGFILTER(optdepends);
   MAKE_PKGFILTER(makedepends);
+  MAKE_PKGFILTER(checkdepends);
   MAKE_PKGFILTER(alldepends);
   MAKE_PKGFILTER(provides);
   MAKE_PKGFILTER(conflicts);
