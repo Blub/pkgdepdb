@@ -18,12 +18,13 @@ void pkgdepdb_config_delete(pkgdepdb_config *cfg_) {
   delete cfg;
 }
 
-int pkgdepdb_config_load_default(pkgdepdb_config *cfg_) {
+pkgdepdb_bool pkgdepdb_config_load_default(pkgdepdb_config *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->ReadConfig();
 }
 
-int pkgdepdb_config_load(pkgdepdb_config *cfg_, const char *filepath) {
+pkgdepdb_bool pkgdepdb_config_load(pkgdepdb_config *cfg_, const char *filepath)
+{
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->ReadConfig(filepath);
 }
@@ -48,42 +49,46 @@ void pkgdepdb_config_set_verbosity(pkgdepdb_config *cfg_, unsigned int v) {
   cfg->verbosity_ = v;
 }
 
-int pkgdepdb_config_quiet(pkgdepdb_config *cfg_) {
+pkgdepdb_bool pkgdepdb_config_quiet(pkgdepdb_config *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->quiet_;
 }
 
-void pkgdepdb_config_set_quiet(pkgdepdb_config *cfg_, int v) {
+void pkgdepdb_config_set_quiet(pkgdepdb_config *cfg_, pkgdepdb_bool v) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   cfg->quiet_ = v;
 }
 
-int pkgdepdb_config_package_depends(pkgdepdb_config *cfg_) {
+pkgdepdb_bool pkgdepdb_config_package_depends(pkgdepdb_config *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->package_depends_;
 }
 
-void pkgdepdb_config_set_package_depends(pkgdepdb_config *cfg_, int v) {
+void pkgdepdb_config_set_package_depends(pkgdepdb_config *cfg_,
+                                         pkgdepdb_bool v)
+{
   auto cfg = reinterpret_cast<Config*>(cfg_);
   cfg->package_depends_ = !!v;
 }
 
-int pkgdepdb_config_package_file_lists(pkgdepdb_config *cfg_) {
+pkgdepdb_bool pkgdepdb_config_package_file_lists(pkgdepdb_config *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->package_filelist_;
 }
 
-void pkgdepdb_config_set_package_file_lists(pkgdepdb_config *cfg_, int v) {
+void pkgdepdb_config_set_package_file_lists(pkgdepdb_config *cfg_,
+                                            pkgdepdb_bool v)
+{
   auto cfg = reinterpret_cast<Config*>(cfg_);
   cfg->package_filelist_ = !!v;
 }
 
-int pkgdepdb_config_package_info(pkgdepdb_config *cfg_) {
+pkgdepdb_bool pkgdepdb_config_package_info(pkgdepdb_config *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->package_info_;
 }
 
-void pkgdepdb_config_set_package_info(pkgdepdb_config *cfg_, int v) {
+void pkgdepdb_config_set_package_info(pkgdepdb_config *cfg_, pkgdepdb_bool v) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   cfg->package_info_ = !!v;
 }

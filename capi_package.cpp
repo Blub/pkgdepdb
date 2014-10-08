@@ -69,8 +69,8 @@ void pkgdepdb_pkg_set_description(pkgdepdb_pkg *pkg_, const char *v) {
   pkg->description_ = v;
 }
 
-int pkgdepdb_pkg_read_info(pkgdepdb_pkg *pkg_, const char *data, size_t size,
-                           pkgdepdb_config *cfg_)
+pkgdepdb_bool pkgdepdb_pkg_read_info(pkgdepdb_pkg *pkg_, const char *data,
+                                     size_t size, pkgdepdb_config *cfg_)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   auto cfg = reinterpret_cast<Config*>(cfg_);
@@ -175,8 +175,8 @@ size_t pkgdepdb_pkg_dep_get(pkgdepdb_pkg *pkg_, unsigned int what,
   return pkg_dependlist_get(*pkg, kDepMember[what], on, oc, off, n);
 }
 
-int pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg_, unsigned int what,
-                         const char *name, const char *constraint)
+size_t pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg_, unsigned int what,
+                            const char *name, const char *constraint)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   if (what >= kDepMemberCount)
@@ -184,8 +184,8 @@ int pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg_, unsigned int what,
   return pkg_dependlist_add(*pkg, kDepMember[what], name, constraint);
 }
 
-int pkgdepdb_pkg_dep_del_name(pkgdepdb_pkg *pkg_, unsigned int what,
-                              const char *name)
+size_t pkgdepdb_pkg_dep_del_name(pkgdepdb_pkg *pkg_, unsigned int what,
+                                 const char *name)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   if (what >= kDepMemberCount)
@@ -193,8 +193,8 @@ int pkgdepdb_pkg_dep_del_name(pkgdepdb_pkg *pkg_, unsigned int what,
   return pkg_dependlist_del_name(*pkg, kDepMember[what], name);
 }
 
-int pkgdepdb_pkg_dep_del_full(pkgdepdb_pkg *pkg_, unsigned int what,
-                              const char *name, const char *constraint)
+size_t pkgdepdb_pkg_dep_del_full(pkgdepdb_pkg *pkg_, unsigned int what,
+                                 const char *name, const char *constraint)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   if (what >= kDepMemberCount)
@@ -202,11 +202,12 @@ int pkgdepdb_pkg_dep_del_full(pkgdepdb_pkg *pkg_, unsigned int what,
   return pkg_dependlist_del_full(*pkg, kDepMember[what], name, constraint);
 }
 
-int pkgdepdb_pkg_dep_del_i(pkgdepdb_pkg *pkg_, unsigned int what, size_t idx) {
+size_t pkgdepdb_pkg_dep_del_i(pkgdepdb_pkg *pkg_, unsigned int what, size_t id)
+{
   auto pkg = reinterpret_cast<Package*>(pkg_);
   if (what >= kDepMemberCount)
     return 0;
-  return pkg_dependlist_del_i(*pkg, kDepMember[what], idx);
+  return pkg_dependlist_del_i(*pkg, kDepMember[what], id);
 }
 
 size_t pkgdepdb_pkg_groups_count(pkgdepdb_pkg *pkg_) {
@@ -267,13 +268,13 @@ void pkgdepdb_pkg_guess_version(pkgdepdb_pkg *pkg_, const char *filename) {
   pkg->Guess(filename);
 }
 
-int pkgdepdb_pkg_conflict(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
+pkgdepdb_bool pkgdepdb_pkg_conflict(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
   auto pkg = reinterpret_cast<Package*>(subj_);
   auto obj = reinterpret_cast<Package*>(obj_);
   return pkg->ConflictsWith(*obj);
 }
 
-int pkgdepdb_pkg_replaces(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
+pkgdepdb_bool pkgdepdb_pkg_replaces(pkgdepdb_pkg *subj_, pkgdepdb_pkg *obj_) {
   auto pkg = reinterpret_cast<Package*>(subj_);
   auto obj = reinterpret_cast<Package*>(obj_);
   return pkg->Replaces(*obj);
