@@ -17,10 +17,14 @@ START_TEST (test_ca_package)
   pkgdepdb_pkg *oldfoo = pkgdepdb_pkg_new();
   ck_assert(oldfoo);
 
-  pkgdepdb_pkg_set_name    (libfoo, "libfoo");
-  pkgdepdb_pkg_set_version (libfoo, "1.0-1");
-  ck_assert_str_eq(pkgdepdb_pkg_name(libfoo),    "libfoo");
-  ck_assert_str_eq(pkgdepdb_pkg_version(libfoo), "1.0-1");
+  pkgdepdb_pkg_set_name       (libfoo, "libfoo");
+  pkgdepdb_pkg_set_version    (libfoo, "1.0-1");
+  pkgdepdb_pkg_set_pkgbase    (libfoo, "foobase");
+  pkgdepdb_pkg_set_description(libfoo, "foo description");
+  ck_assert_str_eq(pkgdepdb_pkg_name(libfoo),        "libfoo");
+  ck_assert_str_eq(pkgdepdb_pkg_version(libfoo),     "1.0-1");
+  ck_assert_str_eq(pkgdepdb_pkg_pkgbase(libfoo),     "foobase");
+  ck_assert_str_eq(pkgdepdb_pkg_description(libfoo), "foo description");
 
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_DEPENDS,     "libc", NULL);
   pkgdepdb_pkg_dep_add     (libfoo, PKGDEPDB_PKG_DEPENDS,     "libbar1", NULL);
@@ -91,6 +95,37 @@ START_TEST (test_ca_package)
   ck_assert_str_eq(deps[2], "usr/lib/libfoo.so.1.0");
   ck_assert_str_eq(deps[3], "usr/lib/libfoo.so.1.0.0");
 
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_keys(libfoo), 0);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(libfoo, "nonsense"), 0);
+  ck_assert_int_eq(pkgdepdb_pkg_info_add(libfoo, "license", "BSD"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_keys(libfoo), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(libfoo, "license"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(libfoo, "nonsense"), 0);
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(libfoo, "license",vers,0,8),1);
+  ck_assert_str_eq(vers[0], "BSD");
+  ck_assert_int_eq(pkgdepdb_pkg_info_add(libfoo, "A", "1"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_add(libfoo, "A", "2"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_add(libfoo, "A", "3"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_keys(libfoo), 2);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(libfoo, "license"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(libfoo, "A"), 3);
+  ck_assert_int_eq(pkgdepdb_pkg_info_del_i(libfoo, "license", 0), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_keys(libfoo), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(libfoo, "license"), 0);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(libfoo, "A"), 3);
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(libfoo, "A", deps, 0, 8), 3);
+  ck_assert_str_eq(deps[0], "1");
+  ck_assert_str_eq(deps[1], "2");
+  ck_assert_str_eq(deps[2], "3");
+  ck_assert_int_eq(pkgdepdb_pkg_info_del_i(libfoo, "A", 1), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(libfoo, "A", deps, 0, 8), 2);
+  ck_assert_str_eq(deps[0], "1");
+  ck_assert_str_eq(deps[1], "3");
+  ck_assert_int_eq(pkgdepdb_pkg_info_del_s(libfoo, "A", "3"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(libfoo, "A", deps, 0, 8), 1);
+  ck_assert_str_eq(deps[0], "1");
+
+  /* second package for conflict test */
   pkgdepdb_pkg_set_name     (oldfoo, "foo");
   pkgdepdb_pkg_guess_version(oldfoo, "foo-0.9-1-x86_64.pkg.tar.xz");
 
@@ -151,8 +186,9 @@ START_TEST (test_ca_pkginfo)
 "builddate = 1411832227\n"
 "packager = The test suite\n"
 "size = 1024\n"
+"size = 1025\n"
 "arch = x86_64\n"
-"license = GPL\n"
+"license = BSD\n"
 "conflict = foo\n"
 "provides = foo=1.0\n"
 "replaces = foo\n"
@@ -211,13 +247,50 @@ START_TEST (test_ca_pkginfo)
 
   k = 0;
   for (i = 0; i != 3; ++i) {
-    if (!strcmp(deps[i], "base"))          k |= 1;
+    if      (!strcmp(deps[i], "base"))     k |= 1;
     else if (!strcmp(deps[i], "foogroup")) k |= 2;
     else if (!strcmp(deps[i], "devel"))    k |= 4;
     else ck_abort_msg("test package in invalid group: %s", deps[i]);
   }
   if (k != 7)
     ck_abort_msg("not all test package groups have been found");
+
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_keys(pkg), 6);
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_keys(pkg, deps, 0, 8), 6);
+
+  k = 0;
+  for (i = 0; i != 6; ++i) {
+    if      (!strcmp(deps[i], "url"))       k |= 1;
+    else if (!strcmp(deps[i], "builddate")) k |= 2;
+    else if (!strcmp(deps[i], "packager"))  k |= 4;
+    else if (!strcmp(deps[i], "size"))      k |= 8;
+    else if (!strcmp(deps[i], "arch"))      k |= 16;
+    else if (!strcmp(deps[i], "license"))   k |= 32;
+    else ck_abort_msg("unexpected info key: `%s`", deps[i]);
+  }
+  if (k != 63)
+    ck_abort_msg("not all unhandled info lines were stored (%x)", k);
+
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(pkg, "url"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(pkg, "builddate"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(pkg, "packager"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(pkg, "size"), 2);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(pkg, "arch"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_count_values(pkg, "license"), 1);
+
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(pkg,"url",      vers, 0,8), 1);
+  ck_assert_str_eq(vers[0], "http://about:blank");
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(pkg,"builddate",vers, 0,8), 1);
+  ck_assert_str_eq(vers[0], "1411832227");
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(pkg,"packager", vers, 0,8), 1);
+  ck_assert_str_eq(vers[0], "The test suite");
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(pkg,"size",     vers, 0,8), 2);
+  ck_assert_str_eq(vers[0], "1024");
+  ck_assert_str_eq(vers[1], "1025");
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(pkg,"arch",     vers, 0,8), 1);
+  ck_assert_str_eq(vers[0], "x86_64");
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(pkg,"license",  vers, 0,8), 1);
+  ck_assert_str_eq(vers[0], "BSD");
 
   pkgdepdb_pkg_delete(pkg);
 }

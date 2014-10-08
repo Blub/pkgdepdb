@@ -125,7 +125,7 @@ bool Package::ReadInfo(const string& str, const size_t size,
     auto keypos = pos;
     while (pos < size && str[pos] != '=' && str[pos] != c_isspace(str[pos]))
       ++pos;
-    auto key = str.substr(keypos, pos-keypos);
+    auto key = str.substr(keypos, pos-keypos-1);
     skipwhite();
     if (pos >= size || str[pos] != '=') {
       optconfig.Log(Error, "invalid entry in .PKGINFO\n");
@@ -174,6 +174,15 @@ bool Package::ReadInfo(const string& str, const size_t size,
     if (!optconfig.package_depends_ && !optconfig.package_info_) {
       skipline();
       continue;
+    }
+
+    if (optconfig.package_info_ && isentry("pkgdesc", sizeof("pkgdesc")-1)) {
+      if (description_.empty()) {
+        if (!getvalue("pkgdesc", description_))
+          return false;
+        continue;
+      }
+      // if we already had a pkgdesc line, fall through to the info_ case
     }
 
     if (!optconfig.package_depends_) {

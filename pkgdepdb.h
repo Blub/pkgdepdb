@@ -140,12 +140,14 @@ pkgdepdb_pkg* pkgdepdb_pkg_new   (void);
 pkgdepdb_pkg* pkgdepdb_pkg_load  (const char *filename, pkgdepdb_config*);
 void          pkgdepdb_pkg_delete(pkgdepdb_pkg*);
 
-const char*   pkgdepdb_pkg_name   (pkgdepdb_pkg*);
-const char*   pkgdepdb_pkg_version(pkgdepdb_pkg*);
-const char*   pkgdepdb_pkg_pkgbase(pkgdepdb_pkg*);
-void          pkgdepdb_pkg_set_name   (pkgdepdb_pkg*, const char*);
-void          pkgdepdb_pkg_set_version(pkgdepdb_pkg*, const char*);
-void          pkgdepdb_pkg_set_pkgbase(pkgdepdb_pkg*, const char*);
+const char*   pkgdepdb_pkg_name       (pkgdepdb_pkg*);
+const char*   pkgdepdb_pkg_version    (pkgdepdb_pkg*);
+const char*   pkgdepdb_pkg_pkgbase    (pkgdepdb_pkg*);
+const char*   pkgdepdb_pkg_description(pkgdepdb_pkg*);
+void          pkgdepdb_pkg_set_name       (pkgdepdb_pkg*, const char*);
+void          pkgdepdb_pkg_set_version    (pkgdepdb_pkg*, const char*);
+void          pkgdepdb_pkg_set_pkgbase    (pkgdepdb_pkg*, const char*);
+void          pkgdepdb_pkg_set_description(pkgdepdb_pkg*, const char*);
 
 int           pkgdepdb_pkg_read_info(pkgdepdb_pkg*, const char*, size_t,
                                      pkgdepdb_config*);
