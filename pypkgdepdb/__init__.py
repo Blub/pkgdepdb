@@ -678,6 +678,15 @@ class DB(object):
         pkg.linked = False
         del pkg
 
+    def is_broken(self, what):
+        if type(what) == Package:
+            v = lib.db_package_is_broken(self._ptr, what._ptr)
+        elif type(what) == Elf:
+            v = lib.db_object_is_broken(self._ptr, what._ptr)
+        else:
+            raise TypeError('object must be a Package or Elf instance')
+        return True if v == 1 else False
+
 class Package(object):
     def __init__(self, ptr=None, linked=False):
         self._ptr = ptr or lib.pkg_new()
