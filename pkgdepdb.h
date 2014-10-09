@@ -37,13 +37,17 @@ void             pkgdepdb_cfg_set_verbosity(pkgdepdb_cfg*, unsigned int);
 
 /* some boolean properties */
 pkgdepdb_bool    pkgdepdb_cfg_quiet                 (pkgdepdb_cfg*);
-void             pkgdepdb_cfg_set_quiet             (pkgdepdb_cfg*, pkgdepdb_bool);
+void             pkgdepdb_cfg_set_quiet             (pkgdepdb_cfg*,
+                                                     pkgdepdb_bool);
 pkgdepdb_bool    pkgdepdb_cfg_package_depends       (pkgdepdb_cfg*);
-void             pkgdepdb_cfg_set_package_depends   (pkgdepdb_cfg*, pkgdepdb_bool);
+void             pkgdepdb_cfg_set_package_depends   (pkgdepdb_cfg*,
+                                                     pkgdepdb_bool);
 pkgdepdb_bool    pkgdepdb_cfg_package_file_lists    (pkgdepdb_cfg*);
-void             pkgdepdb_cfg_set_package_file_lists(pkgdepdb_cfg*, pkgdepdb_bool);
+void             pkgdepdb_cfg_set_package_file_lists(pkgdepdb_cfg*,
+                                                     pkgdepdb_bool);
 pkgdepdb_bool    pkgdepdb_cfg_package_info          (pkgdepdb_cfg*);
-void             pkgdepdb_cfg_set_package_info      (pkgdepdb_cfg*, pkgdepdb_bool);
+void             pkgdepdb_cfg_set_package_info      (pkgdepdb_cfg*,
+                                                     pkgdepdb_bool);
 
 /* threading */
 unsigned int     pkgdepdb_cfg_max_jobs    (pkgdepdb_cfg*);
@@ -84,8 +88,8 @@ const char*   pkgdepdb_db_name(pkgdepdb_db*);
 void          pkgdepdb_db_set_name(pkgdepdb_db*, const char*);
 
 size_t        pkgdepdb_db_library_path_count(pkgdepdb_db*);
-size_t        pkgdepdb_db_library_path_get  (pkgdepdb_db*, const char**, size_t,
-                                             size_t);
+size_t        pkgdepdb_db_library_path_get  (pkgdepdb_db*, const char**,
+                                             size_t, size_t);
 pkgdepdb_bool pkgdepdb_db_library_path_add  (pkgdepdb_db*, const char*);
 pkgdepdb_bool pkgdepdb_db_library_path_del_s(pkgdepdb_db*, const char*);
 pkgdepdb_bool pkgdepdb_db_library_path_del_i(pkgdepdb_db*, size_t);
@@ -93,15 +97,16 @@ pkgdepdb_bool pkgdepdb_db_library_path_set_i(pkgdepdb_db*, size_t,
                                              const char*);
 
 /* the package delete functions "uninstall" the package from the db */
-size_t pkgdepdb_db_package_count   (pkgdepdb_db*);
-size_t pkgdepdb_db_package_install (pkgdepdb_db*, pkgdepdb_pkg*);
-size_t pkgdepdb_db_package_delete_p(pkgdepdb_db*, pkgdepdb_pkg*);
-size_t pkgdepdb_db_package_delete_s(pkgdepdb_db*, const char*);
-size_t pkgdepdb_db_package_delete_i(pkgdepdb_db*, size_t);
-
+size_t        pkgdepdb_db_package_count   (pkgdepdb_db*);
+pkgdepdb_bool pkgdepdb_db_package_install (pkgdepdb_db*, pkgdepdb_pkg*);
+pkgdepdb_pkg* pkgdepdb_db_package_find    (pkgdepdb_db*, const char*);
+size_t        pkgdepdb_db_package_get     (pkgdepdb_db*, pkgdepdb_pkg**, size_t,
+                                           size_t);
+pkgdepdb_bool pkgdepdb_db_package_delete_p(pkgdepdb_db*, pkgdepdb_pkg*);
+pkgdepdb_bool pkgdepdb_db_package_delete_s(pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_package_delete_i(pkgdepdb_db*, size_t);
 /* remove a package without destroying it */
-size_t pkgdepdb_db_package_remove(pkgdepdb_db*, pkgdepdb_pkg*);
-
+pkgdepdb_bool pkgdepdb_db_package_remove(pkgdepdb_db*, pkgdepdb_pkg*);
 pkgdepdb_bool pkgdepdb_db_package_is_broken(pkgdepdb_db*, pkgdepdb_pkg*);
 
 /* the DB's object list is read-only */
@@ -193,10 +198,12 @@ size_t        pkgdepdb_pkg_filelist_del_s(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg*, size_t);
 
 size_t        pkgdepdb_pkg_info_count_keys  (pkgdepdb_pkg*);
-size_t        pkgdepdb_pkg_info_get_keys    (pkgdepdb_pkg*, const char**, size_t, size_t);
+size_t        pkgdepdb_pkg_info_get_keys    (pkgdepdb_pkg*, const char**,
+                                             size_t, size_t);
 pkgdepdb_bool pkgdepdb_pkg_info_contains_key(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_info_count_values(pkgdepdb_pkg*, const char *key);
-size_t        pkgdepdb_pkg_info_get_values  (pkgdepdb_pkg*, const char *key, const char**, size_t, size_t);
+size_t        pkgdepdb_pkg_info_get_values  (pkgdepdb_pkg*, const char *key,
+                                             const char**, size_t, size_t);
 size_t        pkgdepdb_pkg_info_add  (pkgdepdb_pkg*, const char*, const char*);
 size_t        pkgdepdb_pkg_info_del_s(pkgdepdb_pkg*, const char*, const char*);
 size_t        pkgdepdb_pkg_info_del_i(pkgdepdb_pkg*, const char*, size_t);
