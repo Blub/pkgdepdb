@@ -70,6 +70,8 @@ pkgdepdb_functions = [
     ('db_library_path_set_i',      c_int,    [p_db, c_size_t, c_char_p]),
     ('db_package_count',           c_size_t, [p_db]),
     ('db_package_install',         c_size_t, [p_db, p_pkg]),
+    ('db_package_find',            p_pkg,    [p_db, c_char_p]),
+    ('db_package_get',             c_size_t, [p_db, POINTER(p_pkg), c_size_t, c_size_t]),
     ('db_package_delete_p',        c_size_t, [p_db, p_pkg]),
     ('db_package_delete_s',        c_size_t, [p_db, c_char_p]),
     ('db_package_delete_i',        c_size_t, [p_db, c_size_t]),
@@ -262,20 +264,22 @@ class Config(object):
                                       lib.cfg_set_package_info)
 
 class StringListAccess(object):
-    def __init__(self, owner, count, get, add, del_s, del_i, set_i=None):
-        self.owner    = owner
-        self.__count  = count
-        self.__get    = get
-        self.__add    = add
-        self.__del_s  = del_s
-        self.__del_i  = del_i
+    def __init__(self, owner, count, get, add, del_s, del_i, set_i=None,
+                 conv=cstr):
+        self.owner   = owner
+        self._conv   = conv
+        self._count  = count
+        self._get    = get
+        self._add    = add
+        self._del_s  = del_s
+        self._del_i  = del_i
         if set_i is None:
             self.__setitem__ = None
         else:
             self.__set_i  = set_i
 
     def __len__(self):
-        return self.__count(self.owner._ptr)
+        return self._count(self.owner._ptr)
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -303,7 +307,7 @@ class StringListAccess(object):
             if count > 0:
                 return []
             values = self.get(start+count, -count)
-            return values[start:start+count:step]
+            return values[-count:0:step]
 
     def __setitem__(self, key, value):
         if isinstance(key, slice):
@@ -314,9 +318,9 @@ class StringListAccess(object):
         if key > count:
             raise IndexError
         elif key == count:
-            return self.__add(self.owner._ptr, cstr(value))
+            self.add(value)
         else:
-            return self.__set_i(self.owner._ptr, key, cstr(value))
+            self.set_i(key, value)
 
     def __setslice__(self, start, stop, values, step=None):
         count = len(self)
@@ -332,12 +336,12 @@ class StringListAccess(object):
                 if start >= stop:
                     return
                 if start == count:
-                    if self.__add(self.owner._ptr, cstr(v)) == 1:
+                    if self.add(v):
                         count += 1
                 elif start > count:
                     raise IndexError
                 else:
-                    self.__set_i(self.owner._ptr, start, cstr(v))
+                    self.set_i(start, v)
                 start += step
         else:
             for v in values:
@@ -346,23 +350,18 @@ class StringListAccess(object):
                 if start < 0:
                     raise IndexError
                 if start == count:
-                    if self.__add(self.owner._ptr, cstr(v)) == 1:
+                    if self.add(v):
                         count += 1
                 elif start > count:
                     raise IndexError
                 else:
-                    self.__set_i(self.owner._ptr, start, cstr(v))
+                    self.set_i(start, v)
                 start += step
 
     def __delitem__(self, key):
         if isinstance(key, slice):
             return self.__delslice__(self, key.start, key.stop, key.step)
-        if isinstance(key, int):
-            if self.__del_i(self.owner._ptr, int(key)) != 1:
-                raise IndexError
-            return
-        if self.__del_s(self.owner._ptr, cstr(key)) != 1:
-            raise IndexError
+        self.delete(key)
 
     def __delslice__(self, start=None, stop=None, step=None):
         step  = step or 1
@@ -374,8 +373,7 @@ class StringListAccess(object):
             s = slice(start, stop, step)
         else:
             s = reverse(slice(start, stop, step))
-        for idx in s:
-            print(idx)
+        raise Excpetion('TODO')
 
     def __contains__(self, value):
         return value in self.get()
@@ -401,7 +399,7 @@ class StringListAccess(object):
         return self.Iterator(self, len(self)-1, -1)
 
     def get(self, offset=None, count=None):
-        avail = self.__count(self.owner._ptr)
+        avail = len(self)
         if offset is None:
             offset = 0
             if count is None:
@@ -411,27 +409,95 @@ class StringListAccess(object):
         if count > avail - offset:
             count = avail - offset
         lst = (c_char_p * count)()
-        got = self.__get(self.owner._ptr, lst, offset, count)
+        got = self._get(self.owner._ptr, lst, offset, count)
         return [ from_c_string(x) for x in lst[0:got] ]
 
     def add(self, s):
-        return True if self.__add(self.owner._ptr, cstr(s)) else False
+        return True if self._add(self.owner._ptr, self._conv(s)) else False
+
+    def set_i(self, index, value):
+        return (
+            True if self.__set_i(self.owner._ptr, index, self._conv(value))
+            else False)
 
     def delete(self, what):
         if isinstance(what, str):
-            return True if self.__del_s(self.owner._ptr, cstr(s)) else False
+            if 0 == self._del_s(self.owner._ptr, self._conv(what)):
+                raise IndexError
         elif isinstance(what, int):
-            return True if sefl.__del_i(self.owner._ptr, s) else False
+            if 0 == self._del_i(self.owner._ptr, what):
+                raise IndexError
         else:
-            raise PKGDepDBException(
-                'invalid type for delete operation: %s (%s)' %
-                (type(what), str(what)))
+            raise KeyError('invalid type for delete operation: %s (%s)' %
+                           (type(what), str(what)))
 
     def append(self, value):
         return self.add(value)
     def extend(self, value):
         for i in value:
             self.append(value)
+
+class DepListAccess(StringListAccess):
+    def __init__(self, owner, count, get, add, del_s, del_t, del_i, set_i=None,
+                 conv=cstr):
+        StringListAccess.__init__(self, owner, count, get, add, del_s, del_i,
+                                  set_i, conv)
+        self._del_t = del_t
+
+    def add(self, s):
+        if isinstance(s, str):
+            x = s.find('<')
+            x = x if x >= 0 else s.find('>')
+            x = x if x >= 0 else s.find('=')
+            x = x if x >= 0 else s.find('!')
+            if x == -1:
+                return (True if self._add(self.owner._ptr,
+                                          self._conv(s),
+                                          self._conv("")) == 1
+                        else False)
+            else:
+                a = s[0:x]
+                b = s[x+1 if s[x+1] != '=' else x+2:]
+                return (True if self._add(self.owner._ptr,
+                                          self._conv(a),
+                                          self._conv(b)) == 1
+                        else False)
+        elif isinstance(s, (str,str)):
+            return (True if self._add(self.owner._ptr,
+                                      self._conv(s[0]),
+                                      self._conv(s[1])) == 1
+                    else False)
+
+    def get(self, offset=None, count=None):
+        avail = self._count(self.owner._ptr)
+        if offset is None:
+            offset = 0
+            if count is None:
+                count = avail
+        elif count is None:
+            count = 1
+        if count > avail - offset:
+            count = avail - offset
+        lst_a = (c_char_p * count)()
+        lst_b = (c_char_p * count)()
+        got = self._get(self.owner._ptr, lst_a, lst_b, offset, count)
+        return zip([ from_c_string(x) for x in lst_a[0:got] ],
+                   [ from_c_string(x) for x in lst_b[0:got] ])
+
+    def delete(self, what):
+        if isinstance(what, str):
+            if 0 == self._del_s(self.owner._ptr, self._conv(what)):
+                raise IndexError
+        elif isinstance(what, int):
+            if 0 == self._del_i(self.owner._ptr, what):
+                raise IndexError
+        elif isinstance(what, (str,str)):
+            if 0 == self._del_t(self.owner._ptr, self._conv(what[0]),
+                                self._conv(what[1])):
+                raise IndexError
+        else:
+            raise KeyError('invalid type for delete operation: %s (%s)' %
+                           (type(what), str(what)))
 
 class StringMapOfStringList(object):
     def __init__(self, owner, count_keys, get_keys, count_values, get_values,
@@ -497,6 +563,47 @@ class StringMapOfStringList(object):
         return [ from_c_string(x) for x in lst[0:got] ]
 
 class DB(object):
+    class PackageList(object):
+        def __init__(self, owner):
+            self.owner = owner
+
+        def __len__(self):
+            return lib.db_package_count(self.owner._ptr)
+
+        def get(self, off=0, count=None):
+            if off < 0: raise IndexError
+            maxcount = len(self)
+            if off >= maxcount: raise IndexError
+            count = count or maxcount
+            if count < 0: raise ValueError('cannot fetch a negative count')
+            count = min(count, maxcount - off)
+            out = (p_pkg * count)()
+            got = lib.db_package_get(self.owner._ptr, out, off, count)
+            return [Package(x,True) for x in got]
+
+        def __getitem__(self, key):
+            if isinstance(key, slice):
+                return self.__getslice__(self, key.start, key.stop, key.step)
+            if isinstance(key, str):
+                return lib.db_package_find(self.owner._ptr, cstr(key))
+            return self.get(key, 1)[0]
+
+        def __getslice__(self, start=None, stop=None, step=None):
+            step  = step or 1
+            start = start or 0
+            count = stop - start if stop else None
+            if step == 0: raise ValueError('step cannot be zero')
+            if count == 0: return []
+            if step > 0:
+                if count < 0: return []
+                return self.get(start, count)[::step]
+            else:
+                if count > 0: return []
+                return self.get(start+count, -count)[-count:0:step]
+
+        def __contains__(self, value):
+            return value in self.get()
+
     def __init__(self, cfg):
         self._ptr = lib.db_new(cfg._ptr)
         if self._ptr is None:
@@ -526,6 +633,7 @@ class DB(object):
                                              lib.db_assume_found_add,
                                              lib.db_assume_found_del_s,
                                              lib.db_assume_found_del_i)
+        self.packages = DB.PackageList(self)
 
     loaded_version = IntGetter(lib.db_loaded_version)
     strict_linking = BoolProperty(lib.db_strict_linking,
@@ -554,11 +662,28 @@ class DB(object):
     def wipe_filelists(self):
         return True if lib.db_wipe_file_lists(self._ptr) == 1 else False
 
+    def install(self, pkg):
+        if lib.db_package_install(self._ptr, pkg._ptr) != 1:
+            raise PKGDepDBException('package installation failed')
+        pkg.linked = True
+
+    def uninstall_package(self, pkg):
+        if lib.db_package_remove(self._ptr, pkg._ptr) != 1:
+            raise PKGDepDBException('failed to remove package')
+        pkg.linked = False
+
+    def delete_package(self, pkg):
+        if lib.db_package_delete_p(self._ptr, pkg._ptr) != 1:
+            raise PKGDepDBException('failed to uninstall package')
+        pkg.linked = False
+        del pkg
+
 class Package(object):
-    def __init__(self, ptr=None):
+    def __init__(self, ptr=None, linked=False):
         self._ptr = ptr or lib.pkg_new()
         if self._ptr is None:
             raise PKGDepDBException('failed to create package instance')
+        self.linked = linked
 
         self.groups = StringListAccess(self,
                                        lib.pkg_groups_count,
@@ -581,6 +706,22 @@ class Package(object):
                                           lib.pkg_info_del_s,
                                           lib.pkg_info_del_i,
                                           lib.pkg_info_set_i)
+        def make_deplist(self, what):
+            return DepListAccess(self,
+                lambda o:       lib.pkg_dep_count   (o, what),
+                lambda o, *arg: lib.pkg_dep_get     (o, what, *arg),
+                lambda o, *arg: lib.pkg_dep_add     (o, what, *arg),
+                lambda o, *arg: lib.pkg_dep_del_name(o, what, *arg),
+                lambda o, *arg: lib.pkg_dep_del_full(o, what, *arg),
+                lambda o, *arg: lib.pkg_dep_del_i   (o, what, *arg),
+                lambda o, *arg: lib.pkg_dep_set_i   (o, what, *arg))
+        self.depends      = make_deplist(self, PkgEntry.Depends)
+        self.optdepends   = make_deplist(self, PkgEntry.OptDepends)
+        self.makedepends  = make_deplist(self, PkgEntry.MakeDepends)
+        self.checkdepends = make_deplist(self, PkgEntry.CheckDepends)
+        self.provides     = make_deplist(self, PkgEntry.Provides)
+        self.conflicts    = make_deplist(self, PkgEntry.Conflicts)
+        self.replaces     = make_deplist(self, PkgEntry.Replaces)
 
     name        = StringProperty(lib.pkg_name, lib.pkg_set_name)
     version     = StringProperty(lib.pkg_version, lib.pkg_set_version)
@@ -588,14 +729,15 @@ class Package(object):
     description = StringProperty(lib.pkg_description, lib.pkg_set_description)
 
     def __del__(self):
-        lib.pkg_delete(self._ptr)
+        if not self.linked:
+            lib.pkg_delete(self._ptr)
 
     @staticmethod
     def load(path, cfg):
         ptr = lib.pkg_load(cstr(path), cfg._ptr)
         if ptr is None:
             raise PKGDepDBException('failed to load package from: %s' % (path))
-        return Package(ptr)
+        return Package(ptr, False)
 
     def read_info(self, pkginfo_text, cfg):
         if lib.pkg_read_info(self._ptr, cstr(pkginfo_text), len(pkginfo_text),
