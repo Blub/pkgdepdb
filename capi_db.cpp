@@ -82,6 +82,13 @@ pkgdepdb_bool pkgdepdb_db_library_path_del_i(pkgdepdb_db *db_, size_t index) {
   return db->LD_Delete(index);
 }
 
+pkgdepdb_bool pkgdepdb_db_library_path_set_i(pkgdepdb_db *db_, size_t index,
+                                             const char *v)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_set_i(db->library_path_, index, v);
+}
+
 size_t pkgdepdb_db_package_count(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->packages_.size();

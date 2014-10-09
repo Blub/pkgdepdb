@@ -89,6 +89,8 @@ size_t        pkgdepdb_db_library_path_get  (pkgdepdb_db*, const char**, size_t,
 pkgdepdb_bool pkgdepdb_db_library_path_add  (pkgdepdb_db*, const char*);
 pkgdepdb_bool pkgdepdb_db_library_path_del_s(pkgdepdb_db*, const char*);
 pkgdepdb_bool pkgdepdb_db_library_path_del_i(pkgdepdb_db*, size_t);
+pkgdepdb_bool pkgdepdb_db_library_path_set_i(pkgdepdb_db*, size_t,
+                                             const char*);
 
 /* the package delete functions "uninstall" the package from the db */
 size_t pkgdepdb_db_package_count   (pkgdepdb_db*);
@@ -197,6 +199,8 @@ size_t        pkgdepdb_pkg_info_get_values  (pkgdepdb_pkg*, const char *key, con
 size_t        pkgdepdb_pkg_info_add  (pkgdepdb_pkg*, const char*, const char*);
 size_t        pkgdepdb_pkg_info_del_s(pkgdepdb_pkg*, const char*, const char*);
 size_t        pkgdepdb_pkg_info_del_i(pkgdepdb_pkg*, const char*, size_t);
+pkgdepdb_bool pkgdepdb_pkg_info_set_i(pkgdepdb_pkg*, const char*, size_t,
+                                      const char*);
 
 size_t        pkgdepdb_pkg_elf_count(pkgdepdb_pkg*);
 size_t        pkgdepdb_pkg_elf_get  (pkgdepdb_pkg*, pkgdepdb_elf*, size_t,

@@ -264,6 +264,13 @@ size_t pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg *pkg_, size_t index) {
   return pkgdepdb_strlist_del_i(*pkg, &Package::filelist_, index);
 }
 
+pkgdepdb_bool pkgdepdb_pkg_filelist_set_i(pkgdepdb_pkg *pkg_, size_t index,
+                                          const char *v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_set_i(pkg->filelist_, index, v);
+}
+
 void pkgdepdb_pkg_guess_version(pkgdepdb_pkg *pkg_, const char *filename) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   pkg->Guess(filename);
@@ -412,5 +419,16 @@ size_t pkgdepdb_pkg_info_del_i(pkgdepdb_pkg *pkg_, const char *k, size_t idx) {
     pkg->info_.erase(info);
   return 1;
 }
+pkgdepdb_bool pkgdepdb_pkg_info_set_i(pkgdepdb_pkg *pkg_, const char *k,
+                                      size_t index, const char *v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto info = pkg->info_.find(k);
+  if (info == pkg->info_.end())
+    return 0;
+  auto &lst = info->second;
+  return pkgdepdb_strlist_set_i(lst, index, v);
+}
+
 
 } // extern "C"

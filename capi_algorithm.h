@@ -142,4 +142,14 @@ size_t pkgdepdb_strlist_del_i(T& obj, STRLIST T::*member, size_t index) {
   return 1;
 }
 
+static inline
+bool pkgdepdb_strlist_set_i(std::vector<std::string>& lst, size_t index,
+                            const char *value)
+{
+  if (index >= lst.size())
+    return false;
+  lst[index] = value;
+  return true;
+}
+
 #endif

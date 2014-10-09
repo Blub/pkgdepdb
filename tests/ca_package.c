@@ -124,6 +124,11 @@ START_TEST (test_ca_package)
   ck_assert_str_eq(deps[0], "1");
   ck_assert_str_eq(deps[1], "2");
   ck_assert_str_eq(deps[2], "3");
+  ck_assert_int_eq(pkgdepdb_pkg_info_set_i(libfoo, "A", 1, "X"), 1);
+  ck_assert_int_eq(pkgdepdb_pkg_info_get_values(libfoo, "A", deps, 0, 8), 3);
+  ck_assert_str_eq(deps[0], "1");
+  ck_assert_str_eq(deps[1], "X");
+  ck_assert_str_eq(deps[2], "3");
   ck_assert_int_eq(pkgdepdb_pkg_info_del_i(libfoo, "A", 1), 1);
   ck_assert_int_eq(pkgdepdb_pkg_info_get_values(libfoo, "A", deps, 0, 8), 2);
   ck_assert_str_eq(deps[0], "1");
