@@ -131,10 +131,10 @@ pkgdepdb_bool pkgdepdb_db_assume_found_add  (pkgdepdb_db*, const char*);
 pkgdepdb_bool pkgdepdb_db_assume_found_del_s(pkgdepdb_db*, const char*);
 pkgdepdb_bool pkgdepdb_db_assume_found_del_i(pkgdepdb_db*, size_t);
 
-void          pkgdepdb_db_relink_all     (pkgdepdb_db*);
-void          pkgdepdb_db_fix_paths      (pkgdepdb_db*);
-pkgdepdb_bool pkgdepdb_db_wipe_packages  (pkgdepdb_db*);
-pkgdepdb_bool pkgdepdb_db_wipe_file_lists(pkgdepdb_db*);
+void          pkgdepdb_db_relink_all    (pkgdepdb_db*);
+void          pkgdepdb_db_fix_paths     (pkgdepdb_db*);
+pkgdepdb_bool pkgdepdb_db_wipe_packages (pkgdepdb_db*);
+pkgdepdb_bool pkgdepdb_db_wipe_filelists(pkgdepdb_db*);
 
 /*********
  * pkgdepdb::Package interface
@@ -194,6 +194,7 @@ size_t        pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg*, size_t);
 
 size_t        pkgdepdb_pkg_info_count_keys  (pkgdepdb_pkg*);
 size_t        pkgdepdb_pkg_info_get_keys    (pkgdepdb_pkg*, const char**, size_t, size_t);
+pkgdepdb_bool pkgdepdb_pkg_info_contains_key(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_info_count_values(pkgdepdb_pkg*, const char *key);
 size_t        pkgdepdb_pkg_info_get_values  (pkgdepdb_pkg*, const char *key, const char**, size_t, size_t);
 size_t        pkgdepdb_pkg_info_add  (pkgdepdb_pkg*, const char*, const char*);

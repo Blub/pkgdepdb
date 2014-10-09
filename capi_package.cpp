@@ -370,6 +370,13 @@ size_t pkgdepdb_pkg_info_get_keys(pkgdepdb_pkg *pkg_, const char **out,
   return got;
 }
 
+pkgdepdb_bool pkgdepdb_pkg_info_contains_key(pkgdepdb_pkg *pkg_,
+                                             const char *key)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkg->info_.find(key) != pkg->info_.end() ? 1 : 0;
+}
+
 size_t pkgdepdb_pkg_info_count_values(pkgdepdb_pkg *pkg_, const char *key) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   auto info = pkg->info_.find(key);

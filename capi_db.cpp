@@ -252,7 +252,7 @@ pkgdepdb_bool pkgdepdb_db_wipe_packages(pkgdepdb_db *db_) {
   return db->WipePackages();
 }
 
-pkgdepdb_bool pkgdepdb_db_wipe_file_lists(pkgdepdb_db *db_) {
+pkgdepdb_bool pkgdepdb_db_wipe_filelists(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->WipeFilelists();
 }
