@@ -27,6 +27,34 @@ class JSON(object):
     Query = 1
     DB    = 2
 
+class ELF(object):
+    CLASSNONE = 0
+    CLASS32   = 1
+    CLASS64   = 2
+    DATANONE  = 0
+    DATA2LSB  = 1
+    DATA2MSB  = 2
+    OSABI_NONE       = 0
+    OSABI_HPUX       = 1
+    OSABI_NETBSD     = 2
+    OSABI_LINUX      = 3
+    OSABI_HURD       = 4
+    OSABI_86OPEN     = 5
+    OSABI_SOLARIS    = 6
+    OSABI_AIX        = 7
+    OSABI_IRIX       = 8
+    OSABI_FREEBSD    = 9
+    OSABI_TRU64      = 10
+    OSABI_MODESTO    = 11
+    OSABI_OPENBSD    = 12
+    OSABI_OPENVMS    = 13
+    OSABI_NSK        = 14
+    OSABI_AROS       = 15
+    OSABI_ARM        = 97
+    OSABI_STANDALONE = 255
+    OSABI_SYSV       = 0 # ELFOSABI_NONE
+    OSABI_MONTEREY   = 7 # ELFOSABI_AIX
+
 class lib(object):
     pass
 
@@ -563,9 +591,9 @@ class Elf(object):
         lib.elf_unref(self._ptr)
 
     @staticmethod
-    def load(self, path, cfg):
-        err = c_int(0)
-        ptr = lib.elf_load(cstr(path), byref(err), cfg._ptr)
+    def load(path, cfg):
+        err = ctypes.c_int(0)
+        ptr = lib.elf_load(cstr(path), ctypes.byref(err), cfg._ptr)
         if ptr is None:
             if err != 0:
                 raise PKGDepDBException('failed to parse object %s' % (path))
@@ -575,10 +603,10 @@ class Elf(object):
         return Elf(ptr)
 
     @staticmethod
-    def read(self, byteobj, basename, dirname, cfg):
-        err = c_int(0)
+    def read(byteobj, basename, dirname, cfg):
+        err = ctypes.c_int(0)
         ptr = lib.elf_read(byteobj, len(byteobj), cstr(basename),
-                           cstr(dirname), byref(err), cfg)
+                           cstr(dirname), ctypes.byref(err), cfg)
         if ptr is None:
             if err != 0:
                 raise PKGDepDBException('failed to parse object %s'
@@ -595,11 +623,14 @@ class Elf(object):
     def osabi_string(self):
         return from_c_string(lib.elf_osabi_string(self._ptr))
 
+    def can_use(self, other, strict=True):
+        return lib.elf_can_use(self._ptr, other._ptr, 1 if strict else 0)
+
 __all__ = [
             'PKGDepDBException',
             'p_cfg', 'p_db', 'p_pkg', 'p_elf',
-            'LogLevel', 'PkgEntry', 'JSON',
+            'LogLevel', 'PkgEntry', 'JSON', 'ELF'
             'rawlib',
             'lib',
-            'Config', 'DB', 'Package', 'Pkg', 'Elf'
+            'Config', 'DB', 'Package', 'Pkg', 'Elf',
           ]

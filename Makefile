@@ -133,6 +133,7 @@ c-check: .libs/libpkgdepdb.a
 
 py-check: .libs/libpkgdepdb.a
 	LD_LIBRARY_PATH=.libs PYTHONPATH=. $(PYTHON) tests/pa_config.py
+	LD_LIBRARY_PATH=.libs PYTHONPATH=. $(PYTHON) tests/pa_elf.py
 
 # DO NOT DELETE
 

@@ -2,19 +2,21 @@ import ctypes
 
 def from_c_string2(addr, length):
     """utf-8 decode a C string into a python string"""
-    #return str(ctypes.string_at(addr, length), encoding='utf-8')
+    if addr is None:
+        return None
     if type(addr) == str:
         return addr[0:length]
     return ctypes.string_at(addr, length).decode('utf-8')
 def from_c_string(addr):
     """utf-8 decode a C string into a python string"""
-    #return str(addr, encoding='utf-8')
+    if addr is None:
+        return None
     if type(addr) == str:
         return addr
     return addr.decode('utf-8')
 def cstr(s):
     """convenience function to encode a str as bytes"""
-    return s.encode('utf-8')
+    return None if s is None else s.encode('utf-8')
 
 def BoolProperty(c_getter, c_setter):
     def getter(self):
@@ -150,10 +152,13 @@ class StringListAccess(object):
         if step == 0:
             raise ValueError('step cannot be zero')
         if step > 0:
-            s = slice(start, stop, step)
+            s = range(start, stop, step)
         else:
-            s = reverse(slice(start, stop, step))
-        raise Excpetion('TODO')
+            s = reverse(range(start, stop, step))
+        minus = 0
+        for idx in s:
+            self.delete(idx - minus)
+            minus += 1
 
     def __contains__(self, value):
         return self.contains(value)
@@ -219,7 +224,7 @@ class StringListAccess(object):
         return self.add(value)
     def extend(self, value):
         for i in value:
-            self.append(value)
+            self.append(i)
 
 class DepListAccess(StringListAccess):
     def __init__(self, owner, count, get, add, contains, del_s, del_t, del_i,
