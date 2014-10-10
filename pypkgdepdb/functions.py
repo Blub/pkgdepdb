@@ -24,6 +24,7 @@ pkgdepdb_functions = [
     ('cfg_delete',                 None,     [p_cfg]),
     ('cfg_load',                   c_int,    [p_cfg, c_char_p]),
     ('cfg_load_default',           c_int,    [p_cfg]),
+    ('cfg_read',                   c_int,    [p_cfg, c_char_p, c_char_p, c_size_t]),
     ('cfg_database',               c_char_p, [p_cfg]),
     ('cfg_set_database',           None,     [p_cfg, c_char_p]),
     ('cfg_verbosity',              c_uint,   [p_cfg]),

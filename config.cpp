@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "main.h"
 
@@ -224,6 +225,12 @@ bool Config::ReadConfig(const char *path) {
   if (!in)
     return false;
   return ReadConfig(in, path);
+}
+
+bool Config::ReadConfig(const char *name, const char *data, size_t length) {
+  string strdata(data, length);
+  std::istringstream is(strdata);
+  return ReadConfig(is, name);
 }
 
 bool Config::ReadConfig() {

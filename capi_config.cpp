@@ -29,6 +29,13 @@ pkgdepdb_bool pkgdepdb_cfg_load(pkgdepdb_cfg *cfg_, const char *filepath)
   return cfg->ReadConfig(filepath);
 }
 
+pkgdepdb_bool pkgdepdb_cfg_read(pkgdepdb_cfg *cfg_, const char *name,
+                                const char *data, size_t length)
+{
+  auto cfg = reinterpret_cast<Config*>(cfg_);
+  return cfg->ReadConfig(name, data, length);
+}
+
 const char *pkgdepdb_cfg_database(pkgdepdb_cfg *cfg_) {
   auto cfg = reinterpret_cast<Config*>(cfg_);
   return cfg->database_.c_str();

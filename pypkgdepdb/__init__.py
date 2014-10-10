@@ -55,6 +55,11 @@ class Config(object):
         if lib.cfg_load_default(self._ptr) == 0:
             raise PKGDepDBException('failed to load default config')
 
+    def read(self, name, data):
+        data = cstr(data)
+        if lib.cfg_read(self._ptr, cstr(name), data, len(data)) != 1:
+            raise PKGDepDBException('failed to parse config')
+
     database  = StringProperty(lib.cfg_database, lib.cfg_set_database)
 
     verbosity = IntProperty(lib.cfg_verbosity, lib.cfg_set_verbosity)
