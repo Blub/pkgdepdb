@@ -64,6 +64,7 @@ class Config(object):
 
     verbosity = IntProperty(lib.cfg_verbosity, lib.cfg_set_verbosity)
     log_level = IntProperty(lib.cfg_log_level, lib.cfg_set_log_level)
+    max_jobs  = IntProperty(lib.cfg_max_jobs,  lib.cfg_set_max_jobs)
     json      = IntProperty(lib.cfg_json,      lib.cfg_set_json)
 
     quiet              = BoolProperty(lib.cfg_quiet, lib.cfg_set_quiet)
