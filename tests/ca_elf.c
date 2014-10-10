@@ -112,7 +112,7 @@ START_TEST (test_ca_libpkgdepdb)
   ck_assert(cfg);
 
   int err = 0;
-  pkgdepdb_elf elf = pkgdepdb_elf_open(".libs/libpkgdepdb.so", &err, cfg);
+  pkgdepdb_elf elf = pkgdepdb_elf_load(".libs/libpkgdepdb.so", &err, cfg);
   if (!elf) {
     if (err)
       ck_abort_msg("error reading libpkgdepdb.so - cannot read own shared library?");

@@ -122,6 +122,17 @@ int pkg_dependlist_add(Package& pkg, DependList Package::*member,
 }
 
 static inline
+pkgdepdb_bool pkg_dependlist_contains(Package& pkg,
+                                      DependList Package::*member,
+                                      const char *name)
+{
+  for (const auto& dep : pkg.*member)
+    if (std::get<0>(dep) == name)
+      return 1;
+  return 0;
+}
+
+static inline
 int pkg_dependlist_del_name(Package& pkg, DependList Package::*member,
                             const char *name)
 {
@@ -185,6 +196,15 @@ size_t pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg_, unsigned int what,
   return pkg_dependlist_add(*pkg, kDepMember[what], name, constraint);
 }
 
+pkgdepdb_bool pkgdepdb_pkg_dep_contains(pkgdepdb_pkg *pkg_, unsigned int what,
+                                        const char *name)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  if (what >= kDepMemberCount)
+    return 0;
+  return pkg_dependlist_contains(*pkg, kDepMember[what], name);
+}
+
 size_t pkgdepdb_pkg_dep_del_name(pkgdepdb_pkg *pkg_, unsigned int what,
                                  const char *name)
 {
@@ -227,6 +247,11 @@ size_t pkgdepdb_pkg_groups_add(pkgdepdb_pkg *pkg_, const char *v) {
   return pkgdepdb_strlist_add_unique(*pkg, &Package::groups_, v);
 }
 
+pkgdepdb_bool pkgdepdb_pkg_groups_contains(pkgdepdb_pkg *pkg_, const char *v) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_contains(pkg->groups_, v);
+}
+
 size_t pkgdepdb_pkg_groups_del_s(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_del_s_all(*pkg, &Package::groups_, v);
@@ -252,6 +277,12 @@ size_t pkgdepdb_pkg_filelist_get(pkgdepdb_pkg *pkg_,
 size_t pkgdepdb_pkg_filelist_add(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_add_always(*pkg, &Package::filelist_, v);
+}
+
+pkgdepdb_bool pkgdepdb_pkg_filelist_contains(pkgdepdb_pkg *pkg_, const char *v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_contains(pkg->filelist_, v);
 }
 
 size_t pkgdepdb_pkg_filelist_del_s(pkgdepdb_pkg *pkg_, const char *v) {

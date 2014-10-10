@@ -87,14 +87,15 @@ void          pkgdepdb_db_set_strict_linking(pkgdepdb_db*, pkgdepdb_bool);
 const char*   pkgdepdb_db_name(pkgdepdb_db*);
 void          pkgdepdb_db_set_name(pkgdepdb_db*, const char*);
 
-size_t        pkgdepdb_db_library_path_count(pkgdepdb_db*);
-size_t        pkgdepdb_db_library_path_get  (pkgdepdb_db*, const char**,
-                                             size_t, size_t);
-pkgdepdb_bool pkgdepdb_db_library_path_add  (pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_library_path_del_s(pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_library_path_del_i(pkgdepdb_db*, size_t);
-pkgdepdb_bool pkgdepdb_db_library_path_set_i(pkgdepdb_db*, size_t,
-                                             const char*);
+size_t        pkgdepdb_db_library_path_count   (pkgdepdb_db*);
+size_t        pkgdepdb_db_library_path_get     (pkgdepdb_db*, const char**,
+                                                size_t, size_t);
+pkgdepdb_bool pkgdepdb_db_library_path_contains(pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_library_path_add     (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_library_path_del_s   (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_library_path_del_i   (pkgdepdb_db*, size_t);
+pkgdepdb_bool pkgdepdb_db_library_path_set_i   (pkgdepdb_db*, size_t,
+                                                const char*);
 
 /* the package delete functions "uninstall" the package from the db */
 size_t        pkgdepdb_db_package_count   (pkgdepdb_db*);
@@ -115,26 +116,29 @@ size_t pkgdepdb_db_object_get  (pkgdepdb_db*, pkgdepdb_elf*, size_t, size_t);
 
 pkgdepdb_bool pkgdepdb_db_object_is_broken(pkgdepdb_db*, pkgdepdb_elf);
 
-size_t        pkgdepdb_db_ignored_files_count(pkgdepdb_db*);
-size_t        pkgdepdb_db_ignored_files_get  (pkgdepdb_db*, const char**,
-                                              size_t, size_t);
-pkgdepdb_bool pkgdepdb_db_ignored_files_add  (pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_ignored_files_del_s(pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_ignored_files_del_i(pkgdepdb_db*, size_t);
+size_t        pkgdepdb_db_ignored_files_count   (pkgdepdb_db*);
+size_t        pkgdepdb_db_ignored_files_get     (pkgdepdb_db*, const char**,
+                                                 size_t, size_t);
+pkgdepdb_bool pkgdepdb_db_ignored_files_add     (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_ignored_files_contains(pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_ignored_files_del_s   (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_ignored_files_del_i   (pkgdepdb_db*, size_t);
 
-size_t        pkgdepdb_db_base_packages_count(pkgdepdb_db*);
-size_t        pkgdepdb_db_base_packages_get  (pkgdepdb_db*, const char**,
-                                              size_t, size_t);
-size_t        pkgdepdb_db_base_packages_add  (pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_base_packages_del_s(pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_base_packages_del_i(pkgdepdb_db*, size_t);
+size_t        pkgdepdb_db_base_packages_count   (pkgdepdb_db*);
+size_t        pkgdepdb_db_base_packages_get     (pkgdepdb_db*, const char**,
+                                                 size_t, size_t);
+pkgdepdb_bool pkgdepdb_db_base_packages_contains(pkgdepdb_db*, const char*);
+size_t        pkgdepdb_db_base_packages_add     (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_base_packages_del_s   (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_base_packages_del_i   (pkgdepdb_db*, size_t);
 
-size_t        pkgdepdb_db_assume_found_count(pkgdepdb_db*);
-size_t        pkgdepdb_db_assume_found_get  (pkgdepdb_db*, const char**,
-                                              size_t, size_t);
-pkgdepdb_bool pkgdepdb_db_assume_found_add  (pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_assume_found_del_s(pkgdepdb_db*, const char*);
-pkgdepdb_bool pkgdepdb_db_assume_found_del_i(pkgdepdb_db*, size_t);
+size_t        pkgdepdb_db_assume_found_count   (pkgdepdb_db*);
+size_t        pkgdepdb_db_assume_found_get     (pkgdepdb_db*, const char**,
+                                                 size_t, size_t);
+pkgdepdb_bool pkgdepdb_db_assume_found_add     (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_assume_found_contains(pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_assume_found_del_s   (pkgdepdb_db*, const char*);
+pkgdepdb_bool pkgdepdb_db_assume_found_del_i   (pkgdepdb_db*, size_t);
 
 void          pkgdepdb_db_relink_all    (pkgdepdb_db*);
 void          pkgdepdb_db_fix_paths     (pkgdepdb_db*);
@@ -174,6 +178,8 @@ size_t        pkgdepdb_pkg_dep_count   (pkgdepdb_pkg*, unsigned int what);
 size_t        pkgdepdb_pkg_dep_get     (pkgdepdb_pkg*, unsigned int what,
                                         const char**, const char**, size_t,
                                         size_t);
+pkgdepdb_bool pkgdepdb_pkg_dep_contains(pkgdepdb_pkg*, unsigned int what,
+                                        const char*);
 size_t        pkgdepdb_pkg_dep_add     (pkgdepdb_pkg*, unsigned int what,
                                         const char*, const char*);
 size_t        pkgdepdb_pkg_dep_del_name(pkgdepdb_pkg*, unsigned int what,
@@ -183,19 +189,21 @@ size_t        pkgdepdb_pkg_dep_del_full(pkgdepdb_pkg*, unsigned int what,
 size_t        pkgdepdb_pkg_dep_del_i   (pkgdepdb_pkg*, unsigned int what,
                                         size_t);
 
-size_t        pkgdepdb_pkg_groups_count(pkgdepdb_pkg*);
-size_t        pkgdepdb_pkg_groups_get  (pkgdepdb_pkg*, const char**, size_t,
-                                        size_t);
-size_t        pkgdepdb_pkg_groups_add  (pkgdepdb_pkg*, const char*);
-size_t        pkgdepdb_pkg_groups_del_s(pkgdepdb_pkg*, const char*);
-size_t        pkgdepdb_pkg_groups_del_i(pkgdepdb_pkg*, size_t);
+size_t        pkgdepdb_pkg_groups_count   (pkgdepdb_pkg*);
+size_t        pkgdepdb_pkg_groups_get     (pkgdepdb_pkg*, const char**, size_t,
+                                           size_t);
+pkgdepdb_bool pkgdepdb_pkg_groups_contains(pkgdepdb_pkg*, const char*);
+size_t        pkgdepdb_pkg_groups_add     (pkgdepdb_pkg*, const char*);
+size_t        pkgdepdb_pkg_groups_del_s   (pkgdepdb_pkg*, const char*);
+size_t        pkgdepdb_pkg_groups_del_i   (pkgdepdb_pkg*, size_t);
 
-size_t        pkgdepdb_pkg_filelist_count(pkgdepdb_pkg*);
-size_t        pkgdepdb_pkg_filelist_get  (pkgdepdb_pkg*,
-                                          const char**, size_t, size_t);
-size_t        pkgdepdb_pkg_filelist_add  (pkgdepdb_pkg*, const char*);
-size_t        pkgdepdb_pkg_filelist_del_s(pkgdepdb_pkg*, const char*);
-size_t        pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg*, size_t);
+size_t        pkgdepdb_pkg_filelist_count   (pkgdepdb_pkg*);
+size_t        pkgdepdb_pkg_filelist_get     (pkgdepdb_pkg*,
+                                             const char**, size_t, size_t);
+pkgdepdb_bool pkgdepdb_pkg_filelist_contains(pkgdepdb_pkg*, const char*);
+size_t        pkgdepdb_pkg_filelist_add     (pkgdepdb_pkg*, const char*);
+size_t        pkgdepdb_pkg_filelist_del_s   (pkgdepdb_pkg*, const char*);
+size_t        pkgdepdb_pkg_filelist_del_i   (pkgdepdb_pkg*, size_t);
 
 size_t        pkgdepdb_pkg_info_count_keys  (pkgdepdb_pkg*);
 size_t        pkgdepdb_pkg_info_get_keys    (pkgdepdb_pkg*, const char**,
@@ -229,7 +237,7 @@ pkgdepdb_bool pkgdepdb_pkg_replaces(pkgdepdb_pkg*, pkgdepdb_pkg*);
 
 pkgdepdb_elf  pkgdepdb_elf_new  (void);
 void          pkgdepdb_elf_unref(pkgdepdb_elf);
-pkgdepdb_elf  pkgdepdb_elf_open (const char *file, int *err, pkgdepdb_cfg*);
+pkgdepdb_elf  pkgdepdb_elf_load (const char *file, int *err, pkgdepdb_cfg*);
 pkgdepdb_elf  pkgdepdb_elf_read (const char *data, size_t size,
                                  const char *basename, const char *dirname,
                                  int *err, pkgdepdb_cfg*);
@@ -263,8 +271,6 @@ void          pkgdepdb_elf_set_interpreter(pkgdepdb_elf, const char*);
 size_t        pkgdepdb_elf_needed_count(pkgdepdb_elf);
 size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf, const char**, size_t,
                                         size_t);
-
-/* for completeness */
 pkgdepdb_bool pkgdepdb_elf_needed_contains(pkgdepdb_elf, const char*);
 void          pkgdepdb_elf_needed_add     (pkgdepdb_elf, const char*);
 size_t        pkgdepdb_elf_needed_del_s   (pkgdepdb_elf, const char*);

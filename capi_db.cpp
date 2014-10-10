@@ -72,6 +72,13 @@ pkgdepdb_bool pkgdepdb_db_library_path_add(pkgdepdb_db *db_, const char *path) {
   return db->LD_Append(path);
 }
 
+pkgdepdb_bool pkgdepdb_db_library_path_contains(pkgdepdb_db *db_,
+                                                const char *path)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_contains(db->library_path_, path);
+}
+
 pkgdepdb_bool pkgdepdb_db_library_path_del_s(pkgdepdb_db *db_, const char *path) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->LD_Delete(path);
@@ -201,6 +208,13 @@ pkgdepdb_bool pkgdepdb_db_ignored_files_add(pkgdepdb_db *db_, const char *file)
   return db->IgnoreFile_Add(file);
 }
 
+pkgdepdb_bool pkgdepdb_db_ignored_files_contains(pkgdepdb_db *db_,
+                                                 const char *file)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_contains(db->ignore_file_rules_, file);
+}
+
 pkgdepdb_bool pkgdepdb_db_ignored_files_del_s(pkgdepdb_db *db_,
                                               const char *file)
 {
@@ -230,6 +244,13 @@ size_t pkgdepdb_db_base_packages_add(pkgdepdb_db *db_, const char *name) {
   return db->BasePackages_Add(name);
 }
 
+pkgdepdb_bool pkgdepdb_db_base_packages_contains(pkgdepdb_db *db_,
+                                                 const char *name)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_contains(db->base_packages_, name);
+}
+
 pkgdepdb_bool pkgdepdb_db_base_packages_del_s(pkgdepdb_db *db_,
                                               const char *name)
 {
@@ -257,6 +278,13 @@ size_t pkgdepdb_db_assume_found_get(pkgdepdb_db *db_, const char **out,
 pkgdepdb_bool pkgdepdb_db_assume_found_add(pkgdepdb_db *db_, const char *lib) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->AssumeFound_Add(lib);
+}
+
+pkgdepdb_bool pkgdepdb_db_assume_found_contains(pkgdepdb_db *db_,
+                                                const char *lib)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_contains(db->assume_found_rules_, lib);
 }
 
 pkgdepdb_bool pkgdepdb_db_assume_found_del_s(pkgdepdb_db *db_, const char *lib)

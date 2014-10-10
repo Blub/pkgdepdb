@@ -26,7 +26,7 @@ void pkgdepdb_elf_unref(pkgdepdb_elf elf_) {
   delete elf;
 }
 
-pkgdepdb_elf pkgdepdb_elf_open(const char *file, int *err,
+pkgdepdb_elf pkgdepdb_elf_load(const char *file, int *err,
                                pkgdepdb_cfg *cfg_)
 {
   if (err)
@@ -224,17 +224,14 @@ size_t pkgdepdb_elf_needed_get(pkgdepdb_elf elf_, const char **out, size_t off,
   return pkgdepdb_strlist_get(*elf, &Elf::needed_, out, off, count);
 }
 
-pkgdepdb_bool pkgdepdb_elf_needed_contains(pkgdepdb_elf elf_, const char *v) {
-  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
-  for (const auto& n : elf->needed_)
-    if (n == v)
-      return 1;
-  return 0;
-}
-
 void pkgdepdb_elf_needed_add(pkgdepdb_elf elf_, const char *v) {
   auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
   elf->needed_.emplace_back(v);
+}
+
+pkgdepdb_bool pkgdepdb_elf_needed_contains(pkgdepdb_elf elf_, const char *v) {
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  return pkgdepdb_strlist_contains(elf->needed_, v);
 }
 
 size_t pkgdepdb_elf_needed_del_s(pkgdepdb_elf elf_, const char *v) {

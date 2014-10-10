@@ -152,4 +152,9 @@ bool pkgdepdb_strlist_set_i(std::vector<std::string>& lst, size_t index,
   return true;
 }
 
+template<class STRLIST>
+bool pkgdepdb_strlist_contains(const STRLIST& lst, const char *value) {
+  return std::find(lst.begin(), lst.end(), value) != lst.end();
+}
+
 #endif

@@ -182,10 +182,17 @@ class DB(object):
         pkg.linked = False
 
     def delete_package(self, pkg):
-        if lib.db_package_delete_p(self._ptr, pkg._ptr) != 1:
-            raise PKGDepDBException('failed to uninstall package')
-        pkg.linked = False
-        del pkg
+        if isinstance(pkg, int):
+            if lib.db_package_delete_i(self._ptr, pkg) != 1:
+                raise PKGDepDBException('cannot delete package %i' % (pkg))
+        elif isinstance(pkg, str):
+            if lib.db_package_delete_s(self._ptr, cstr(pkg)) != 1:
+                raise PKGDepDBException('cannot delete package %s' % (pkg))
+        else:
+            if lib.db_package_delete_p(self._ptr, pkg._ptr) != 1:
+                raise PKGDepDBException('failed to uninstall package')
+            pkg.linked = False
+            del pkg
 
     def is_broken(self, what):
         if type(what) == Package:
@@ -275,6 +282,56 @@ class Package(object):
         if type(other) != Package:
             raise TypeError('other must be a package')
         return True if lib.pkg_replaces(self._ptr, other._ptr) else False
+
+class Elf(object):
+    def __init__(self, ptr=None):
+        self._ptr = ptr or lib.elf_new()
+        if self._ptr is None:
+            raise PKGDepDBException('failed to create Elf instance')
+
+    dirname  = StringProperty(lib.elf_dirname,  lib.elf_set_dirname)
+    basename = StringProperty(lib.elf_basename, lib.elf_set_basename)
+    ei_class = IntProperty   (lib.elf_class,    lib.elf_set_elf_class)
+    ei_data  = IntProperty   (lib.elf_data,     lib.elf_set_elf_data)
+    ei_osabi = IntProperty   (lib.elf_osabi,    lib.elf_set_elf_osabi)
+    rpath    = StringProperty(lib.elf_rpath,    lib.elf_set_rpath)
+    runpath  = StringProperty(lib.elf_runpath,  lib.elf_set_runpath)
+
+    def __del__(self):
+        lib.elf_unref(self._ptr)
+
+    @staticmethod
+    def load(self, path, cfg):
+        err = c_int(0)
+        ptr = lib.elf_load(cstr(path), byref(err), cfg._ptr)
+        if ptr is None:
+            if err != 0:
+                raise PKGDepDBException('failed to parse object %s' % (path))
+            else:
+                raise PKGDepDBException('failed to load %s: %s' % (path,
+                                        from_c_string(lib.error())))
+        return Elf(ptr)
+
+    @staticmethod
+    def read(self, byteobj, basename, dirname, cfg):
+        err = c_int(0)
+        ptr = lib.elf_read(byteobj, len(byteobj), cstr(basename),
+                           cstr(dirname), byref(err), cfg)
+        if ptr is None:
+            if err != 0
+                raise PKGDepDBException('failed to parse object %s'
+                                        % (basename))
+            else:
+                raise PKGDepDBException('failed to load %s: %s'
+                                        % (basename, from_c_string(lib.error())))
+        return Elf(ptr)
+
+    def class_string(self):
+        return from_c_string(lib.elf_class_string(self._ptr))
+    def data_string(self):
+        return from_c_string(lib.elf_data_string(self._ptr))
+    def osabi_string(self):
+        return from_c_string(lib.elf_osabi_string(self._ptr))
 
 __all__ = [
             'PKGDepDBException',
