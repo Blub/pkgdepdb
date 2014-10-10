@@ -37,7 +37,8 @@ class TestConfig(unittest.TestCase):
 
     def MakePkg(self, name, version, description,
                 depends=[], optdepends=[], makedepends=[], checkdepends=[],
-                conflicts=[], replaces=[], provides=[], pkgbase=None):
+                conflicts=[], replaces=[], provides=[], pkgbase=None,
+                check=False):
         pkg = pypkgdepdb.Package()
         self.assertIsNotNone(pkg)
         pkg.name        = name
@@ -50,18 +51,21 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(pkg.pkgbase     , pkgbase)
 
         pkg.depends.extend(depends)
-        self.assertEqual(len(pkg.depends), len(depends))
-        pkgdeps = pkg.depends
-        for i in range(len(depends)):
-            if type(depends[i]) == str:
-                self.assertEqual(pkgdeps[i][0], depends[i])
-                self.assertEqual(pkg.depends[i][0], depends[i])
-            else:
-                self.assertEqual(pkgdeps[i], depends[i])
-                self.assertEqual(pkg.depends[i], depends[i])
+        if check:
+            self.assertEqual(len(pkg.depends), len(depends))
+            pkgdeps = pkg.depends
+            for i in range(len(depends)):
+                if type(depends[i]) == str:
+                    self.assertEqual(pkgdeps[i][0], depends[i])
+                    self.assertEqual(pkg.depends[i][0], depends[i])
+                else:
+                    self.assertEqual(pkgdeps[i], depends[i])
+                    self.assertEqual(pkg.depends[i], depends[i])
 
         def filldeps(name, deps):
             getattr(pkg, name).extend(deps)
+            if not check:
+                return
             pkgdeps = getattr(pkg, name)
             self.assertEqual(len(pkgdeps), len(deps))
             for i in range(len(deps)):
@@ -86,7 +90,8 @@ class TestConfig(unittest.TestCase):
                            checkdepends=['check'],
                            conflicts=['oldfoo'],
                            replaces=['oldfoo'],
-                           provides=[('oldfoo', '=1.0')])
+                           provides=[('oldfoo', '=1.0')],
+                           check=True)
         self.assertEqual(type(foo.makedepends[0]), tuple)
 
 if __name__ == '__main__':
