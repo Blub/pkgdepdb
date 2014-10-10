@@ -4,7 +4,7 @@
 # local pypkgdepdb/ and LD_LIBRARY_PATH point to .libs/
 
 # eg:
-#pkgdepdb/ $ LD_LIBRARY_PATH=.libs PYTHONPATH=. python exampls/report_broken.py
+# $ LD_LIBRARY_PATH=.libs PYTHONPATH=. python examples/report_broken.py
 
 import sys
 import pypkgdepdb
