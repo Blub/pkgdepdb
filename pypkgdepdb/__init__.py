@@ -158,6 +158,9 @@ class DB(object):
         if lib.db_read(self._ptr, cstr(path)) != 1:
             raise PKGDepDBException('failed to read database from %s' % (path))
 
+    def load(self, path):
+        return self.read(path)
+
     def store(self, path):
         if lib.db_store(self._ptr, cstr(path)) != 1:
             raise PKGDepDBException('failed to store database to %s' % (path))
