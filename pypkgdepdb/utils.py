@@ -251,7 +251,10 @@ class DepListAccess(StringListAccess):
                                           self._conv(a),
                                           self._conv(b)) == 1
                         else False)
-        elif isinstance(s, (str,str)):
+        elif (isinstance(s, tuple) and 
+              len(s) == 2 and
+              isinstance(s[0], str) and 
+              isinstance(s[1], str)):
             return (True if self._add(self.owner._ptr,
                                       self._conv(s[0]),
                                       self._conv(s[1])) == 1
@@ -273,8 +276,8 @@ class DepListAccess(StringListAccess):
         lst_a = (ctypes.c_char_p * count)()
         lst_b = (ctypes.c_char_p * count)()
         got = self._get(self.owner._ptr, lst_a, lst_b, offset, count)
-        return zip([ from_c_string(x) for x in lst_a[0:got] ],
-                   [ from_c_string(x) for x in lst_b[0:got] ])
+        return list(zip([ from_c_string(x) for x in lst_a[0:got] ],
+                        [ from_c_string(x) for x in lst_b[0:got] ]))
 
     def delete(self, what):
         if isinstance(what, str):
