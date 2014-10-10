@@ -47,7 +47,7 @@ STATIC_BINARY = $(BINARY)-static
 MANPAGES      = pkgdepdb.1
 
 .PHONY: man manpages uninstall uninstall-bin uninstall-man static \
-        install install-bin install-man
+        install install-bin install-man check c-check py-check
 
 default: all
 
@@ -115,7 +115,13 @@ depend:
 	-rm -f Makefile.bak
 
 .libs/libpkgdepdb.a: $(LIBPKGDEPDB_LA)
-check: .libs/libpkgdepdb.a
+check:
+	@echo "Running testsuite for the C API"
+	$(MAKE) c-check
+	@echo "Running testsuite for the python interface using $(PYTHON)"
+	$(MAKE) py-check
+
+c-check: .libs/libpkgdepdb.a
 	$(CXX) -o tests/ca_config tests/ca_config.c .libs/libpkgdepdb.a -lcheck $(LIBS)
 	tests/ca_config
 	$(CXX) -o tests/ca_elf tests/ca_elf.c .libs/libpkgdepdb.a -lcheck $(LIBS)
@@ -124,6 +130,9 @@ check: .libs/libpkgdepdb.a
 	tests/ca_package
 	$(CXX) -o tests/ca_db tests/ca_db.c .libs/libpkgdepdb.a -lcheck $(LIBS)
 	tests/ca_db
+
+py-check: .libs/libpkgdepdb.a
+	LD_LIBRARY_PATH=.libs PYTHONPATH=. $(PYTHON) tests/pa_config.py
 
 # DO NOT DELETE
 
