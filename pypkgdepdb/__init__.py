@@ -86,7 +86,7 @@ class DB(object):
             count = min(count, maxcount - off)
             out = (p_pkg * count)()
             got = lib.db_package_get(self.owner._ptr, out, off, count)
-            return [Package(x,True) for x in got]
+            return [Package(x,True) for x in out[0:got]]
 
         def __getitem__(self, key):
             if isinstance(key, slice):
@@ -225,7 +225,7 @@ class Package(object):
             count = min(count, maxcount - off)
             out = (p_elf * count)()
             got = lib.pkg_elf_get(self.owner._ptr, out, off, count)
-            return [Elf(x) for x in got]
+            return [Elf(x) for x in out[0:got]]
 
         def delete(self, what):
             if type(what) == Elf:
