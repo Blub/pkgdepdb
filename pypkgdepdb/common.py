@@ -1,0 +1,3 @@
+class PKGDepDBException(Exception):
+    pass
+

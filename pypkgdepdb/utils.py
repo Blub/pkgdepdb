@@ -37,15 +37,16 @@ def StringProperty(c_getter, c_setter):
     return property(getter, setter)
 
 class StringListAccess(object):
-    def __init__(self, owner, count, get, add, del_s, del_i, set_i=None,
-                 conv=cstr):
-        self.owner   = owner
-        self._conv   = conv
-        self._count  = count
-        self._get    = get
-        self._add    = add
-        self._del_s  = del_s
-        self._del_i  = del_i
+    def __init__(self, owner, count, get, add, contains, del_s, del_i,
+                 set_i=None, conv=cstr):
+        self.owner     = owner
+        self._conv     = conv
+        self._count    = count
+        self._get      = get
+        self._add      = add
+        self._contains = contains
+        self._del_s    = del_s
+        self._del_i    = del_i
         if set_i is None:
             self.__setitem__ = None
         else:
@@ -149,7 +150,7 @@ class StringListAccess(object):
         raise Excpetion('TODO')
 
     def __contains__(self, value):
-        return value in self.get()
+        return self.contains(value)
 
     class Iterator(object):
         def __init__(self, owner, beg, end):
@@ -188,6 +189,10 @@ class StringListAccess(object):
     def add(self, s):
         return True if self._add(self.owner._ptr, self._conv(s)) else False
 
+    def contains(self, s):
+        return (True if self._contains(self.owner._ptr, self._conv(s))
+                else False)
+
     def set_i(self, index, value):
         return (
             True if self.__set_i(self.owner._ptr, index, self._conv(value))
@@ -211,10 +216,10 @@ class StringListAccess(object):
             self.append(value)
 
 class DepListAccess(StringListAccess):
-    def __init__(self, owner, count, get, add, del_s, del_t, del_i, set_i=None,
-                 conv=cstr):
-        StringListAccess.__init__(self, owner, count, get, add, del_s, del_i,
-                                  set_i, conv)
+    def __init__(self, owner, count, get, add, contains, del_s, del_t, del_i,
+                 set_i=None, conv=cstr):
+        StringListAccess.__init__(self, owner, count, get, add, contains,
+                                  del_s, del_i, set_i, conv)
         self._del_t = del_t
 
     def add(self, s):
@@ -240,6 +245,9 @@ class DepListAccess(StringListAccess):
                                       self._conv(s[0]),
                                       self._conv(s[1])) == 1
                     else False)
+
+    def contains(self, value):
+        return self._contains(self.owner._ptr, cstr(value))
 
     def get(self, offset=None, count=None):
         avail = self._count(self.owner._ptr)

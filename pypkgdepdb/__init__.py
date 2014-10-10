@@ -1,13 +1,11 @@
 import ctypes
 
+from .common import *
 from . import functions
 from .functions import p_cfg, p_db, p_pkg, p_elf
 from .utils import *
 
 SONAME = 'libpkgdepdb.so.1'
-
-class PKGDepDBException(Exception):
-    pass
 
 class LogLevel(object):
     Debug   = 0
@@ -121,6 +119,7 @@ class DB(object):
                                              lib.db_library_path_count,
                                              lib.db_library_path_get,
                                              lib.db_library_path_add,
+                                             lib.db_library_path_contains,
                                              lib.db_library_path_del_s,
                                              lib.db_library_path_del_i,
                                              lib.db_library_path_set_i)
@@ -128,18 +127,21 @@ class DB(object):
                                               lib.db_ignored_files_count,
                                               lib.db_ignored_files_get,
                                               lib.db_ignored_files_add,
+                                              lib.db_ignored_files_contains,
                                               lib.db_ignored_files_del_s,
                                               lib.db_ignored_files_del_i)
         self.base_packages = StringListAccess(self,
                                               lib.db_base_packages_count,
                                               lib.db_base_packages_get,
                                               lib.db_base_packages_add,
+                                              lib.db_base_packages_contains,
                                               lib.db_base_packages_del_s,
                                               lib.db_base_packages_del_i)
         self.assume_found = StringListAccess(self,
                                              lib.db_assume_found_count,
                                              lib.db_assume_found_get,
                                              lib.db_assume_found_add,
+                                             lib.db_assume_found_contains,
                                              lib.db_assume_found_del_s,
                                              lib.db_assume_found_del_i)
         self.packages = DB.PackageList(self)
@@ -214,12 +216,14 @@ class Package(object):
                                        lib.pkg_groups_count,
                                        lib.pkg_groups_get,
                                        lib.pkg_groups_add,
+                                       lib.pkg_groups_contains,
                                        lib.pkg_groups_del_s,
                                        lib.pkg_groups_del_i)
         self.filelist = StringListAccess(self,
                                          lib.pkg_filelist_count,
                                          lib.pkg_filelist_get,
                                          lib.pkg_filelist_add,
+                                         lib.pkg_filelist_contains,
                                          lib.pkg_filelist_del_s,
                                          lib.pkg_filelist_del_i)
         self.info = StringMapOfStringList(self,
@@ -237,6 +241,7 @@ class Package(object):
                 lambda o:       lib.pkg_dep_count   (o, what),
                 lambda o, *arg: lib.pkg_dep_get     (o, what, *arg),
                 lambda o, *arg: lib.pkg_dep_add     (o, what, *arg),
+                lambda o, *arg: lib.pkg_dep_contains(o, what, *arg),
                 lambda o, *arg: lib.pkg_dep_del_name(o, what, *arg),
                 lambda o, *arg: lib.pkg_dep_del_full(o, what, *arg),
                 lambda o, *arg: lib.pkg_dep_del_i   (o, what, *arg),
@@ -289,13 +294,22 @@ class Elf(object):
         if self._ptr is None:
             raise PKGDepDBException('failed to create Elf instance')
 
-    dirname  = StringProperty(lib.elf_dirname,  lib.elf_set_dirname)
-    basename = StringProperty(lib.elf_basename, lib.elf_set_basename)
-    ei_class = IntProperty   (lib.elf_class,    lib.elf_set_elf_class)
-    ei_data  = IntProperty   (lib.elf_data,     lib.elf_set_elf_data)
-    ei_osabi = IntProperty   (lib.elf_osabi,    lib.elf_set_elf_osabi)
-    rpath    = StringProperty(lib.elf_rpath,    lib.elf_set_rpath)
-    runpath  = StringProperty(lib.elf_runpath,  lib.elf_set_runpath)
+        self.needed = StringListAccess(self,
+                                       lib.elf_needed_count,
+                                       lib.elf_needed_get,
+                                       lib.elf_needed_add,
+                                       lib.elf_needed_contains,
+                                       lib.elf_needed_del_s,
+                                       lib.elf_needed_del_i)
+
+    dirname     = StringProperty(lib.elf_dirname,     lib.elf_set_dirname)
+    basename    = StringProperty(lib.elf_basename,    lib.elf_set_basename)
+    ei_class    = IntProperty   (lib.elf_class,       lib.elf_set_class)
+    ei_data     = IntProperty   (lib.elf_data,        lib.elf_set_data)
+    ei_osabi    = IntProperty   (lib.elf_osabi,       lib.elf_set_osabi)
+    rpath       = StringProperty(lib.elf_rpath,       lib.elf_set_rpath)
+    runpath     = StringProperty(lib.elf_runpath,     lib.elf_set_runpath)
+    interpreter = StringProperty(lib.elf_interpreter, lib.elf_set_interpreter)
 
     def __del__(self):
         lib.elf_unref(self._ptr)
@@ -318,7 +332,7 @@ class Elf(object):
         ptr = lib.elf_read(byteobj, len(byteobj), cstr(basename),
                            cstr(dirname), byref(err), cfg)
         if ptr is None:
-            if err != 0
+            if err != 0:
                 raise PKGDepDBException('failed to parse object %s'
                                         % (basename))
             else:

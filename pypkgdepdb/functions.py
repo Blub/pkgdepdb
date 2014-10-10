@@ -1,3 +1,4 @@
+from .common import *
 from ctypes import c_int, c_uint, c_char_p, c_size_t, POINTER, c_void_p, c_ubyte
 
 def load(rawlib, lib, funcs, allprefix):
@@ -141,7 +142,7 @@ pkgdepdb_functions = [
     ('pkg_replaces',               c_int,    [p_pkg, p_pkg]),
     ('elf_new',                    p_elf,    []),
     ('elf_unref',                  None,     [p_elf]),
-    ('elf_open',                   p_elf,    [c_char_p, POINTER(c_int), p_cfg]),
+    ('elf_load',                   p_elf,    [c_char_p, POINTER(c_int), p_cfg]),
     ('elf_read',                   p_elf,    [c_char_p, c_size_t, c_char_p, c_char_p, POINTER(c_int), p_cfg]),
     ('elf_dirname',                c_char_p, [p_elf]),
     ('elf_basename',               c_char_p, [p_elf]),
