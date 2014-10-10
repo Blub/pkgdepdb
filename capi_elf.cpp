@@ -295,4 +295,12 @@ size_t pkgdepdb_elf_found_get(pkgdepdb_elf elf_, pkgdepdb_elf *out, size_t off,
   return got;
 }
 
+pkgdepdb_elf pkgdepdb_elf_found_find(pkgdepdb_elf elf_, const char *name) {
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  for (Elf *obj : elf->req_found_)
+    if (obj->basename_ == name)
+      return reinterpret_cast<pkgdepdb_elf>(new rptr<Elf>(obj));
+  return nullptr;
+}
+
 } // extern "C"

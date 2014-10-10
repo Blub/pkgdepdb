@@ -181,7 +181,7 @@ size_t pkgdepdb_db_object_get(pkgdepdb_db *db_, pkgdepdb_elf *out,
   for (auto i = db->objects_.begin() + off; i != db->objects_.end(); ++i) {
     if (!count--)
       return got;
-    rptr<Elf> **dest = reinterpret_cast<rptr<Elf>**>(&out[got]);
+    rptr<Elf> **dest = reinterpret_cast<rptr<Elf>**>(&out[got++]);
     if (*dest)
       **dest = *i;
     else

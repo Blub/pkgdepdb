@@ -63,7 +63,7 @@ class StringListAccess(object):
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            return self.__getslice__(self, key.start, key.stop, key.step)
+            return self.__getslice__(key.start, key.stop, key.step)
         if not isinstance(key, int): raise TypeError
         if key < 0: raise IndexError
         count = self.__len__()
@@ -140,7 +140,7 @@ class StringListAccess(object):
 
     def __delitem__(self, key):
         if isinstance(key, slice):
-            return self.__delslice__(self, key.start, key.stop, key.step)
+            return self.__delslice__(key.start, key.stop, key.step)
         self.delete(key)
 
     def __delslice__(self, start=None, stop=None, step=None):

@@ -171,4 +171,10 @@ pkgdepdb_functions = [
     ('elf_needed_del_s',           c_int,    [p_elf, c_char_p]),
     ('elf_needed_del_i',           None,     [p_elf, c_size_t]),
     ('elf_can_use',                c_int,    [p_elf, p_elf, c_int]),
+    ('elf_missing_count',          c_size_t, [p_elf]),
+    ('elf_missing_get',            c_size_t, [p_elf, POINTER(c_char_p), c_size_t, c_size_t]),
+    ('elf_missing_contains',       c_int,    [p_elf, c_char_p]),
+    ('elf_found_count',            c_size_t, [p_elf]),
+    ('elf_found_get',              c_size_t, [p_elf, POINTER(p_elf), c_size_t, c_size_t]),
+    ('elf_found_find',             c_int,    [p_elf, c_char_p]),
 ]

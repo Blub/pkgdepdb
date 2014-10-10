@@ -90,7 +90,55 @@ class DB(object):
 
         def __getitem__(self, key):
             if isinstance(key, slice):
-                return self.__getslice__(self, key.start, key.stop, key.step)
+                return self.__getslice__(key.start, key.stop, key.step)
+            if isinstance(key, str):
+                return lib.db_package_find(self.owner._ptr, cstr(key))
+            return self.get(key, 1)[0]
+
+        def __getslice__(self, start=None, stop=None, step=None):
+            step  = step or 1
+            start = start or 0
+            count = stop - start if stop else None
+            if step == 0: raise ValueError('step cannot be zero')
+            if count == 0: return []
+            if step > 0:
+                if count < 0: return []
+                return self.get(start, count)[::step]
+            else:
+                if count > 0: return []
+                return self.get(start+count, -count)[-count:0:step]
+
+        def __contains__(self, value):
+            return value in self.get()
+
+    class ElfList(object):
+        def __init__(self, owner):
+            self.owner = owner
+
+        def __len__(self):
+            return lib.db_object_count(self.owner._ptr)
+
+        def get_named(self, name):
+            return [i for i in self.get() if i.basename == name][0]
+
+        def get(self, off=0, count=None):
+            if isinstance(off, str):
+                if count is not None:
+                    raise ValueError('named access cannot have a count')
+                return self.get_named(off)
+            if off < 0: raise IndexError
+            maxcount = len(self)
+            if off >= maxcount: raise IndexError
+            count = count or maxcount
+            if count < 0: raise ValueError('cannot fetch a negative count')
+            count = min(count, maxcount - off)
+            out = (p_pkg * count)()
+            got = lib.db_object_get(self.owner._ptr, out, off, count)
+            return [Elf(x) for x in out[0:got]]
+
+        def __getitem__(self, key):
+            if isinstance(key, slice):
+                return self.__getslice__(key.start, key.stop, key.step)
             if isinstance(key, str):
                 return lib.db_package_find(self.owner._ptr, cstr(key))
             return self.get(key, 1)[0]
@@ -145,6 +193,7 @@ class DB(object):
                                              lib.db_assume_found_del_s,
                                              lib.db_assume_found_del_i)
         self.packages = DB.PackageList(self)
+        self.elfs     = DB.ElfList(self)
 
     loaded_version = IntGetter(lib.db_loaded_version)
     strict_linking = BoolProperty(lib.db_strict_linking,
@@ -245,7 +294,7 @@ class Package(object):
 
         def __getitem__(self, key):
             if isinstance(key, slice):
-                return self.__getslice__(self, key.start, key.stop, key.step)
+                return self.__getslice__(key.start, key.stop, key.step)
             if isinstance(key, str):
                 raise TypeError('cannot index objects by name yet')
             return self.get(key, 1)[0]
@@ -268,7 +317,7 @@ class Package(object):
 
         def __delitem__(self, index):
             if isinstance(key, slice):
-                return self.__delslice__(self, key.start, key.stop, key.step)
+                return self.__delslice__(key.start, key.stop, key.step)
             self.delete(key)
 
         def __delslice__(self, start=None, stop=None, step=None):
@@ -380,7 +429,6 @@ class Package(object):
         self.conflicts    = make_deplist(self, PkgEntry.Conflicts)
         self.replaces     = make_deplist(self, PkgEntry.Replaces)
 
-        self.objects = Package.ElfList(self)
 
     name        = StringProperty(lib.pkg_name, lib.pkg_set_name)
     version     = StringProperty(lib.pkg_version, lib.pkg_set_version)
@@ -417,6 +465,64 @@ class Package(object):
         return True if lib.pkg_replaces(self._ptr, other._ptr) else False
 
 class Elf(object):
+    class FoundList(object):
+        def __init__(self, owner):
+            self.owner = owner
+
+        def __len__(self):
+            return lib.elf_found_count(self.owner._ptr)
+
+        def get_named(self, name):
+            got = lib.elf_found_find(self.owner._ptr, cstr(name))
+            if got is None:
+                raise KeyError('no such found dependency: %s' % name)
+            return Elf(got)
+
+        def get(self, off=0, count=None):
+            if isinstance(off, str):
+                if count is not None:
+                    raise ValueError('named access cannot have a count')
+                return get_named(off, count)
+            if off < 0: raise IndexError
+            maxcount = len(self)
+            if off >= maxcount: raise IndexError
+            count = count or maxcount
+            if count < 0: raise ValueError('cannot fetch a negative count')
+            count = min(count, maxcount - off)
+            out = (p_pkg * count)()
+            got = lib.elf_found_get(self.owner._ptr, out, off, count)
+            return [Elf(x) for x in out[0:got]]
+
+        def __getitem__(self, key):
+            if isinstance(key, slice):
+                return self.__getslice__(key.start, key.stop, key.step)
+            if isinstance(key, str):
+                return self.get_named(key)
+            return self.get(key, 1)[0]
+
+        def __getslice__(self, start=None, stop=None, step=None):
+            step  = step or 1
+            start = start or 0
+            count = stop - start if stop else None
+            if step == 0: raise ValueError('step cannot be zero')
+            if count == 0: return []
+            if step > 0:
+                if count < 0: return []
+                return self.get(start, count)[::step]
+            else:
+                if count > 0: return []
+                return self.get(start+count, -count)[-count:0:step]
+
+        def __contains__(self, value):
+            if type(value) == Elf:
+                return value in self.get()
+            if isinstance(value, str):
+                try:
+                    self.get_named(value)
+                    return True
+                except KeyError:
+                    return False
+            raise TypeError('need a library name or Elf instance')
     def __init__(self, ptr=None):
         self._ptr = ptr or lib.elf_new()
         if self._ptr is None:
@@ -429,6 +535,13 @@ class Elf(object):
                                        lib.elf_needed_contains,
                                        lib.elf_needed_del_s,
                                        lib.elf_needed_del_i)
+        self.missing = StringListAccess(self,
+                                        lib.elf_missing_count,
+                                        lib.elf_missing_get,
+                                        None,
+                                        lib.elf_missing_contains,
+                                        None, None)
+        self.found = Elf.FoundList(self)
 
     dirname     = StringProperty(lib.elf_dirname,     lib.elf_set_dirname)
     basename    = StringProperty(lib.elf_basename,    lib.elf_set_basename)

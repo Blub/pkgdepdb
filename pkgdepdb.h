@@ -286,6 +286,7 @@ pkgdepdb_bool pkgdepdb_elf_missing_contains(pkgdepdb_elf, const char*);
 size_t        pkgdepdb_elf_found_count   (pkgdepdb_elf);
 size_t        pkgdepdb_elf_found_get     (pkgdepdb_elf, pkgdepdb_elf*, size_t,
                                           size_t);
+pkgdepdb_elf  pkgdepdb_elf_found_find    (pkgdepdb_elf, const char*);
 
 /* OSABI/class/data compatibility check */
 int           pkgdepdb_elf_can_use(pkgdepdb_elf, pkgdepdb_elf obj, int strict);
