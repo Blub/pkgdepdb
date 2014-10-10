@@ -278,6 +278,15 @@ void          pkgdepdb_elf_needed_add     (pkgdepdb_elf, const char*);
 size_t        pkgdepdb_elf_needed_del_s   (pkgdepdb_elf, const char*);
 void          pkgdepdb_elf_needed_del_i   (pkgdepdb_elf, size_t);
 
+size_t        pkgdepdb_elf_missing_count   (pkgdepdb_elf);
+size_t        pkgdepdb_elf_missing_get     (pkgdepdb_elf, const char**, size_t,
+                                            size_t);
+pkgdepdb_bool pkgdepdb_elf_missing_contains(pkgdepdb_elf, const char*);
+
+size_t        pkgdepdb_elf_found_count   (pkgdepdb_elf);
+size_t        pkgdepdb_elf_found_get     (pkgdepdb_elf, pkgdepdb_elf*, size_t,
+                                          size_t);
+
 /* OSABI/class/data compatibility check */
 int           pkgdepdb_elf_can_use(pkgdepdb_elf, pkgdepdb_elf obj, int strict);
 

@@ -251,4 +251,48 @@ int pkgdepdb_elf_can_use(pkgdepdb_elf subject, pkgdepdb_elf object, int strict)
   return elf->CanUse(*other, strict);
 }
 
+size_t pkgdepdb_elf_missing_count(pkgdepdb_elf elf_) {
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  return elf->req_missing_.size();
+}
+
+size_t pkgdepdb_elf_missing_get(pkgdepdb_elf elf_, const char **out,
+                                size_t off, size_t count)
+{
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  return pkgdepdb_strlist_get(elf->req_missing_, out, off, count);
+}
+
+pkgdepdb_bool pkgdepdb_elf_missing_contains(pkgdepdb_elf elf_, const char *v) {
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  return pkgdepdb_strlist_contains(elf->req_missing_, v);
+}
+
+size_t pkgdepdb_elf_found_count(pkgdepdb_elf elf_) {
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  return elf->req_found_.size();
+}
+
+size_t pkgdepdb_elf_found_get(pkgdepdb_elf elf_, pkgdepdb_elf *out, size_t off,
+                              size_t count)
+{
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  auto len = elf->req_found_.size();
+  if (off >= len)
+    return 0;
+  auto i   = elf->req_found_.begin();
+  auto end = elf->req_found_.begin();
+  size_t got = 0;
+  while (off--)
+    ++i;
+  for (; got < count && i != end; ++i) {
+    rptr<Elf> **dest = reinterpret_cast<rptr<Elf>**>(&out[got++]);
+    if (*dest)
+      **dest = *i;
+    else
+      *dest = new rptr<Elf>(*i);
+  }
+  return got;
+}
+
 } // extern "C"
