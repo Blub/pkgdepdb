@@ -45,6 +45,7 @@ using ObjectList  = vec<rptr<Elf>>;
 struct Package;
 using PackageList = vec<Package*>;
 
+void split_dependency(const string &full, string &dep, string &constraint);
 #ifdef PKGDEPDB_ENABLE_ALPM
 void split_constraint(const string &full, string &op, string &ver);
 bool package_satisfies(const Package *other,

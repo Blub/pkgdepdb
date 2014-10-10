@@ -321,6 +321,19 @@ bool read_stringlist(SerialIn &in, vec<string> &list) {
   return in.in_;
 }
 
+bool read_olddependlist(SerialIn &in, vec<tuple<string,string>> &list) {
+  string full, dep, constraint;
+  uint32_t len;
+  in >= len;
+  list.reserve(len);
+  for (uint32_t i = 0; i != len; ++i) {
+    in >= full;
+    split_dependency(full, dep, constraint);
+    list.emplace_back(move(dep), move(constraint));
+  }
+  return in.in_;
+}
+
 bool read_dependlist(SerialIn &in, vec<tuple<string,string>> &list) {
   tuple<string,string> s;
   uint32_t len;
@@ -549,21 +562,31 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
   for (auto &o : pkg->objects_)
     o->owner_ = pkg;
 
-  if (hdrver >= 3) {
+  if (hdrver >= 10) {
     if (!read_dependlist(in, pkg->depends_) ||
-        (hdrver >= 10 && !read_dependlist(in, pkg->makedepends_)) ||
+        !read_dependlist(in, pkg->makedepends_) ||
         (hdrver >= 12 && !read_dependlist(in, pkg->checkdepends_)) ||
-        !read_dependlist(in, pkg->optdepends_))
-    {
-      return false;
-    }
-  }
-  if (hdrver >= 4) {
-    if (!read_dependlist(in, pkg->provides_) ||
+        !read_dependlist(in, pkg->optdepends_) ||
+        !read_dependlist(in, pkg->provides_) ||
         !read_dependlist(in, pkg->conflicts_) ||
         !read_dependlist(in, pkg->replaces_))
     {
       return false;
+    }
+  }
+  if (hdrver >= 3) {
+    if (!read_olddependlist(in, pkg->depends_) ||
+        !read_olddependlist(in, pkg->optdepends_))
+    {
+      return false;
+    }
+    if (hdrver >= 4) {
+      if (!read_olddependlist(in, pkg->provides_) ||
+          !read_olddependlist(in, pkg->conflicts_) ||
+          !read_olddependlist(in, pkg->replaces_))
+      {
+        return false;
+      }
     }
   }
   if (hdrver >= 5 && !read_stringset(in, pkg->groups_))

@@ -786,13 +786,13 @@ void DB::ShowPackages(bool                 filter_broken,
     if (config_.verbosity_ >= 1) {
       for (auto &grp : pkg->groups_)
         printf("    is in group: %s\n", grp.c_str());
-      ShowDependList("    depends on: %s\n",               pkg->depends_);
-      ShowDependList("    depends optionally on: %s\n",    pkg->optdepends_);
-      ShowDependList("    depends at compiletime on: %s\n",pkg->makedepends_);
-      ShowDependList("    check depends on: %s\n",         pkg->checkdepends_);
-      ShowDependList("    provides: %s\n",                 pkg->provides_);
-      ShowDependList("    replaces: %s\n",                 pkg->replaces_);
-      ShowDependList("    conflicts with: %s\n",           pkg->conflicts_);
+      ShowDependList("    depends on: %s%s\n",              pkg->depends_);
+      ShowDependList("    depends optionally on: %s%s\n",   pkg->optdepends_);
+      ShowDependList("    depends at buildtime on: %s%s\n", pkg->makedepends_);
+      ShowDependList("    check depends on: %s%s\n",        pkg->checkdepends_);
+      ShowDependList("    provides: %s%s\n",                pkg->provides_);
+      ShowDependList("    replaces: %s%s\n",                pkg->replaces_);
+      ShowDependList("    conflicts with: %s%s\n",          pkg->conflicts_);
       if (filter_broken) {
         for (auto &obj : pkg->objects_) {
           if (!util::all(obj_filters, *this, *obj))
@@ -924,6 +924,17 @@ void DB::ShowFilelist(const FilterList    &pkg_filters,
       printf("%s\n", file.c_str());
     }
   }
+}
+
+void split_dependency(const string &full, string &dep, string &constraint) {
+  auto c = full.find_first_of("<>=!");
+  if (c == string::npos) {
+    dep = full;
+    constraint.clear();
+    return;
+  }
+  dep = full.substr(0, c);
+  constraint = full.substr(c);
 }
 
 #ifdef PKGDEPDB_ENABLE_ALPM
