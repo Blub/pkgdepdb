@@ -373,6 +373,21 @@ size_t pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg *pkg_, size_t index) {
   return 1;
 }
 
+int pkgdepdb_pkg_elf_set_i(pkgdepdb_pkg *pkg_, size_t index,
+                           pkgdepdb_elf elf_)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto elf = reinterpret_cast<rptr<Elf>*>(elf_);
+  if (index >= pkg->objects_.size())
+    return 0;
+  if (!elf || !*elf) {
+    pkg->objects_.erase(pkg->objects_.begin() + index);
+    return -1;
+  }
+  pkg->objects_[index] = *elf;
+  return 1;
+}
+
 size_t pkgdepdb_pkg_info_count_keys(pkgdepdb_pkg *pkg_) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkg->info_.size();

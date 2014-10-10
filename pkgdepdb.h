@@ -224,6 +224,8 @@ size_t        pkgdepdb_pkg_elf_get  (pkgdepdb_pkg*, pkgdepdb_elf*, size_t,
 size_t        pkgdepdb_pkg_elf_add  (pkgdepdb_pkg*, pkgdepdb_elf);
 size_t        pkgdepdb_pkg_elf_del_e(pkgdepdb_pkg*, pkgdepdb_elf);
 size_t        pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg*, size_t);
+/* 0: Invalid index, 1: replaced, -1: deleted */
+int           pkgdepdb_pkg_elf_set_i(pkgdepdb_pkg*, size_t, pkgdepdb_elf);
 
 /* some exposed utility functions */
 void          pkgdepdb_pkg_guess_version(pkgdepdb_pkg*, const char *filename);
