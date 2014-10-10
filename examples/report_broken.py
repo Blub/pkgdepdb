@@ -1,7 +1,10 @@
 #!/usr/bin/python
 
-# when running from the pkgdepdb source tree let PYTHONPATH to point to the
+# when running from the pkgdepdb source tree let PYTHONPATH point to the
 # local pypkgdepdb/ and LD_LIBRARY_PATH point to .libs/
+
+# eg:
+#pkgdepdb/ $ LD_LIBRARY_PATH=.libs PYTHONPATH=. python exampls/report_broken.py
 
 import sys
 import pypkgdepdb
