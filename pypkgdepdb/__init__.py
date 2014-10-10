@@ -206,6 +206,129 @@ class DB(object):
         return True if v == 1 else False
 
 class Package(object):
+    class ElfList(object):
+        def __init__(self, owner):
+            self.owner = owner
+
+        def __len__(self):
+            return lib.pkg_elf_count(self.owner._ptr)
+
+        def get(self, off=0, count=None):
+            if off < 0: raise IndexError
+            maxcount = len(self)
+            if off >= maxcount: raise IndexError
+            count = count or maxcount
+            if count < 0: raise ValueError('cannot fetch a negative count')
+            count = min(count, maxcount - off)
+            out = (p_elf * count)()
+            got = lib.pkg_elf_get(self.owner._ptr, out, off, count)
+            return [Elf(x) for x in got]
+
+        def delete(self, what):
+            if type(what) == Elf:
+                if 1 != lib.pkg_elf_del_e(self.owner._ptr, what._ptr):
+                    raise KeyError('package does not contain this object')
+            elif isinstance(index, int):
+                if 1 != lib.pkg_elf_del_i(self.owner._ptr, what):
+                    raise KeyError('no such index: %i' % (what))
+            else:
+                raise TypeError('cannot delete objects by name yet')
+
+        def set_i(self, idx, what):
+            if what is not None:
+                what = what._ptr
+            if lib.pkg_elf_set_i(self.owner._ptr, idx, what) == 0:
+                raise IndexError('no such index: %i' % (idx))
+
+        def __getitem__(self, key):
+            if isinstance(key, slice):
+                return self.__getslice__(self, key.start, key.stop, key.step)
+            if isinstance(key, str):
+                raise TypeError('cannot index objects by name yet')
+            return self.get(key, 1)[0]
+
+        def __getslice__(self, start=None, stop=None, step=None):
+            step  = step or 1
+            start = start or 0
+            count = stop - start if stop else None
+            if step == 0: raise ValueError('step cannot be zero')
+            if count == 0: return []
+            if step > 0:
+                if count < 0: return []
+                return self.get(start, count)[::step]
+            else:
+                if count > 0: return []
+                return self.get(start+count, -count)[-count:0:step]
+
+        def __contains__(self, value):
+            return value in self.get()
+
+        def __delitem__(self, index):
+            if isinstance(key, slice):
+                return self.__delslice__(self, key.start, key.stop, key.step)
+            self.delete(key)
+
+        def __delslice__(self, start=None, stop=None, step=None):
+            step  = step or 1
+            start = start or 0
+            stop  = stop   or self.count()
+            if step == 0:
+                raise ValueError('step cannot be zero')
+            if step > 0:
+                s = slice(start, stop, step)
+            else:
+                s = reverse(slice(start, stop, step))
+            raise Excpetion('TODO')
+
+        def __setitem__(self, key, value):
+            if isinstance(key, slice):
+                return self.__setslice__(key.start, key.stop, value, key.step)
+            if not isinstance(key, int): raise TypeError
+            if key < 0: raise IndexError
+            count = self.__len__()
+            if key > count:
+                raise IndexError
+            elif key == count:
+                self.add(value)
+            else:
+                self.set_i(key, value)
+
+        def __setslice__(self, start, stop, values, step=None):
+            count = len(self)
+            start = start or 0
+            stop  = stop  or count
+            step  = step  or 1
+            if step == 0:
+                raise ValueError('step cannot be zero')
+            if step > 0:
+                if start < 0:
+                    raise IndexError
+                for v in values:
+                    if start >= stop:
+                        return
+                    if start == count:
+                        if self.add(v):
+                            count += 1
+                    elif start > count:
+                        raise IndexError
+                    else:
+                        self.set_i(start, v)
+                    start += step
+            else:
+                for v in values:
+                    if start <= stop:
+                        return
+                    if start < 0:
+                        raise IndexError
+                    if start == count:
+                        if self.add(v):
+                            count += 1
+                    elif start > count:
+                        raise IndexError
+                    else:
+                        self.set_i(start, v)
+                    start += step
+
     def __init__(self, ptr=None, linked=False):
         self._ptr = ptr or lib.pkg_new()
         if self._ptr is None:
@@ -253,6 +376,8 @@ class Package(object):
         self.provides     = make_deplist(self, PkgEntry.Provides)
         self.conflicts    = make_deplist(self, PkgEntry.Conflicts)
         self.replaces     = make_deplist(self, PkgEntry.Replaces)
+
+        self.objects = Package.ElfList(self)
 
     name        = StringProperty(lib.pkg_name, lib.pkg_set_name)
     version     = StringProperty(lib.pkg_version, lib.pkg_set_version)
