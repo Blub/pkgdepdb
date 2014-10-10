@@ -3,11 +3,15 @@ import ctypes
 def from_c_string2(addr, length):
     """utf-8 decode a C string into a python string"""
     #return str(ctypes.string_at(addr, length), encoding='utf-8')
-    return ctypes.string_at(addr, length).encode('utf-8')
+    if type(addr) == str:
+        return addr[0:length]
+    return ctypes.string_at(addr, length).decode('utf-8')
 def from_c_string(addr):
     """utf-8 decode a C string into a python string"""
     #return str(addr, encoding='utf-8')
-    return addr.encode('utf-8')
+    if type(addr) == str:
+        return addr
+    return addr.decode('utf-8')
 def cstr(s):
     """convenience function to encode a str as bytes"""
     return s.encode('utf-8')
