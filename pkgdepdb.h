@@ -206,6 +206,8 @@ pkgdepdb_bool pkgdepdb_pkg_filelist_contains(pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_add     (pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_s   (pkgdepdb_pkg*, const char*);
 size_t        pkgdepdb_pkg_filelist_del_i   (pkgdepdb_pkg*, size_t);
+pkgdepdb_bool pkgdepdb_pkg_filelist_set_i   (pkgdepdb_pkg*, size_t,
+                                             const char*);
 
 size_t        pkgdepdb_pkg_info_count_keys  (pkgdepdb_pkg*);
 size_t        pkgdepdb_pkg_info_get_keys    (pkgdepdb_pkg*, const char**,

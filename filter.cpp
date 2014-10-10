@@ -293,7 +293,6 @@ PackageFilter::NAME(rptr<Match> matcher, bool neg) {        \
   return make_pkgdepfilter(matcher, neg, &Package::VAR##_); \
 }
 
-#define MAKE_PKGFILTER1(NAME) MAKE_PKGFILTER(NAME,NAME)
 #define MAKE_PKGDEPFILTER1(NAME) MAKE_PKGDEPFILTER(NAME,NAME)
 
 MAKE_PKGFILTER(group,groups)
@@ -307,7 +306,6 @@ MAKE_PKGDEPFILTER1(replaces)
 MAKE_PKGFILTER(contains,filelist)
 
 #undef MAKE_PKGFILTER
-#undef MAKE_PKGFILTER1
 
 uniq<PackageFilter>
 PackageFilter::alldepends(rptr<Match> matcher, bool neg) {

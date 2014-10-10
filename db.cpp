@@ -754,7 +754,7 @@ bool DB::IsBroken(const Package *pkg) const {
 }
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wno-format-nonliteral"
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
 static void ShowDependList(const char *fmt, const DependList& lst) {
   for (const auto &dep : lst)
     printf(fmt, std::get<0>(dep).c_str(), std::get<1>(dep).c_str());

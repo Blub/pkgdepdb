@@ -26,7 +26,7 @@ void pkgdepdb_clear_error(void) {
   pkgdepdb_old = NULL;
 }
 
-void pkgdepdb_rotate_error(void) {
+static void pkgdepdb_rotate_error(void) {
   free(pkgdepdb_old);
   pkgdepdb_old = pkgdepdb_err;
   pkgdepdb_err = NULL;
@@ -37,6 +37,8 @@ const char* pkgdepdb_error(void) {
   return pkgdepdb_old;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
 void pkgdepdb_set_error(const char *fmt, ...) {
   va_list ap;
   int     len;
@@ -53,5 +55,6 @@ void pkgdepdb_set_error(const char *fmt, ...) {
   va_end(ap);
   pkgdepdb_err[len] = 0;
 }
+#pragma clang diagnostic pop
 
 } // extern "C"

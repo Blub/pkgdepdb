@@ -124,6 +124,7 @@ pkgdepdb_functions = [
     ('pkg_filelist_add',           c_size_t, [p_pkg, c_char_p]),
     ('pkg_filelist_del_s',         c_size_t, [p_pkg, c_char_p]),
     ('pkg_filelist_del_i',         c_size_t, [p_pkg, c_size_t]),
+    ('pkg_filelist_set_i',         c_size_t, [p_pkg, c_size_t, c_char_p]),
     ('pkg_info_count_keys',        c_size_t, [p_pkg]),
     ('pkg_info_get_keys',          c_size_t, [p_pkg, POINTER(c_char_p), c_size_t, c_size_t]),
     ('pkg_info_contains_key',      c_size_t, [p_pkg, c_char_p]),

@@ -406,7 +406,8 @@ class Package(object):
                                          lib.pkg_filelist_add,
                                          lib.pkg_filelist_contains,
                                          lib.pkg_filelist_del_s,
-                                         lib.pkg_filelist_del_i)
+                                         lib.pkg_filelist_del_i,
+                                         lib.pkg_filelist_set_i)
         self.info = StringMapOfStringList(self,
                                           lib.pkg_info_count_keys,
                                           lib.pkg_info_get_keys,

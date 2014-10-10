@@ -110,6 +110,11 @@ bool write_stringlist(SerialOut &out, const vec<string> &list);
 bool read_stringlist (SerialIn  &in,        vec<string> &list);
 bool write_stringset (SerialOut &out, const StringSet   &list);
 bool read_stringset  (SerialIn  &in,        StringSet   &list);
+bool write_dependlist(SerialOut &out, const vec<tuple<string,string>> &list);
+bool read_dependlist (SerialIn  &in,        vec<tuple<string,string>> &list);
+
+// backward compat
+bool read_olddependlist(SerialIn &in, vec<tuple<string,string>> &list);
 
 } // ::pkgdepdb
 
