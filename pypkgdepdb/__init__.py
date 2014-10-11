@@ -639,21 +639,24 @@ class Elf(object):
         if self._ptr is None:
             raise PKGDepDBException('failed to create Elf instance')
 
-        self.needed = StringListAccess(self,
-                                       lib.elf_needed_count,
-                                       lib.elf_needed_get,
-                                       lib.elf_needed_add,
-                                       lib.elf_needed_contains,
-                                       lib.elf_needed_del_s,
-                                       lib.elf_needed_del_i,
-                                       lib.elf_needed_del_r)
-        self.missing = StringListAccess(self,
-                                        lib.elf_missing_count,
-                                        lib.elf_missing_get,
-                                        None,
-                                        lib.elf_missing_contains,
-                                        None, None, None)
-        self.found = Elf.FoundList(self)
+        self._needed = StringListAccess(self,
+                                        lib.elf_needed_count,
+                                        lib.elf_needed_get,
+                                        lib.elf_needed_add,
+                                        lib.elf_needed_contains,
+                                        lib.elf_needed_del_s,
+                                        lib.elf_needed_del_i,
+                                        lib.elf_needed_del_r)
+        self._missing = StringListAccess(self,
+                                         lib.elf_missing_count,
+                                         lib.elf_missing_get,
+                                         None,
+                                         lib.elf_missing_contains,
+                                         None, None, None)
+        self._found = Elf.FoundList(self)
+
+
+    needed  = StringListProperty('_needed')
 
     dirname     = StringProperty(lib.elf_dirname,     lib.elf_set_dirname)
     basename    = StringProperty(lib.elf_basename,    lib.elf_set_basename)
@@ -663,6 +666,20 @@ class Elf(object):
     rpath       = StringProperty(lib.elf_rpath,       lib.elf_set_rpath)
     runpath     = StringProperty(lib.elf_runpath,     lib.elf_set_runpath)
     interpreter = StringProperty(lib.elf_interpreter, lib.elf_set_interpreter)
+
+    @property
+    def found(self):
+        return self._found
+    @found.setter
+    def found(self, unused_value):
+        raise PKGDepDBException('Elf.found is a read only property')
+
+    @property
+    def missing(self):
+        return self._missing
+    @missing.setter
+    def missing(self, unused_value):
+        raise PKGDepDBException('Elf.missing is a read only property')
 
     def __del__(self):
         lib.elf_unref(self._ptr)
