@@ -114,7 +114,8 @@ bool write_dependlist(SerialOut &out, const vec<tuple<string,string>> &list);
 bool read_dependlist (SerialIn  &in,        vec<tuple<string,string>> &list);
 
 // backward compat
-bool read_olddependlist(SerialIn &in, vec<tuple<string,string>> &list);
+bool write_olddependlist(SerialOut &out, const vec<tuple<string,string>>&);
+bool read_olddependlist (SerialIn  &in,        vec<tuple<string,string>>&);
 
 } // ::pkgdepdb
 

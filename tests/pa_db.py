@@ -128,5 +128,11 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(len(db.packages), 2)
         self.assertFalse(db.is_broken(libfoo))
 
+        db.store('pa_db_test.db.gz')
+        ck = pypkgdepdb.DB(self.cfg)
+        ck.read('pa_db_test.db.gz')
+        self.assertEqual(len(db.packages), len(ck.packages))
+        del ck
+
 if __name__ == '__main__':
     unittest.main()

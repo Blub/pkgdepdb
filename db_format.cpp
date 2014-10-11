@@ -321,6 +321,15 @@ bool read_stringlist(SerialIn &in, vec<string> &list) {
   return in.in_;
 }
 
+bool write_olddependlist(SerialOut &out, const vec<tuple<string,string>> &list)
+{
+  auto len = static_cast<uint32_t>(list.size());
+  out.out_.Write((const char*)&len, sizeof(len));
+  for (auto &s : list)
+    out <= (std::get<0>(s) + std::get<1>(s));
+  return out.out_;
+}
+
 bool read_olddependlist(SerialIn &in, vec<tuple<string,string>> &list) {
   string full, dep, constraint;
   uint32_t len;
@@ -487,21 +496,31 @@ static bool write_pkg(SerialOut &out,    Package  *pkg,
   if (!write_objlist(out, pkg->objects_))
     return false;
 
-  if (hdrver >= 3) {
+  if (hdrver >= 10) {
     if (!write_dependlist(out, pkg->depends_) ||
-        (hdrver >= 10 && !write_dependlist(out, pkg->makedepends_)) ||
+        !write_dependlist(out, pkg->makedepends_) ||
         (hdrver >= 12 && !write_dependlist(out, pkg->checkdepends_)) ||
-        !write_dependlist(out, pkg->optdepends_))
-    {
-      return false;
-    }
-  }
-  if (hdrver >= 4) {
-    if (!write_dependlist(out, pkg->provides_)  ||
+        !write_dependlist(out, pkg->optdepends_) ||
+        !write_dependlist(out, pkg->provides_)  ||
         !write_dependlist(out, pkg->conflicts_) ||
         !write_dependlist(out, pkg->replaces_))
     {
       return false;
+    }
+  }
+  else if (hdrver >= 3) {
+    if (!write_olddependlist(out, pkg->depends_) ||
+        !write_olddependlist(out, pkg->optdepends_))
+    {
+      return false;
+    }
+    if (hdrver >= 4) {
+      if (!write_olddependlist(out, pkg->provides_)  ||
+          !write_olddependlist(out, pkg->conflicts_) ||
+          !write_olddependlist(out, pkg->replaces_))
+      {
+        return false;
+      }
     }
   }
   if (hdrver >= 5 && !write_stringset(out, pkg->groups_))
@@ -574,7 +593,7 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
       return false;
     }
   }
-  if (hdrver >= 3) {
+  else if (hdrver >= 3) {
     if (!read_olddependlist(in, pkg->depends_) ||
         !read_olddependlist(in, pkg->optdepends_))
     {
