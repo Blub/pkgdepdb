@@ -51,22 +51,22 @@ const char* pkgdepdb_pkg_description(pkgdepdb_pkg *pkg_) {
 
 void pkgdepdb_pkg_set_name(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
-  pkg->name_ = v;
+  pkg->name_ = v ? v : "";
 }
 
 void pkgdepdb_pkg_set_version(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
-  pkg->version_ = v;
+  pkg->version_ = v ? v : "";
 }
 
 void pkgdepdb_pkg_set_pkgbase(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
-  pkg->pkgbase_ = v;
+  pkg->pkgbase_ = v ? v : "";
 }
 
 void pkgdepdb_pkg_set_description(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
-  pkg->description_ = v;
+  pkg->description_ = v ? v : "";
 }
 
 pkgdepdb_bool pkgdepdb_pkg_read_info(pkgdepdb_pkg *pkg_, const char *data,
