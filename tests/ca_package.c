@@ -145,7 +145,7 @@ START_TEST (test_ca_package)
   ck_assert_str_eq(pkgdepdb_pkg_version(oldfoo), "0.9-1");
 
   ck_assert( pkgdepdb_pkg_conflict(libfoo, oldfoo));
-  ck_assert(!pkgdepdb_pkg_conflict(oldfoo, libfoo));
+  ck_assert( pkgdepdb_pkg_conflict(oldfoo, libfoo));
   ck_assert( pkgdepdb_pkg_replaces(libfoo, oldfoo));
   ck_assert(!pkgdepdb_pkg_replaces(oldfoo, libfoo));
 

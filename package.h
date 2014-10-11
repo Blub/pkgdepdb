@@ -40,6 +40,7 @@ struct Package {
 
   // loading utiltiy functions
   void Guess(const string& name);
+  static bool Conflict(const Package&, const Package&);
   bool ConflictsWith(const Package&) const;
   bool Replaces(const Package&) const;
 

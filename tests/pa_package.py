@@ -112,7 +112,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(oldfoo.version, '0.9-1')
 
         self.assertTrue (foo.conflicts_with(oldfoo))
-        self.assertFalse(oldfoo.conflicts_with(foo))
+        self.assertTrue (oldfoo.conflicts_with(foo))
         self.assertTrue (foo.replaces_package(oldfoo))
         self.assertFalse(oldfoo.replaces_package(foo))
 
@@ -160,7 +160,18 @@ group = foogroup
         self.assertEqual(libfoo.version,     '1.0-1')
         self.assertEqual(libfoo.pkgbase,     'foobase')
         self.assertEqual(libfoo.description, 'test package')
-        self.assertEqual(libfoo.info['url'], 'http://about:blank')
+        self.assertEqual(list(libfoo.depends),      [('libc',''),
+                                                     ('libbar1','')])
+        self.assertEqual(list(libfoo.optdepends),   [('libbar2','>1')])
+        self.assertEqual(list(libfoo.makedepends),  [('make','')])
+        self.assertEqual(list(libfoo.checkdepends), [('check','')])
+        self.assertEqual(list(libfoo.info['url']),       ['http://about:blank'])
+        self.assertEqual(list(libfoo.info['builddate']), ['1411832227'])
+        self.assertEqual(list(libfoo.info['packager']),  ['The test suite'])
+        self.assertEqual(list(libfoo.info['size']),      ['1024', '1025'])
+        self.assertEqual(list(libfoo.info['arch']),      ['x86_64'])
+        self.assertEqual(list(libfoo.info['license']),   ['BSD'])
+        self.assertEqual(list(libfoo.groups), ['base', 'devel', 'foogroup'])
 
 if __name__ == '__main__':
     unittest.main()

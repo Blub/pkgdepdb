@@ -520,8 +520,8 @@ void Package::ShowNeeded() {
   }
 }
 
-bool Package::ConflictsWith(const Package &other) const {
-  for (auto &conf : conflicts_) {
+bool Package::Conflict(const Package& self, const Package &other) {
+  for (auto &conf : self.conflicts_) {
     const string &name = std::get<0>(conf);
 #ifdef PKGDEPDB_ENABLE_ALPM
     string op, ver;
@@ -542,6 +542,10 @@ bool Package::ConflictsWith(const Package &other) const {
 #endif
   }
   return false;
+}
+
+bool Package::ConflictsWith(const Package &other) const {
+  return Conflict(*this, other) || Conflict(other, *this);
 }
 
 bool Package::Replaces(const Package &other) const {
