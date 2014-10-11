@@ -44,9 +44,18 @@ def StringProperty(c_getter, c_setter):
         return c_setter(self._ptr, cstr(value))
     return property(getter, setter)
 
+def StringListProperty(name):
+    def getter(self):
+        return getattr(self, name)
+    def setter(self, value):
+        l = getattr(self, name)
+        l.delete_range(0, len(l))
+        l.extend(value)
+    return property(getter, setter)
+
 class StringListAccess(object):
     def __init__(self, owner, count, get, add, contains, del_s, del_i,
-                 set_i=None, conv=cstr):
+                 del_r, set_i=None, conv=cstr):
         self.owner     = owner
         self._conv     = conv
         self._count    = count
@@ -55,6 +64,7 @@ class StringListAccess(object):
         self._contains = contains
         self._del_s    = del_s
         self._del_i    = del_i
+        self._del_r    = del_r
         if set_i is None:
             self.__setitem__ = None
         else:
@@ -71,6 +81,7 @@ class StringListAccess(object):
         count = self.__len__()
         if key >= count: raise IndexError
         return self.get(key, 1)[0]
+
 
     def __getslice__(self, start=None, stop=None, step=None):
         step  = step or 1
@@ -146,11 +157,15 @@ class StringListAccess(object):
         self.delete(key)
 
     def __delslice__(self, start=None, stop=None, step=None):
-        step  = step or 1
+        step  = step  or 1
         start = start or 0
-        stop  = stop   or self.count()
+        stop  = stop  or self.count()
         if step == 0:
             raise ValueError('step cannot be zero')
+        if step == 1:
+            # optimized shortcut
+            if stop <= start: return
+            return self.delete_range(start, stop-start)
         if step > 0:
             s = range(start, stop, step)
         else:
@@ -220,6 +235,9 @@ class StringListAccess(object):
             raise KeyError('invalid type for delete operation: %s (%s)' %
                            (type(what), str(what)))
 
+    def delete_range(self, idx, count):
+        self._del_r(self.owner._ptr, idx, count)
+
     def append(self, value):
         return self.add(value)
     def extend(self, value):
@@ -228,9 +246,9 @@ class StringListAccess(object):
 
 class DepListAccess(StringListAccess):
     def __init__(self, owner, count, get, add, contains, del_s, del_t, del_i,
-                 set_i=None, conv=cstr):
+                 del_r, set_i=None, conv=cstr):
         StringListAccess.__init__(self, owner, count, get, add, contains,
-                                  del_s, del_i, set_i, conv)
+                                  del_s, del_i, del_r, set_i, conv)
         self._del_t = del_t
 
     def add(self, s):
@@ -296,7 +314,7 @@ class DepListAccess(StringListAccess):
 
 class StringMapOfStringList(object):
     def __init__(self, owner, count_keys, get_keys, count_values, get_values,
-                 add, del_kv, del_ki, set_ki, contains_key):
+                 add, del_kv, del_ki, del_kr, set_ki, contains_key):
         self.owner    = owner
         self.__count_keys   = count_keys
         self.__get_keys     = get_keys
@@ -305,6 +323,7 @@ class StringMapOfStringList(object):
         self.__add          = add
         self.__del_kv       = del_kv
         self.__del_ki       = del_ki
+        self.__del_kr       = del_kr
         self.__set_ki       = set_ki
         self.__contains     = contains_key
 
@@ -322,6 +341,7 @@ class StringMapOfStringList(object):
             lambda owner, v: self.__add(owner, ckey, v),
             lambda owner, s: self.__del_kv(owner, ckey, s),
             lambda owner, i: self.__del_ki(owner, ckey, i),
+            lambda owner, i, c: self.__del_kr(owner, ckey, i, c),
             lambda owner, i, v: self.__set_ki(owner, ckey, i, v))
 
     def __delitem__(self, key):

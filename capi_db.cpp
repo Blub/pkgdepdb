@@ -89,6 +89,13 @@ pkgdepdb_bool pkgdepdb_db_library_path_del_i(pkgdepdb_db *db_, size_t index) {
   return db->LD_Delete(index);
 }
 
+size_t pkgdepdb_db_library_path_del_r(pkgdepdb_db *db_, size_t index,
+                                      size_t count)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_del_r(db->library_path_, index, count);
+}
+
 pkgdepdb_bool pkgdepdb_db_library_path_set_i(pkgdepdb_db *db_, size_t index,
                                              const char *v)
 {
@@ -227,6 +234,13 @@ pkgdepdb_bool pkgdepdb_db_ignored_files_del_i(pkgdepdb_db *db_, size_t index) {
   return db->IgnoreFile_Delete(index);
 }
 
+size_t pkgdepdb_db_ignored_files_del_r(pkgdepdb_db *db_, size_t index,
+                                       size_t count)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_del_r(db->ignore_file_rules_, index, count);
+}
+
 size_t pkgdepdb_db_base_packages_count(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->base_packages_.size();
@@ -263,6 +277,13 @@ pkgdepdb_bool pkgdepdb_db_base_packages_del_i(pkgdepdb_db *db_, size_t index) {
   return db->BasePackages_Delete(index);
 }
 
+size_t pkgdepdb_db_base_packages_del_r(pkgdepdb_db *db_, size_t index,
+                                       size_t count)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_del_r(db->base_packages_, index, count);
+}
+
 size_t pkgdepdb_db_assume_found_count(pkgdepdb_db *db_) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->assume_found_rules_.size();
@@ -296,6 +317,13 @@ pkgdepdb_bool pkgdepdb_db_assume_found_del_s(pkgdepdb_db *db_, const char *lib)
 pkgdepdb_bool pkgdepdb_db_assume_found_del_i(pkgdepdb_db *db_, size_t index) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->AssumeFound_Delete(index);
+}
+
+size_t pkgdepdb_db_assume_found_del_r(pkgdepdb_db *db_, size_t index,
+                                      size_t count)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_del_r(db->assume_found_rules_, index, count);
 }
 
 void pkgdepdb_db_relink_all(pkgdepdb_db *db_) {

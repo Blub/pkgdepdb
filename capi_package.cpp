@@ -170,6 +170,13 @@ int pkg_dependlist_del_i(Package& pkg, DependList Package::*member, size_t i) {
   return 1;
 }
 
+static inline
+size_t pkg_dependlist_del_r(Package& pkg, DependList Package::*member,
+                            size_t i, size_t count)
+{
+  return pkgdepdb_strlist_del_r(pkg.*member, i, count);
+}
+
 size_t pkgdepdb_pkg_dep_count(pkgdepdb_pkg *pkg_, unsigned int what) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   if (what >= kDepMemberCount)
@@ -231,6 +238,15 @@ size_t pkgdepdb_pkg_dep_del_i(pkgdepdb_pkg *pkg_, unsigned int what, size_t id)
   return pkg_dependlist_del_i(*pkg, kDepMember[what], id);
 }
 
+size_t pkgdepdb_pkg_dep_del_r(pkgdepdb_pkg *pkg_, unsigned int what, size_t id,
+                              size_t count)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  if (what >= kDepMemberCount)
+    return 0;
+  return pkg_dependlist_del_r(*pkg, kDepMember[what], id, count);
+}
+
 size_t pkgdepdb_pkg_groups_count(pkgdepdb_pkg *pkg_) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_count(*pkg, &Package::groups_);
@@ -260,6 +276,12 @@ size_t pkgdepdb_pkg_groups_del_s(pkgdepdb_pkg *pkg_, const char *v) {
 size_t pkgdepdb_pkg_groups_del_i(pkgdepdb_pkg *pkg_, size_t index) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_del_i(*pkg, &Package::groups_, index);
+}
+
+size_t pkgdepdb_pkg_groups_del_r(pkgdepdb_pkg *pkg_, size_t index, size_t cnt)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_del_r(pkg->groups_, index, cnt);
 }
 
 size_t pkgdepdb_pkg_filelist_count(pkgdepdb_pkg *pkg_) {
@@ -293,6 +315,12 @@ size_t pkgdepdb_pkg_filelist_del_s(pkgdepdb_pkg *pkg_, const char *v) {
 size_t pkgdepdb_pkg_filelist_del_i(pkgdepdb_pkg *pkg_, size_t index) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_del_i(*pkg, &Package::filelist_, index);
+}
+
+size_t pkgdepdb_pkg_filelist_del_r(pkgdepdb_pkg *pkg_, size_t idx, size_t cnt)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_del_r(pkg->filelist_, idx, cnt);
 }
 
 pkgdepdb_bool pkgdepdb_pkg_filelist_set_i(pkgdepdb_pkg *pkg_, size_t index,
@@ -370,6 +398,18 @@ size_t pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg *pkg_, size_t index) {
   if (index >= pkg->objects_.size())
     return 0;
   pkg->objects_.erase(pkg->objects_.begin() + index);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_elf_del_r(pkgdepdb_pkg *pkg_, size_t index, size_t count) {
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  size_t max = pkg->objects_.size();
+  if (index >= max)
+    return 0;
+  if (count > max - index)
+    count = max - index;
+  pkg->objects_.erase(pkg->objects_.begin() + index,
+                      pkg->objects_.begin() + index + count);
   return 1;
 }
 
@@ -472,6 +512,18 @@ size_t pkgdepdb_pkg_info_del_i(pkgdepdb_pkg *pkg_, const char *k, size_t idx) {
     pkg->info_.erase(info);
   return 1;
 }
+
+size_t pkgdepdb_pkg_info_del_r(pkgdepdb_pkg *pkg_, const char *k, size_t idx,
+                               size_t count)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto info = pkg->info_.find(k);
+  if (info == pkg->info_.end())
+    return 0;
+  auto &lst = info->second;
+  return pkgdepdb_strlist_del_r(lst, idx, count);
+}
+
 pkgdepdb_bool pkgdepdb_pkg_info_set_i(pkgdepdb_pkg *pkg_, const char *k,
                                       size_t index, const char *v)
 {

@@ -142,6 +142,21 @@ size_t pkgdepdb_strlist_del_i(T& obj, STRLIST T::*member, size_t index) {
   return 1;
 }
 
+template<class STRLIST>
+size_t pkgdepdb_strlist_del_r(STRLIST& lst, size_t index, size_t count) {
+  size_t max = lst.size();
+  if (index >= max)
+    return 0;
+  if (count > max - index)
+    count = max - index;
+  auto i = lst.begin();
+  while (index--) ++i;
+  auto e = i;
+  for (index = count; index--;) ++e;
+  lst.erase(i, e);
+  return count;
+}
+
 static inline
 bool pkgdepdb_strlist_set_i(std::vector<std::string>& lst, size_t index,
                             const char *value)

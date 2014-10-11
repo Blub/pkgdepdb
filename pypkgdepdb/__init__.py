@@ -212,35 +212,39 @@ class DB(object):
         self._ptr = lib.db_new(cfg._ptr)
         if self._ptr is None:
             raise PKGDepDBException('failed to create database instance')
-        self.library_path = StringListAccess(self,
-                                             lib.db_library_path_count,
-                                             lib.db_library_path_get,
-                                             lib.db_library_path_add,
-                                             lib.db_library_path_contains,
-                                             lib.db_library_path_del_s,
-                                             lib.db_library_path_del_i,
-                                             lib.db_library_path_set_i)
-        self.ignored_files = StringListAccess(self,
-                                              lib.db_ignored_files_count,
-                                              lib.db_ignored_files_get,
-                                              lib.db_ignored_files_add,
-                                              lib.db_ignored_files_contains,
-                                              lib.db_ignored_files_del_s,
-                                              lib.db_ignored_files_del_i)
-        self.base_packages = StringListAccess(self,
-                                              lib.db_base_packages_count,
-                                              lib.db_base_packages_get,
-                                              lib.db_base_packages_add,
-                                              lib.db_base_packages_contains,
-                                              lib.db_base_packages_del_s,
-                                              lib.db_base_packages_del_i)
-        self.assume_found = StringListAccess(self,
-                                             lib.db_assume_found_count,
-                                             lib.db_assume_found_get,
-                                             lib.db_assume_found_add,
-                                             lib.db_assume_found_contains,
-                                             lib.db_assume_found_del_s,
-                                             lib.db_assume_found_del_i)
+        self._library_path = StringListAccess(self,
+                                              lib.db_library_path_count,
+                                              lib.db_library_path_get,
+                                              lib.db_library_path_add,
+                                              lib.db_library_path_contains,
+                                              lib.db_library_path_del_s,
+                                              lib.db_library_path_del_i,
+                                              lib.db_library_path_del_r,
+                                              lib.db_library_path_set_i)
+        self._ignored_files = StringListAccess(self,
+                                               lib.db_ignored_files_count,
+                                               lib.db_ignored_files_get,
+                                               lib.db_ignored_files_add,
+                                               lib.db_ignored_files_contains,
+                                               lib.db_ignored_files_del_s,
+                                               lib.db_ignored_files_del_i,
+                                               lib.db_ignored_files_del_r)
+        self._base_packages = StringListAccess(self,
+                                               lib.db_base_packages_count,
+                                               lib.db_base_packages_get,
+                                               lib.db_base_packages_add,
+                                               lib.db_base_packages_contains,
+                                               lib.db_base_packages_del_s,
+                                               lib.db_base_packages_del_i,
+                                               lib.db_base_packages_del_r)
+        self._assume_found = StringListAccess(self,
+                                              lib.db_assume_found_count,
+                                              lib.db_assume_found_get,
+                                              lib.db_assume_found_add,
+                                              lib.db_assume_found_contains,
+                                              lib.db_assume_found_del_s,
+                                              lib.db_assume_found_del_i,
+                                              lib.db_assume_found_del_r)
         self.packages = DB.PackageList(self)
         self.elfs     = DB.ElfList(self)
 
@@ -248,6 +252,11 @@ class DB(object):
     strict_linking = BoolProperty(lib.db_strict_linking,
                                   lib.db_set_strict_linking)
     name           = StringProperty(lib.db_name, lib.db_set_name)
+
+    library_path  = StringListProperty('_library_path')
+    ignored_files = StringListProperty('_ignored_files')
+    base_packages = StringListProperty('_base_packages')
+    assume_found  = StringListProperty('_assume_found')
 
     def __del__(self):
         lib.db_delete(self._ptr)
@@ -340,6 +349,9 @@ class Package(object):
             else:
                 raise TypeError('cannot delete objects by name yet')
 
+        def delete_range(self, idx, count):
+            lib.pkg_elf_del_r(self.owner._ptr, idx, count)
+
         def set_i(self, idx, what):
             if what is not None:
                 what = what._ptr
@@ -380,11 +392,17 @@ class Package(object):
             stop  = stop   or self.count()
             if step == 0:
                 raise ValueError('step cannot be zero')
+            if step == 1:
+                if stop <= start: return
+                return self.delete_range(start, stop-start)
             if step > 0:
                 s = slice(start, stop, step)
             else:
                 s = reverse(slice(start, stop, step))
-            raise Excpetion('TODO')
+            minus = 0
+            for idx in s:
+                self.delete(idx - minus)
+                minus += 1
 
         def __setitem__(self, key, value):
             if isinstance(key, slice):
@@ -441,31 +459,34 @@ class Package(object):
             raise PKGDepDBException('failed to create package instance')
         self.linked = linked
 
-        self.groups = StringListAccess(self,
-                                       lib.pkg_groups_count,
-                                       lib.pkg_groups_get,
-                                       lib.pkg_groups_add,
-                                       lib.pkg_groups_contains,
-                                       lib.pkg_groups_del_s,
-                                       lib.pkg_groups_del_i)
-        self.filelist = StringListAccess(self,
-                                         lib.pkg_filelist_count,
-                                         lib.pkg_filelist_get,
-                                         lib.pkg_filelist_add,
-                                         lib.pkg_filelist_contains,
-                                         lib.pkg_filelist_del_s,
-                                         lib.pkg_filelist_del_i,
-                                         lib.pkg_filelist_set_i)
-        self.info = StringMapOfStringList(self,
-                                          lib.pkg_info_count_keys,
-                                          lib.pkg_info_get_keys,
-                                          lib.pkg_info_count_values,
-                                          lib.pkg_info_get_values,
-                                          lib.pkg_info_add,
-                                          lib.pkg_info_del_s,
-                                          lib.pkg_info_del_i,
-                                          lib.pkg_info_set_i,
-                                          lib.pkg_info_contains_key)
+        self._groups = StringListAccess(self,
+                                        lib.pkg_groups_count,
+                                        lib.pkg_groups_get,
+                                        lib.pkg_groups_add,
+                                        lib.pkg_groups_contains,
+                                        lib.pkg_groups_del_s,
+                                        lib.pkg_groups_del_i,
+                                        lib.pkg_groups_del_r)
+        self._filelist = StringListAccess(self,
+                                          lib.pkg_filelist_count,
+                                          lib.pkg_filelist_get,
+                                          lib.pkg_filelist_add,
+                                          lib.pkg_filelist_contains,
+                                          lib.pkg_filelist_del_s,
+                                          lib.pkg_filelist_del_i,
+                                          lib.pkg_filelist_del_r,
+                                          lib.pkg_filelist_set_i)
+        self._info = StringMapOfStringList(self,
+                                           lib.pkg_info_count_keys,
+                                           lib.pkg_info_get_keys,
+                                           lib.pkg_info_count_values,
+                                           lib.pkg_info_get_values,
+                                           lib.pkg_info_add,
+                                           lib.pkg_info_del_s,
+                                           lib.pkg_info_del_i,
+                                           lib.pkg_info_del_r,
+                                           lib.pkg_info_set_i,
+                                           lib.pkg_info_contains_key)
         def make_deplist(self, what):
             return DepListAccess(self,
                 lambda o:       lib.pkg_dep_count   (o, what),
@@ -475,15 +496,27 @@ class Package(object):
                 lambda o, *arg: lib.pkg_dep_del_name(o, what, *arg),
                 lambda o, *arg: lib.pkg_dep_del_full(o, what, *arg),
                 lambda o, *arg: lib.pkg_dep_del_i   (o, what, *arg),
+                lambda o, *arg: lib.pkg_dep_del_r   (o, what, *arg),
                 lambda o, *arg: lib.pkg_dep_set_i   (o, what, *arg))
-        self.depends      = make_deplist(self, PkgEntry.Depends)
-        self.optdepends   = make_deplist(self, PkgEntry.OptDepends)
-        self.makedepends  = make_deplist(self, PkgEntry.MakeDepends)
-        self.checkdepends = make_deplist(self, PkgEntry.CheckDepends)
-        self.provides     = make_deplist(self, PkgEntry.Provides)
-        self.conflicts    = make_deplist(self, PkgEntry.Conflicts)
-        self.replaces     = make_deplist(self, PkgEntry.Replaces)
+        self._depends      = make_deplist(self, PkgEntry.Depends)
+        self._optdepends   = make_deplist(self, PkgEntry.OptDepends)
+        self._makedepends  = make_deplist(self, PkgEntry.MakeDepends)
+        self._checkdepends = make_deplist(self, PkgEntry.CheckDepends)
+        self._provides     = make_deplist(self, PkgEntry.Provides)
+        self._conflicts    = make_deplist(self, PkgEntry.Conflicts)
+        self._replaces     = make_deplist(self, PkgEntry.Replaces)
 
+
+    groups        = StringListProperty('_groups')
+    filelist      = StringListProperty('_filelist')
+    info          = StringListProperty('_info')
+    depends       = StringListProperty('_depends')
+    optdepends    = StringListProperty('_optdepends')
+    makedepends   = StringListProperty('_makedepends')
+    checkdepends  = StringListProperty('_checkdepends')
+    provides      = StringListProperty('_provides')
+    conflicts     = StringListProperty('_conflicts')
+    replaces      = StringListProperty('_replaces')
 
     name        = StringProperty(lib.pkg_name, lib.pkg_set_name)
     version     = StringProperty(lib.pkg_version, lib.pkg_set_version)
@@ -594,13 +627,14 @@ class Elf(object):
                                        lib.elf_needed_add,
                                        lib.elf_needed_contains,
                                        lib.elf_needed_del_s,
-                                       lib.elf_needed_del_i)
+                                       lib.elf_needed_del_i,
+                                       lib.elf_needed_del_r)
         self.missing = StringListAccess(self,
                                         lib.elf_missing_count,
                                         lib.elf_missing_get,
                                         None,
                                         lib.elf_missing_contains,
-                                        None, None)
+                                        None, None, None)
         self.found = Elf.FoundList(self)
 
     dirname     = StringProperty(lib.elf_dirname,     lib.elf_set_dirname)

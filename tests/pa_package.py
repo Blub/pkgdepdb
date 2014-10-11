@@ -55,7 +55,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(pkg.description , description)
         self.assertEqual(pkg.pkgbase     , pkgbase)
 
-        pkg.depends.extend(depends)
+        pkg.depends = depends
         if check:
             self.assertEqual(len(pkg.depends), len(depends))
             pkgdeps = pkg.depends

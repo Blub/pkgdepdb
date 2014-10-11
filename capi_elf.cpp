@@ -244,6 +244,12 @@ void pkgdepdb_elf_needed_del_i(pkgdepdb_elf elf_, size_t index) {
   elf->needed_.erase(elf->needed_.begin() + index);
 }
 
+void pkgdepdb_elf_needed_del_r(pkgdepdb_elf elf_, size_t index, size_t count) {
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  elf->needed_.erase(elf->needed_.begin() + index,
+                     elf->needed_.begin() + index + count);
+}
+
 int pkgdepdb_elf_can_use(pkgdepdb_elf subject, pkgdepdb_elf object, int strict)
 {
   auto elf = *reinterpret_cast<rptr<Elf>*>(subject);
