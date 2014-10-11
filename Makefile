@@ -2,6 +2,7 @@ DESTDIR    =
 PREFIX     = /usr/local
 BINDIR     = $(PREFIX)/bin
 LIBDIR     = $(PREFIX)/lib
+INCLUDEDIR = $(PREFIX)/include
 DATADIR    = $(PREFIX)/share
 SYSCONFDIR = $(PREFIX)/etc
 MANDIR     = $(DATADIR)/man
@@ -46,8 +47,11 @@ BINARY        = pkgdepdb
 STATIC_BINARY = $(BINARY)-static
 MANPAGES      = pkgdepdb.1
 
-.PHONY: man manpages uninstall uninstall-bin uninstall-man static \
-        install install-bin install-man check c-check py-check
+.PHONY: static \
+        man manpages \
+        uninstall uninstall-bin uninstall-lib uninstall-man \
+        install   install-bin   install-lib   install-man \
+        check c-check py-check
 
 default: all
 
@@ -95,8 +99,8 @@ clean:
 	-rm -f .cflags
 	-rm -rf .libs
 
-install: install-bin install-man
-uninstall: uninstall-bin uninstall-man
+install: install-bin install-lib install-man
+uninstall: uninstall-bin uninstall-lib uninstall-man
 install-prefix:
 	install -d -m755 $(DESTDIR)$(PREFIX)
 install-bin: install-prefix
@@ -104,6 +108,15 @@ install-bin: install-prefix
 	install    -m755 $(BINARY)  $(DESTDIR)$(BINDIR)/$(BINARY)
 uninstall-bin:
 	rm -f $(DESTDIR)$(BINDIR)/$(BINARY)
+install-lib: install-prefix
+	install -d -m755            $(DESTDIR)$(INCLUDEDIR)
+	install    -m644 pkgdepdb.h $(DESTDIR)$(INCLUDEDIR)/pkgdepdb.h
+	install -d -m755 $(DESTDIR)$(LIBDIR)
+	$(LIBTOOL) --mode=install \
+	  install -m755 $(LIBPKGDEPDB_LA) $(DESTDIR)$(LIBDIR)/$(LIBPKGDEPDB_LA)
+uninstall-lib:
+	rm -f $(DESTDIR)$(INCLUDEDIR)/pkgdepdb.h
+	$(LIBTOOL) --mode=uninstall rm -f $(DESTDIR)$(LIBDIR)/$(LIBPKGDEPDB_LA)
 install-man: $(MANPAGES) install-prefix
 	install -d -m755            $(DESTDIR)$(MAN1DIR)
 	install    -m644 pkgdepdb.1 $(DESTDIR)$(MAN1DIR)/pkgdepdb.1
