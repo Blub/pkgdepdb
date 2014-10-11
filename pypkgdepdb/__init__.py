@@ -279,9 +279,9 @@ class DB(object):
         lib.db_fix_paths(self._ptr)
 
     def wipe_packages(self):
-        return True if lib.db_wipe_packages(self._ptr) == 1 else False
+        return lib.db_wipe_packages(self._ptr) == 1
     def wipe_filelists(self):
-        return True if lib.db_wipe_file_lists(self._ptr) == 1 else False
+        return lib.db_wipe_file_lists(self._ptr) == 1
 
     def install(self, pkg):
         if lib.db_package_install(self._ptr, pkg._ptr) != 1:
@@ -313,7 +313,7 @@ class DB(object):
             v = lib.db_object_is_broken(self._ptr, what._ptr)
         else:
             raise TypeError('object must be a Package or Elf instance')
-        return True if v == 1 else False
+        return v == 1
 
 #    def __eq__(self, other):
 #        return self._ptr == other._ptr

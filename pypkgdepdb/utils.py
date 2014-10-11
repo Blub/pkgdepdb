@@ -20,7 +20,7 @@ def cstr(s):
 
 def BoolProperty(c_getter, c_setter):
     def getter(self):
-        return True if c_getter(self._ptr) != 0 else False
+        return c_getter(self._ptr) != 0
     def setter(self, value):
         return c_setter(self._ptr, value)
     return property(getter, setter)
@@ -213,16 +213,13 @@ class StringListAccess(object):
         return [ from_c_string(x) for x in lst[0:got] ]
 
     def add(self, s):
-        return True if self._add(self.owner._ptr, self._conv(s)) else False
+        return self._add(self.owner._ptr, self._conv(s)) == 1
 
     def contains(self, s):
-        return (True if self._contains(self.owner._ptr, self._conv(s))
-                else False)
+        return self._contains(self.owner._ptr, self._conv(s)) == 1
 
     def set_i(self, index, value):
-        return (
-            True if self.__set_i(self.owner._ptr, index, self._conv(value))
-            else False)
+        return self.__set_i(self.owner._ptr, index, self._conv(value)) == 1
 
     def delete(self, what):
         if isinstance(what, str):
@@ -258,25 +255,22 @@ class DepListAccess(StringListAccess):
             x = x if x >= 0 else s.find('=')
             x = x if x >= 0 else s.find('!')
             if x == -1:
-                return (True if self._add(self.owner._ptr,
-                                          self._conv(s),
-                                          self._conv("")) == 1
-                        else False)
+                return self._add(self.owner._ptr,
+                                 self._conv(s),
+                                 self._conv(""))
             else:
                 a = s[0:x]
                 b = s[x+1 if s[x+1] != '=' else x+2:]
-                return (True if self._add(self.owner._ptr,
-                                          self._conv(a),
-                                          self._conv(b)) == 1
-                        else False)
+                return self._add(self.owner._ptr,
+                                 self._conv(a),
+                                 self._conv(b)) == 1
         elif (isinstance(s, tuple) and 
               len(s) == 2 and
               isinstance(s[0], str) and 
               isinstance(s[1], str)):
-            return (True if self._add(self.owner._ptr,
-                                      self._conv(s[0]),
-                                      self._conv(s[1])) == 1
-                    else False)
+            return self._add(self.owner._ptr,
+                             self._conv(s[0]),
+                             self._conv(s[1])) == 1
 
     def contains(self, value):
         return self._contains(self.owner._ptr, cstr(value))
@@ -350,8 +344,7 @@ class StringMapOfStringList(object):
         while lib.pkg_info_del_i(self._ptr, ckey, 0) == 1: pass
 
     def __contains__(self, key):
-        return (True if self.__contains(self.owner._ptr, cstr(key))
-                else False)
+        return self.__contains(self.owner._ptr, cstr(key)) == 1
 
     def __iter__(self):
         def iter():
