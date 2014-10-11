@@ -102,7 +102,8 @@ bool Package::ReadInfo(const string& str, const size_t size,
       optconfig.Log(Error, "invalid %s entry in .PKGINFO", entryname);
       return false;
     }
-    size_t to = str.find_first_of(" \n\r\t", pos);
+    size_t to = str.find_first_of("\n\r", pos);
+    to = str.find_last_not_of(" \t", to, to-pos);
     out = str.substr(pos, to-pos);
     skipline();
     return true;
