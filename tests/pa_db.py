@@ -6,6 +6,9 @@ import pypkgdepdb
 class TestConfig(unittest.TestCase):
     def setUp(self):
         self.cfg = pypkgdepdb.Config()
+        self.cfg.quiet = True
+        self.cfg.verbosity = 0
+        self.cfg.log_level = pypkgdepdb.LogLevel.Error
     def tearDown(self):
         del self.cfg
 
@@ -49,6 +52,7 @@ class TestConfig(unittest.TestCase):
 
     def test_dbcore(self):
         db = pypkgdepdb.DB(self.cfg)
+        self.assertIsNotNone(db)
 
         self.assertEqual(len(db.library_path), 0)
         lst = [ '/lib', '/usr/lib', 'a', 'b', 'c', 'd', 'e', 'f' ]
@@ -61,6 +65,19 @@ class TestConfig(unittest.TestCase):
         del lst[5] # 'e'
         del db.library_path['e']
         self.assertEqual(list(db.library_path), lst)
+        self.assertEqual(type(db.library_path), pypkgdepdb.StringListAccess)
+
+    def test_dbpkgs(self):
+        db = pypkgdepdb.DB(self.cfg)
+        db.name = 'A Database'
+        db.library_path = ['/lib', '/usr/lib']
+        self.assertEqual(len(db.library_path), 2)
+        db.store('pa_db_test.db.gz')
+
+        ck = pypkgdepdb.DB(self.cfg)
+        ck.read('pa_db_test.db.gz')
+        self.assertEqual(len(ck.library_path), 2)
+        self.assertEqual(list(db.library_path), list(ck.library_path))
 
 if __name__ == '__main__':
     unittest.main()

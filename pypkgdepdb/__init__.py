@@ -103,10 +103,10 @@ class Config(object):
     package_info       = BoolProperty(lib.cfg_package_info,
                                       lib.cfg_set_package_info)
 
-#    def __eq__(self, other):
-#        return self._ptr == other._ptr
-#    def __ne__(self, other):
-#        return self._ptr != other._ptr
+    def __eq__(self, other):
+        return self._ptr == other._ptr
+    def __ne__(self, other):
+        return self._ptr != other._ptr
 
 class DB(object):
     class PackageList(object):
@@ -315,10 +315,10 @@ class DB(object):
             raise TypeError('object must be a Package or Elf instance')
         return v == 1
 
-#    def __eq__(self, other):
-#        return self._ptr == other._ptr
-#    def __ne__(self, other):
-#        return self._ptr != other._ptr
+    def __eq__(self, other):
+        return self._ptr == other._ptr
+    def __ne__(self, other):
+        return self._ptr != other._ptr
 
 class Package(object):
     class ElfList(object):
@@ -339,11 +339,14 @@ class Package(object):
             got = lib.pkg_elf_get(self.owner._ptr, out, off, count)
             return [Elf(x) for x in out[0:got]]
 
+        def add(self, elf):
+            return lib.pkg_elf_add(self.owner._ptr, elf._ptr) == 1
+
         def delete(self, what):
             if type(what) == Elf:
                 if 1 != lib.pkg_elf_del_e(self.owner._ptr, what._ptr):
                     raise KeyError('package does not contain this object')
-            elif isinstance(index, int):
+            elif isinstance(what, int):
                 if 1 != lib.pkg_elf_del_i(self.owner._ptr, what):
                     raise KeyError('no such index: %i' % (what))
             else:
@@ -381,7 +384,7 @@ class Package(object):
         def __contains__(self, value):
             return value in self.get()
 
-        def __delitem__(self, index):
+        def __delitem__(self, key):
             if isinstance(key, slice):
                 return self.__delslice__(key.start, key.stop, key.step)
             self.delete(key)
@@ -453,6 +456,12 @@ class Package(object):
                         self.set_i(start, v)
                     start += step
 
+        def append(self, value):
+            return self.add(value)
+        def extend(self, value):
+            for i in value:
+                self.append(i)
+
     def __init__(self, ptr=None, linked=False):
         self._ptr = ptr or lib.pkg_new()
         if self._ptr is None:
@@ -506,6 +515,7 @@ class Package(object):
         self._conflicts    = make_deplist(self, PkgEntry.Conflicts)
         self._replaces     = make_deplist(self, PkgEntry.Replaces)
 
+        self._elfs = Package.ElfList(self)
 
     groups        = StringListProperty('_groups')
     filelist      = StringListProperty('_filelist')
@@ -522,6 +532,14 @@ class Package(object):
     version     = StringProperty(lib.pkg_version, lib.pkg_set_version)
     pkgbase     = StringProperty(lib.pkg_pkgbase, lib.pkg_set_pkgbase)
     description = StringProperty(lib.pkg_description, lib.pkg_set_description)
+
+    @property
+    def elfs(self):
+        return self._elfs
+    @elfs.setter
+    def elfs(self, value):
+        self._elfs.delete_range(0, len(self._elfs))
+        self._elfs.extend(value)
 
     def __del__(self):
         if not self.linked:
@@ -552,10 +570,10 @@ class Package(object):
             raise TypeError('other must be a package')
         return lib.pkg_replaces(self._ptr, other._ptr) != 0
 
-#    def __eq__(self, other):
-#        return self._ptr == other._ptr
-#    def __ne__(self, other):
-#        return self._ptr != other._ptr
+    def __eq__(self, other):
+        return self._ptr == other._ptr
+    def __ne__(self, other):
+        return self._ptr != other._ptr
 
 class Elf(object):
     class FoundList(object):
@@ -685,10 +703,10 @@ class Elf(object):
     def can_use(self, other, strict=True):
         return lib.elf_can_use(self._ptr, other._ptr, 1 if strict else 0)
 
-#    def __eq__(self, other):
-#        return self._ptr[0] == other._ptr[0]
-#    def __ne__(self, other):
-#        return self._ptr[0] != other._ptr[0]
+    def __eq__(self, other):
+        return self._ptr[0] == other._ptr[0]
+    def __ne__(self, other):
+        return self._ptr[0] != other._ptr[0]
 
 __all__ = [
             'PKGDepDBException',
@@ -697,4 +715,7 @@ __all__ = [
             'rawlib',
             'lib',
             'Config', 'DB', 'Package', 'Pkg', 'Elf',
+# for testing
+            'StringListAccess'
+            'StringListProperty'
           ]

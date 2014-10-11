@@ -120,7 +120,7 @@ class TestConfig(unittest.TestCase):
         elf2 = self.MakeElf('/lib', 'lib2.so')
         foo.elfs = [elf1, elf2]
         self.assertEqual(len(foo.elfs), 2)
-        self.assertEqual(foo.elfs, [elf1, elf2])
+        self.assertEqual(list(foo.elfs), [elf1, elf2])
         del elf1
         del elf2
         del foo.elfs[1]
