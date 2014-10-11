@@ -117,6 +117,10 @@ class DB(object):
             return lib.db_package_count(self.owner._ptr)
 
         def get(self, off=0, count=None):
+            if isinstance(key, str):
+                if count is not None:
+                    raise ValueError('named access cannot have a count')
+                return self.get_named(off)
             if off < 0: raise IndexError
             maxcount = len(self)
             if off >= maxcount: raise IndexError
@@ -127,11 +131,17 @@ class DB(object):
             got = lib.db_package_get(self.owner._ptr, out, off, count)
             return [Package(x,True) for x in out[0:got]]
 
+        def get_named(self, name):
+            ptr = lib.db_package_find(self.owner._ptr, cstr(name))
+            if ptr is None:
+                raise KeyError('no such package: %s' % (name))
+            return Package(ptr,True)
+
         def __getitem__(self, key):
             if isinstance(key, slice):
                 return self.__getslice__(key.start, key.stop, key.step)
             if isinstance(key, str):
-                return lib.db_package_find(self.owner._ptr, cstr(key))
+                return self.get_named(key)
             return self.get(key, 1)[0]
 
         def __getslice__(self, start=None, stop=None, step=None):
@@ -179,7 +189,7 @@ class DB(object):
             if isinstance(key, slice):
                 return self.__getslice__(key.start, key.stop, key.step)
             if isinstance(key, str):
-                return lib.db_package_find(self.owner._ptr, cstr(key))
+                return self.get_named(key)
             return self.get(key, 1)[0]
 
         def __getslice__(self, start=None, stop=None, step=None):
