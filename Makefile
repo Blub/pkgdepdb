@@ -143,13 +143,17 @@ check:
 	$(MAKE) py-check
 
 c-check: .libs/libpkgdepdb.a
-	$(CXX) -o tests/ca_config tests/ca_config.c .libs/libpkgdepdb.a -lcheck $(LIBS)
+	$(CC) -c -o tests/ca_config.o tests/ca_config.c
+	$(CXX) -o tests/ca_config tests/ca_config.o .libs/libpkgdepdb.a -lcheck $(LDFLAGS) $(LIBS)
 	tests/ca_config
-	$(CXX) -o tests/ca_elf tests/ca_elf.c .libs/libpkgdepdb.a -lcheck $(LIBS)
+	$(CC) -c -o tests/ca_elf.o tests/ca_elf.c
+	$(CXX) -o tests/ca_elf tests/ca_elf.o .libs/libpkgdepdb.a -lcheck $(LDFLAGS) $(LIBS)
 	tests/ca_elf
-	$(CXX) -o tests/ca_package tests/ca_package.c .libs/libpkgdepdb.a -lcheck $(LIBS)
+	$(CC) -c -o tests/ca_package.o tests/ca_package.c
+	$(CXX) -o tests/ca_package tests/ca_package.o .libs/libpkgdepdb.a -lcheck $(LDFLAGS) $(LIBS)
 	tests/ca_package
-	$(CXX) -o tests/ca_db tests/ca_db.c .libs/libpkgdepdb.a -lcheck $(LIBS)
+	$(CC) -c -o tests/ca_db.o tests/ca_db.c
+	$(CXX) -o tests/ca_db tests/ca_db.o .libs/libpkgdepdb.a -lcheck $(LDFLAGS) $(LIBS)
 	tests/ca_db
 
 py-check: .libs/libpkgdepdb.a
