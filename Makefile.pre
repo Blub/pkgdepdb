@@ -21,3 +21,6 @@ GIT_INFO ?=
 LIB_SHARED_SUFFIX := .so
 LIB_STATIC_SUFFIX := .a
 PYTHON := python
+
+INSTALLTARGETS := install-bin install-man
+INSTALLTARGETS_LIB := install-lib

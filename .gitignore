@@ -10,9 +10,16 @@
 .libs
 
 pkgdepdb
+pkgdepdb.1
 config.h
+setup.py
 
 .localflags
 .cflags
 send.sh
 *.gz
+
+tests/ca_db
+tests/ca_elf
+tests/ca_package
+tests/ca_config

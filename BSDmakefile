@@ -28,6 +28,7 @@ LTLD  = $(LIBTOOL) --mode=link $(CXX)
 LTOBJECTS  = $(OBJECTS:.o=.lo)
 LTMAIN_OBJ = $(MAIN_OBJ:.o=.lo)
 LTLIB_OBJ  = $(LIB_OBJ:.o=.lo)
+INSTALLTARGETS+=$(INSTALLTARGETS_LIB)
 .endif
 .endif
 

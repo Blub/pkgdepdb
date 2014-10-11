@@ -72,6 +72,10 @@ config.h: config.h.in Makefile Makefile.pre BSDmakefile GNUmakefile
 	    -e 's/@@ENABLE_REGEX@@/$(ENABLE_REGEX)/g' \
 	    config.h.in > config.h
 
+setup.py: setup.py.in
+	sed -e 's/@@API_VERSION@@/$(API_VERSION)/g' \
+	    setup.py.in > setup.py
+
 .cpp.o:
 	$(LTCXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
@@ -98,6 +102,7 @@ clean:
 	-rm -f *.o *.lo *.la $(BINARY) $(BINARY)-static $(LIBPKGDEPDB_LA)
 	-rm -f .cflags
 	-rm -rf .libs
+	-rm -f setup.py
 
 install: install-bin install-lib install-man
 uninstall: uninstall-bin uninstall-lib uninstall-man
@@ -114,6 +119,9 @@ install-lib: install-prefix
 	install -d -m755 $(DESTDIR)$(LIBDIR)
 	$(LIBTOOL) --mode=install \
 	  install -m755 $(LIBPKGDEPDB_LA) $(DESTDIR)$(LIBDIR)/$(LIBPKGDEPDB_LA)
+	@echo
+	@echo 'To install the python bindings run: make setup.py'
+	@echo 'Then run setup.py as usual. Both python2 and python3 should work.'
 uninstall-lib:
 	rm -f $(DESTDIR)$(INCLUDEDIR)/pkgdepdb.h
 	$(LIBTOOL) --mode=uninstall rm -f $(DESTDIR)$(LIBDIR)/$(LIBPKGDEPDB_LA)
