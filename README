@@ -3,18 +3,14 @@ v0.1.9
 
 Description:
 
-    This tool is helpful to  find  library  dependencies  of  packages
-    without unpacking or installing them to a temporary location.   It
-    reads through the archive file, optionally parses a .PKGINFO  file
-    if one  is  encountered,  and  then  prints  a  list  of  required
-    libraries of each ELF file contained in the library.
+    pkgdepdb is a tool to manage a dependency  database  for  packages
+    and therein contained binaries and libraries.
 
-    Additionally it can manage a dependency database.  In this mode it
-    performs a  virtual  installation  of  a  package's  binaries  and
-    libraries  into  a  database,  in  which  dependency  lists,   and
-    optionally filelists are maintained. The packages and files can be
-    queried with various query types. A general integrity check of the
-    repository can be performed as well.
+    Currently it understands ArchLinux packages  and  their  metadata,
+    and should also be usable for Slackware packages.  When reading an
+    Arch package, unless configured otherwise, the  information  found
+    in the contained .PKGINFO file will be stored as well, and can  be
+    queried.
 
     Read the manpage for more information, including usage examples.
 
@@ -22,19 +18,60 @@ Installation:
 
     Dependencies:
 
-        built time:
+        build time:
             a C++11 compatible compiler
             libarchive
             BSD or GNU compatible `make'
           optionally:
             libalpm (part of pacman, the ArchLinux package manager)
+        check time:
+            libcheck for the C API checks
+            python 2.7 or 3 for the python API checks
         runtime:
             libarchive
             libalpm (non-optional if compiled in)
 
+    Compilation:
+
+        run `make <option list>' to compile the program
+
+        - Common options:
+
+            PREFIX=/usr/local
+            SYSCONFDIR=${PREFIX}/etc
+            BINDIR=${PREFIX}/bin
+            LIBDIR=${PREFIX}/lib
+            INCLUDEDIR=${PREFIX}/include
+            DATADIR=${PREFIX}/share
+            MANDIR=${DATADIR}/man
+            MAN1DIR=${MANDIR}/man1
+
+        - Feature options:
+
+            ALPM=yes          or     ALPM=no
+                Whether pacman's libalpm should be used.
+
+            THREADS=yes       or     THREADS=no
+                Whether threading should be supported for operations
+                where it is applicable. (Like relinking an entire db.)
+
+            REGEX=yes         or     REGEX=no
+                Whether filters usable via the pkgdepdb commandline
+                tool should support their regular expression variants
+                via POSIX extended regular expressions (EREs).
+
+            WITH_LIBRARY=yes  or     WITH_LIBRARY=no
+                Whether to build the library containing the C-API.
+                (Required for the python bindings.)
+
+        - Used environment variables:
+
+          CC, CXX, CPPFLAGS, CXXFLAGS, LDFLAGS, LIBS
+
+        run `make <option list> check` to run the unit tests.
+
     Installation:
 
-        run `make' to compile the program
         run `make install' to install the program and documentation
 
         Don't forget to set a PREFIX and DESTDIR.
@@ -42,8 +79,19 @@ Installation:
         Typical packaging scripts (such as an Arch PKGBUILD)
         will want to use:
 
-            $ make
-            $ make PREFIX=/usr DESTDIR=$pkgdir install
+            $ make SYSCONFDIR=/etc PREFIX=/usr DESTDIR=$pkgdir install
+
+        To install the python bindings first prepare setup.py by
+        running:
+
+            $ make <options> setup.py
+
+        Then run setup.py, you can run it with multiple python
+        versions if you like:
+
+            $ python2 setup.py install --root="$pkgdir/" --optimize=1
+            $ python3 setup.py install --root="$pkgdir/" --optimize=1
+
 
     install-variables:
 
@@ -66,6 +114,22 @@ Installation:
         DATADIR
             Default: $(PREFIX)/share
             Currently nothing ends up here, but MANDIR uses this path.
+
+        LIBDIR
+            Default: $(PREFIX)/lib
+            When using WITH_LIBARRY=yes this will contain the library
+            and libtool files.
+            Files:
+                libpkgdepdb.so
+                libpkgdepdb.a
+                libpkgdepdb.la
+                            ...
+
+        INCLUDEDIR:
+            Default: $(PREFIX)/include
+            The header files for the C API end up there.
+            Files:
+                pkgdepdb.h
 
         MANDIR
             Default: $(DATADIR)/man
