@@ -302,7 +302,7 @@ pkgdepdb_bool pkgdepdb_pkg_filelist_set_i(pkgdepdb_pkg *pkg_, size_t index,
   return pkgdepdb_strlist_set_i(pkg->filelist_, index, v);
 }
 
-void pkgdepdb_pkg_guess_version(pkgdepdb_pkg *pkg_, const char *filename) {
+void pkgdepdb_pkg_guess(pkgdepdb_pkg *pkg_, const char *filename) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   pkg->Guess(filename);
 }

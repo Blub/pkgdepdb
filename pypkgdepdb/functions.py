@@ -140,7 +140,7 @@ pkgdepdb_functions = [
     ('pkg_elf_del_e',              c_size_t, [p_pkg, p_elf]),
     ('pkg_elf_del_i',              c_size_t, [p_pkg, c_size_t]),
     ('pkg_elf_set_i',              c_size_t, [p_pkg, c_size_t, p_elf]),
-    ('pkg_guess_version',          None,     [p_pkg, c_char_p]),
+    ('pkg_guess',                  None,     [p_pkg, c_char_p]),
     ('pkg_conflict',               c_int,    [p_pkg, p_pkg]),
     ('pkg_replaces',               c_int,    [p_pkg, p_pkg]),
     ('elf_new',                    p_elf,    []),

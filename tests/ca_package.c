@@ -138,8 +138,8 @@ START_TEST (test_ca_package)
   ck_assert_str_eq(deps[0], "1");
 
   /* second package for conflict test */
-  pkgdepdb_pkg_set_name     (oldfoo, "foo");
-  pkgdepdb_pkg_guess_version(oldfoo, "foo-0.9-1-x86_64.pkg.tar.xz");
+  pkgdepdb_pkg_set_name(oldfoo, "foo");
+  pkgdepdb_pkg_guess   (oldfoo, "foo-0.9-1-x86_64.pkg.tar.xz");
 
   ck_assert_str_eq(pkgdepdb_pkg_name(oldfoo),    "foo");
   ck_assert_str_eq(pkgdepdb_pkg_version(oldfoo), "0.9-1");
@@ -218,9 +218,10 @@ START_TEST (test_ca_pkginfo)
   pkgdepdb_pkg_read_info(pkg, pkginfo, sizeof(pkginfo)-1, cfg);
   pkgdepdb_cfg_delete(cfg);
 
-  ck_assert_str_eq(pkgdepdb_pkg_name(pkg),    "libfoo");
-  ck_assert_str_eq(pkgdepdb_pkg_version(pkg), "1.0-1");
-  ck_assert_str_eq(pkgdepdb_pkg_pkgbase(pkg), "foobase");
+  ck_assert_str_eq(pkgdepdb_pkg_name(pkg),        "libfoo");
+  ck_assert_str_eq(pkgdepdb_pkg_version(pkg),     "1.0-1");
+  ck_assert_str_eq(pkgdepdb_pkg_pkgbase(pkg),     "foobase");
+  ck_assert_str_eq(pkgdepdb_pkg_description(pkg), "test package");
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_DEPENDS),      2);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_OPTDEPENDS),   1);
   ck_assert_int_eq(pkgdepdb_pkg_dep_count(pkg, PKGDEPDB_PKG_MAKEDEPENDS),  1);

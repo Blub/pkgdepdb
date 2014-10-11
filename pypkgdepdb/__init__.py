@@ -486,15 +486,15 @@ class Package(object):
                              cfg._ptr) != 1:
             raise PKGDepDBException('error parsing PKGINFO')
 
-    def guess_version(self, filename):
-        lib.pkg_guess_version(self._ptr, cstr(filename))
+    def guess(self, filename):
+        lib.pkg_guess(self._ptr, cstr(filename))
 
-    def conflicts(self, other):
+    def conflicts_with(self, other):
         if type(other) != Package:
             raise TypeError('other must be a package')
-        return True if lib.pkg_conflict(self._ptr, other._ptr) else False
+        return lib.pkg_conflict(self._ptr, other._ptr) != 0
 
-    def replaces(self, other):
+    def replaces_package(self, other):
         if type(other) != Package:
             raise TypeError('other must be a package')
         return True if lib.pkg_replaces(self._ptr, other._ptr) else False

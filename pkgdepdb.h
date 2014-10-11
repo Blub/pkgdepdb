@@ -232,7 +232,7 @@ size_t        pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg*, size_t);
 int           pkgdepdb_pkg_elf_set_i(pkgdepdb_pkg*, size_t, pkgdepdb_elf);
 
 /* some exposed utility functions */
-void          pkgdepdb_pkg_guess_version(pkgdepdb_pkg*, const char *filename);
+void          pkgdepdb_pkg_guess(pkgdepdb_pkg*, const char *filename);
 
 pkgdepdb_bool pkgdepdb_pkg_conflict(pkgdepdb_pkg*, pkgdepdb_pkg*);
 pkgdepdb_bool pkgdepdb_pkg_replaces(pkgdepdb_pkg*, pkgdepdb_pkg*);
