@@ -103,6 +103,11 @@ class Config(object):
     package_info       = BoolProperty(lib.cfg_package_info,
                                       lib.cfg_set_package_info)
 
+#    def __eq__(self, other):
+#        return self._ptr == other._ptr
+#    def __ne__(self, other):
+#        return self._ptr != other._ptr
+
 class DB(object):
     class PackageList(object):
         def __init__(self, owner):
@@ -290,6 +295,11 @@ class DB(object):
         else:
             raise TypeError('object must be a Package or Elf instance')
         return True if v == 1 else False
+
+#    def __eq__(self, other):
+#        return self._ptr == other._ptr
+#    def __ne__(self, other):
+#        return self._ptr != other._ptr
 
 class Package(object):
     class ElfList(object):
@@ -497,7 +507,12 @@ class Package(object):
     def replaces_package(self, other):
         if type(other) != Package:
             raise TypeError('other must be a package')
-        return True if lib.pkg_replaces(self._ptr, other._ptr) else False
+        return lib.pkg_replaces(self._ptr, other._ptr) != 0
+
+#    def __eq__(self, other):
+#        return self._ptr == other._ptr
+#    def __ne__(self, other):
+#        return self._ptr != other._ptr
 
 class Elf(object):
     class FoundList(object):
@@ -625,6 +640,11 @@ class Elf(object):
 
     def can_use(self, other, strict=True):
         return lib.elf_can_use(self._ptr, other._ptr, 1 if strict else 0)
+
+#    def __eq__(self, other):
+#        return self._ptr[0] == other._ptr[0]
+#    def __ne__(self, other):
+#        return self._ptr[0] != other._ptr[0]
 
 __all__ = [
             'PKGDepDBException',
