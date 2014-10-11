@@ -5,15 +5,46 @@
 extern "C" {
 #endif
 
+/*********
+ * common types
+ */
+
 typedef int pkgdepdb_bool;
 
-/* ELF objects are reference counted pointers */
+/**
+ * ELF objects are reference counted, so they have to be un-referenced after
+ * use.
+ */
 typedef struct pkgdepdb_elf_* pkgdepdb_elf;
+
+/**
+ * Packages are owned. When they're inside a database, you must not destroy
+ * the package. When taking it out of a database, it's your responsibility to
+ * destroy it.
+ * Installing the same object to multiple databases is not supported.
+ */
 typedef struct pkgdepdb_pkg_  pkgdepdb_pkg;
+
+/**
+ * Database. Packages and object lists are proxy objects, they cannot be
+ * modified. Instead packages are installed or uninstalled, and objects are
+ * part of packages.
+ */
 typedef struct pkgdepdb_db_   pkgdepdb_db;
+
+/**
+ * Configuration interface, used to control verbosity and threading behavior
+ * of some functionality.
+ */
 typedef struct pkgdepdb_cfg_  pkgdepdb_cfg;
 
-/* core library interface */
+/*********
+ * Main interface.
+ * Calling init several times is supported but will clear out any previously
+ * generated error messages.
+ * Finalize should be called once at the end only.
+ */
+
 void          pkgdepdb_init(void);
 const char*   pkgdepdb_error(void);
 void          pkgdepdb_set_error(const char*, ...);
@@ -23,53 +54,101 @@ void          pkgdepdb_finalize(void);
 /*********
  * pkgdepdb::Config interface
  */
+/** Create a new configuration instance. */
 pkgdepdb_cfg*    pkgdepdb_cfg_new   (void);
-void             pkgdepdb_cfg_delete(pkgdepdb_cfg*);
 
-pkgdepdb_bool    pkgdepdb_cfg_load        (pkgdepdb_cfg*, const char *file);
-pkgdepdb_bool    pkgdepdb_cfg_load_default(pkgdepdb_cfg*);
-pkgdepdb_bool    pkgdepdb_cfg_read        (pkgdepdb_cfg*, const char *name,
+/** Delete a configuration instance.
+ * \param s configuration instance to delete.
+ */
+void             pkgdepdb_cfg_delete(pkgdepdb_cfg *s);
+
+/** Load a configuration file into the current instance.
+ * \param s configuration instance.
+ * \param file path to a configuration file to parse.
+ * \returns true on success.
+ */
+pkgdepdb_bool    pkgdepdb_cfg_load        (pkgdepdb_cfg *s, const char *file);
+
+/** Load the default configuration file from standard configuration paths.
+ * \param s configuration instance.
+ * \returns true on success.
+ */
+pkgdepdb_bool    pkgdepdb_cfg_load_default(pkgdepdb_cfg *s);
+
+/** Parse a configuration text string.
+ * \param s configuration instance.
+ * \param name the name to use in error messages.
+ * \param data the configuration text data.
+ * \param length length of the data to parse.
+ * \returns true on success.
+ */
+pkgdepdb_bool    pkgdepdb_cfg_read        (pkgdepdb_cfg *s, const char *name,
                                            const char *data, size_t length);
 
+/** The configuration's database string. Used by tools to load a default db. */
 const char*      pkgdepdb_cfg_database     (pkgdepdb_cfg*);
+/** Set the configuration's database string. */
 void             pkgdepdb_cfg_set_database (pkgdepdb_cfg*, const char*);
 
+/** Get the verbosity. */
 unsigned int     pkgdepdb_cfg_verbosity    (pkgdepdb_cfg*);
+/** Set the verbosity. */
 void             pkgdepdb_cfg_set_verbosity(pkgdepdb_cfg*, unsigned int);
 
-/* some boolean properties */
+/** Get the 'quiet' setting. */
 pkgdepdb_bool    pkgdepdb_cfg_quiet                 (pkgdepdb_cfg*);
+/** Set the 'quiet' setting. */
 void             pkgdepdb_cfg_set_quiet             (pkgdepdb_cfg*,
                                                      pkgdepdb_bool);
+/**
+ * The package_depends setting controls whether dependency information is
+ * supposed to be stored in the database.
+ */
 pkgdepdb_bool    pkgdepdb_cfg_package_depends       (pkgdepdb_cfg*);
+/** Change whether dependency information will be stored in the database.
+ * \sa pkgdepdb_cfg_package_depends()
+ */
 void             pkgdepdb_cfg_set_package_depends   (pkgdepdb_cfg*,
                                                      pkgdepdb_bool);
+/** Check whether a pacakge's list of files will be stored. */
 pkgdepdb_bool    pkgdepdb_cfg_package_file_lists    (pkgdepdb_cfg*);
+/** Controls whether a package's list of files should be stored. */
 void             pkgdepdb_cfg_set_package_file_lists(pkgdepdb_cfg*,
                                                      pkgdepdb_bool);
+/** Check whether unrecognized PKGINFO strings are stored in the info array. */
 pkgdepdb_bool    pkgdepdb_cfg_package_info          (pkgdepdb_cfg*);
+/** Whether unrecognized PKGINFO strings are stored in the info array. */
 void             pkgdepdb_cfg_set_package_info      (pkgdepdb_cfg*,
                                                      pkgdepdb_bool);
 
-/* threading */
+/** Check the amount of maximum threads allowed for threaded operations. */
 unsigned int     pkgdepdb_cfg_max_jobs    (pkgdepdb_cfg*);
+/** Set the amount of maximum threads allowed for threaded operations. */
 void             pkgdepdb_cfg_set_max_jobs(pkgdepdb_cfg*, unsigned int);
 
-/* output */
-enum {
-  PKGDEPDB_CFG_LOG_LEVEL_DEBUG,
-  PKGDEPDB_CFG_LOG_LEVEL_MESSAGE,
-  PKGDEPDB_CFG_LOG_LEVEL_PRINT,
-  PKGDEPDB_CFG_LOG_LEVEL_WARN,
-  PKGDEPDB_CFG_LOG_LEVEL_ERROR,
+/**
+ * The log level controls which types of messages to print to the terminal.
+ */
+enum PKGDEPDB_CFG_LOG_LEVEL {
+  PKGDEPDB_CFG_LOG_LEVEL_DEBUG,   /**< pring all messages, even debug info */
+  PKGDEPDB_CFG_LOG_LEVEL_MESSAGE, /**< print all messages but debug info */
+  PKGDEPDB_CFG_LOG_LEVEL_PRINT,   /**< messages warnings and errors */
+  PKGDEPDB_CFG_LOG_LEVEL_WARN,    /**< print warnings */
+  PKGDEPDB_CFG_LOG_LEVEL_ERROR,   /**< pring only errors to the terminal */
 };
+/** check the current log level. \sa PKGDEPDB_CFG_LOG_LEVEL */
 unsigned int     pkgdepdb_cfg_log_level    (pkgdepdb_cfg*);
+/** set the current log level. \sa PKGDEPDB_CFG_LOG_LEVEL  */
 void             pkgdepdb_cfg_set_log_level(pkgdepdb_cfg*, unsigned int);
 
 /* json - this part of the interface should not usually be required... */
+/** used only by the commandline tool */
 #define PKGDEPDB_JSONBITS_QUERY (1<<0)
+/** used only by the commandline tool */
 #define PKGDEPDB_JSONBITS_DB    (1<<1)
+/** used only by the commandline tool */
 unsigned int     pkgdepdb_cfg_json    (pkgdepdb_cfg*);
+/** used only by the commandline tool */
 void             pkgdepdb_cfg_set_json(pkgdepdb_cfg*, unsigned int);
 
 /*********
