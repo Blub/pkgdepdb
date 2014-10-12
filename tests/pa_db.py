@@ -1,4 +1,5 @@
 import unittest
+import os
 import ctypes
 
 import pypkgdepdb
@@ -133,6 +134,8 @@ class TestConfig(unittest.TestCase):
         ck.read('pa_db_test.db.gz')
         self.assertEqual(len(db.packages), len(ck.packages))
         del ck
+
+        os.unlink('pa_db_test.db.gz')
 
 if __name__ == '__main__':
     unittest.main()
