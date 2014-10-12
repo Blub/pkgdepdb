@@ -1,7 +1,9 @@
-2014-10-07 Blub
+2014-10-07..12 Blub
 
-	* libcheck tests
-	* C API version 1 in progress and unit-tested
+	* C API version 1
+	* C API unit tests with libcheck
+	* python bindings via ctypes
+	* python binding testsuite
 
 2014-10-06 Blub
 
