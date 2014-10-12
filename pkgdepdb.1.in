@@ -15,15 +15,17 @@
 .Op Cm options
 .Ar package_names...
 .Sh DESCRIPTION
-This tool is helpful to find library dependencies of packages without
-unpacking or installing them to a temporary location. It reads through
-the archive file, optionally parses a .PKGINFO file if one is
-encountered, and then prints a list of required libraries of each ELF
-file contained in the library.
+Commandline interface for managing and querying a package database.
+It manages a database of library dependencies of packages without requiring to
+unpack or install them to a temporary location. Packages are virtually
+installed into the database instead, which means it will extract information
+about ELF files inside an archive, and, if present, read the contained
+.Pa .PKGINFO
+file.
 .Pp
-Additionally it can manage a dependency database. In this mode it
-performs a virtual installation of a package's binaries and libraries
-into a database, in which only the dependency lists is maintained.
+Instead of working on a database it can optionally also just print out
+ELF information from an archive, which is similar to extracting and running
+readelf on the files.
 .Sh OPTIONS
 .Bl -tag -width Ds
 .It Fl h , Fl -help
