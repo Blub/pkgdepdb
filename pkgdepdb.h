@@ -238,13 +238,13 @@ pkgdepdb_bool pkgdepdb_db_library_path_del_i   (pkgdepdb_db*, size_t);
  * \param count the number of entries to remove.
  * \returns number of entries removed.
  */
-size_t        pkgdepdb_db_library_path_del_r   (pkgdepdb_db *db,
-                                                size_t first, size_t, count);
+size_t        pkgdepdb_db_library_path_del_r(pkgdepdb_db *db,
+                                             size_t first, size_t count);
 /** Change a library path entry by index.
  * \returns true on success, false if the index was out of bounds.
  */
-pkgdepdb_bool pkgdepdb_db_library_path_set_i   (pkgdepdb_db*, size_t,
-                                                const char*);
+pkgdepdb_bool pkgdepdb_db_library_path_set_i(pkgdepdb_db*, size_t,
+                                             const char*);
 
 /* the package delete functions "uninstall" the package from the db */
 /** Retrieve the number of packages installed in the database. */
@@ -382,97 +382,301 @@ pkgdepdb_bool pkgdepdb_db_wipe_filelists(pkgdepdb_db*);
  * pkgdepdb::Package interface
  */
 
+/** Create a new empty package instance. */
 pkgdepdb_pkg* pkgdepdb_pkg_new   (void);
+/** Load a package archive from disk. The passed configuration instance
+ * controls what parts to read from a .PKGINFO file within the archive. */
 pkgdepdb_pkg* pkgdepdb_pkg_load  (const char *filename, pkgdepdb_cfg*);
+/** Delete a package instance. This must not be used if the package is owned
+ * by a database. */
 void          pkgdepdb_pkg_delete(pkgdepdb_pkg*);
 
+/** Retrieve the package name.
+ * The pointer is valid until the next write operation and must not be freed.
+ */
 const char*   pkgdepdb_pkg_name       (pkgdepdb_pkg*);
+/** Retrieve the package version.
+ * The pointer is valid until the next write operation and must not be freed.
+ */
 const char*   pkgdepdb_pkg_version    (pkgdepdb_pkg*);
+/** Get the package's `pkgbase` attribute used in the Arch Build System.
+ * The pointer is valid until the next write operation and must not be freed.
+ */
 const char*   pkgdepdb_pkg_pkgbase    (pkgdepdb_pkg*);
+/** Retrieve the package's description.
+ * The pointer is valid until the next write operation and must not be freed.
+ */
 const char*   pkgdepdb_pkg_description(pkgdepdb_pkg*);
+/** Set the package's name. */
 void          pkgdepdb_pkg_set_name       (pkgdepdb_pkg*, const char*);
+/** Set the package's version. */
 void          pkgdepdb_pkg_set_version    (pkgdepdb_pkg*, const char*);
+/** Set the package's pkgbase attribute. */
 void          pkgdepdb_pkg_set_pkgbase    (pkgdepdb_pkg*, const char*);
+/** Set the package's description. */
 void          pkgdepdb_pkg_set_description(pkgdepdb_pkg*, const char*);
 
-pkgdepdb_bool pkgdepdb_pkg_read_info(pkgdepdb_pkg*, const char*, size_t,
-                                     pkgdepdb_cfg*);
+/** Parse and load information from a a .PKGINFO file.
+ * \param pkg the package to load the information into.
+ * \param data the .PKGINFO contents.
+ * \param length the byte length of data.
+ * \param cfg the configuration instance specifying which information is to be
+ *            stored.
+ */
+pkgdepdb_bool pkgdepdb_pkg_read_info(pkgdepdb_pkg *pkg, const char *data,
+                                     size_t length, pkgdepdb_cfg *cfg);
 
-enum {
-  PKGDEPDB_PKG_DEPENDS,
-  PKGDEPDB_PKG_OPTDEPENDS,
-  PKGDEPDB_PKG_MAKEDEPENDS,
-  PKGDEPDB_PKG_CHECKDEPENDS,
+/** Package dependency type. */
+enum PKGDEPDB_PKG_DEPTYPE {
+  PKGDEPDB_PKG_DEPENDS,      /**< direct dependencies */
+  PKGDEPDB_PKG_OPTDEPENDS,   /**< optional dependencies */
+  PKGDEPDB_PKG_MAKEDEPENDS,  /**< build-time dependencies */
+  PKGDEPDB_PKG_CHECKDEPENDS, /**< dependencies of the package's test suite */
+  /** additional packages and versions this package provides */
   PKGDEPDB_PKG_PROVIDES,
-  PKGDEPDB_PKG_CONFLICTS,
-  PKGDEPDB_PKG_REPLACES,
+  PKGDEPDB_PKG_CONFLICTS,    /**< packages this one conflicts with */
+  PKGDEPDB_PKG_REPLACES,     /**< packages this one replaces */
 };
-size_t        pkgdepdb_pkg_dep_count   (pkgdepdb_pkg*, unsigned int what);
-size_t        pkgdepdb_pkg_dep_get     (pkgdepdb_pkg*, unsigned int what,
-                                        const char**, const char**, size_t,
-                                        size_t);
-pkgdepdb_bool pkgdepdb_pkg_dep_contains(pkgdepdb_pkg*, unsigned int what,
-                                        const char*);
-size_t        pkgdepdb_pkg_dep_add     (pkgdepdb_pkg*, unsigned int what,
-                                        const char*, const char*);
-size_t        pkgdepdb_pkg_dep_del_name(pkgdepdb_pkg*, unsigned int what,
-                                        const char*);
-size_t        pkgdepdb_pkg_dep_del_full(pkgdepdb_pkg*, unsigned int what,
-                                        const char*, const char*);
-size_t        pkgdepdb_pkg_dep_del_i   (pkgdepdb_pkg*, unsigned int what,
-                                        size_t);
-size_t        pkgdepdb_pkg_dep_del_r   (pkgdepdb_pkg*, unsigned int what,
-                                        size_t, size_t);
+/** Get the number of dependencies of a specified type.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \returns the number of dependencies of the specified type.
+ */
+size_t        pkgdepdb_pkg_dep_count(pkgdepdb_pkg *pkg, unsigned int deptype);
+/** Fetch dependency information from a package.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param names array filled with package names of dependencies.
+ * \param constraints array to be filled with version constraints.
+ * \param index index of the first dependency to retrieve.
+ * \param count number of dependency tuples to retrieve.
+ * \returns the number of entry tuples extracted.
+ */
+size_t        pkgdepdb_pkg_dep_get(pkgdepdb_pkg *pkg, unsigned int deptype,
+                                   const char **names,
+                                   const char **constraints,
+                                   size_t index, size_t count);
+/** Check whether a package depends on another package by name.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param name the package name without any version constraints.
+ * \returns true if such a dependency entry exists.
+ */
+pkgdepdb_bool pkgdepdb_pkg_dep_contains(pkgdepdb_pkg *pkg,
+                                        unsigned int deptype,
+                                        const char *name);
+/** Add a dependency entry to a package.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param name the package name without any version constraints.
+ * \param constraint an optional version constraint. Can be an empty string, or
+ *                   NULL which is treated like an empty string.
+ * \returns true on success, false if an invalid dependency type was specified.
+ */
+pkgdepdb_bool pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg, unsigned int deptype,
+                                   const char *name, const char *constraint);
+/** Delete a dependency entry from a package.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param name the package name without any version constraints.
+ * \returns 1 if an entry was successfully deleted, 0 otherwise.
+ */
+size_t        pkgdepdb_pkg_dep_del_name(pkgdepdb_pkg *pkg, unsigned int deptype,
+                                        const char *name);
+/** Delete an exactly matching dependency entry from a package.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param name the package name without any version constraints.
+ * \param constraint the version constraint.
+ * \returns 1 if an entry was successfully deleted, 0 otherwise.
+ */
+size_t        pkgdepdb_pkg_dep_del_full(pkgdepdb_pkg *pkg, unsigned int deptype,
+                                        const char *name,
+                                        const char *constraint);
+/** Delete a dependency entry by index.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param index the entry index.
+ * \returns 1 if an entry was successfully deleted, 0 otherwise.
+ */
+size_t        pkgdepdb_pkg_dep_del_i(pkgdepdb_pkg *pkg, unsigned int deptype,
+                                     size_t index);
+/** Delete a range of dependency entries.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param index the index of the first entry to delete.
+ * \param count the number of entries to remove.
+ * \returns the number of removed entries.
+ */
+size_t        pkgdepdb_pkg_dep_del_r(pkgdepdb_pkg *pkg, unsigned int deptype,
+                                     size_t index, size_t count);
 
+/** Retrieve the number of groups a package is part of. */
 size_t        pkgdepdb_pkg_groups_count   (pkgdepdb_pkg*);
+/** Fetch a package's group entries. Parameters work exactly like the ones of
+ * pkgdepdb_db_library_path_get(). */
 size_t        pkgdepdb_pkg_groups_get     (pkgdepdb_pkg*, const char**, size_t,
                                            size_t);
+/** Check whether a package is part of a group. Parameters work exactly like
+ * the ones of pkgdepdb_db_library_path_contains(). */
 pkgdepdb_bool pkgdepdb_pkg_groups_contains(pkgdepdb_pkg*, const char*);
+/** Add a group entry to a package.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_add().*/
 size_t        pkgdepdb_pkg_groups_add     (pkgdepdb_pkg*, const char*);
+/** Delete a group entry from a package by name.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_s().*/
 size_t        pkgdepdb_pkg_groups_del_s   (pkgdepdb_pkg*, const char*);
+/** Delete a group entry from a package by index.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_i().*/
 size_t        pkgdepdb_pkg_groups_del_i   (pkgdepdb_pkg*, size_t);
+/** Delete a range of group entries from a package.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_r().*/
 size_t        pkgdepdb_pkg_groups_del_r   (pkgdepdb_pkg*, size_t, size_t);
 
+/** Retrieve the number of files stored in a package. */
 size_t        pkgdepdb_pkg_filelist_count   (pkgdepdb_pkg*);
+/** Fetch a package's file list entries.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_get(). */
 size_t        pkgdepdb_pkg_filelist_get     (pkgdepdb_pkg*,
                                              const char**, size_t, size_t);
+/** Check whether a package contains a certain file.
+ * Parameters work exactly like the ones of
+ * pkgdepdb_db_library_path_contains(). */
 pkgdepdb_bool pkgdepdb_pkg_filelist_contains(pkgdepdb_pkg*, const char*);
+/** Add a file to a package's filelist.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_add(). */
 size_t        pkgdepdb_pkg_filelist_add     (pkgdepdb_pkg*, const char*);
+/** Delete a file from a package's file list by path.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_s().*/
 size_t        pkgdepdb_pkg_filelist_del_s   (pkgdepdb_pkg*, const char*);
+/** Delete a file from a package's file list by index.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_i().*/
 size_t        pkgdepdb_pkg_filelist_del_i   (pkgdepdb_pkg*, size_t);
+/** Delete a range of entries from a package's filelist.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_r().*/
 size_t        pkgdepdb_pkg_filelist_del_r   (pkgdepdb_pkg*, size_t, size_t);
+/** Replace an entry in a package's file list by index. */
 pkgdepdb_bool pkgdepdb_pkg_filelist_set_i   (pkgdepdb_pkg*, size_t,
                                              const char*);
 
+/** Get the number of keys available in the info map of a package. */
 size_t        pkgdepdb_pkg_info_count_keys  (pkgdepdb_pkg*);
+/** Retrieve available keys of a package's info map.
+ * A package's info-map maps string-keys to a string list of entries.
+ * Most keys usually have 1 entry, for instance packages usually have a single
+ * "url" info entry.
+ * The parameters work exactly like any other string list accessor function,
+ * \sa pkgdepdb_db_library_path_get().
+ */
 size_t        pkgdepdb_pkg_info_get_keys    (pkgdepdb_pkg*, const char**,
                                              size_t, size_t);
+/** Check whether a package's info map contains a certain key. */
 pkgdepdb_bool pkgdepdb_pkg_info_contains_key(pkgdepdb_pkg*, const char*);
+/** Retrieve the number of entries for a certain key in the package's info map.
+ */
 size_t        pkgdepdb_pkg_info_count_values(pkgdepdb_pkg*, const char *key);
+/** Fetch values from the infor map using a key. Otherwise works like the other
+ * string list accessor functions, like pkgdepdb_db_library_path_get().
+ * If the key does not exist it simply returns zero.
+ * \returns the number of values extracted, or zero if there are none or the
+ *          key does not exist.
+ */
 size_t        pkgdepdb_pkg_info_get_values  (pkgdepdb_pkg*, const char *key,
                                              const char**, size_t, size_t);
-size_t        pkgdepdb_pkg_info_add  (pkgdepdb_pkg*, const char*, const char*);
-size_t        pkgdepdb_pkg_info_del_s(pkgdepdb_pkg*, const char*, const char*);
-size_t        pkgdepdb_pkg_info_del_i(pkgdepdb_pkg*, const char*, size_t);
-size_t        pkgdepdb_pkg_info_del_r(pkgdepdb_pkg*, const char*, size_t,
-                                      size_t);
-pkgdepdb_bool pkgdepdb_pkg_info_set_i(pkgdepdb_pkg*, const char*, size_t,
-                                      const char*);
+/** Add an entry to the package's info map. If the key does not yet exist, a
+ * new list for that key will be instantiated.
+ * \param pkg the package instance.
+ * \param key the key to add to, if it doesn't exist yet, it will be created.
+ * \param value the value to add to the list.
+ * \returns 1 if the value was added successfully.
+ */
+size_t        pkgdepdb_pkg_info_add(pkgdepdb_pkg *pkg, const char *key,
+                                    const char *value);
+/** Delete an entry from a package's info map by key and value.
+ * If the last value for a key has been removed, the key will be removed as
+ * well.
+ * \param pkg the package instance.
+ * \param key the key to remove from.
+ * \param value the value to add to the list.
+ * \returns 1 if the value was removed successfully.
+ */
+size_t        pkgdepdb_pkg_info_del_s(pkgdepdb_pkg *pkg, const char *key,
+                                      const char *value);
+/** Delete an entry from a package's info map by key and index.
+ * If the last value for a key has been removed, the key will be removed as
+ * well.
+ * \param pkg the package instance.
+ * \param key the key to remove from.
+ * \param index the entry's index.
+ * \returns 1 if the value was removed successfully.
+ */
+size_t        pkgdepdb_pkg_info_del_i(pkgdepdb_pkg *pkg, const char *key,
+                                      size_t index);
+/** Delete a range of entries from a package's info map.
+ * If the last value for a key has been removed, the key will be removed as
+ * well.
+ * \param pkg the package instance.
+ * \param key the key to remove from.
+ * \param index the entry's index.
+ * \param count the number of values to remove.
+ * \returns 1 if the value was removed successfully.
+ */
+size_t        pkgdepdb_pkg_info_del_r(pkgdepdb_pkg *pkg, const char *key,
+                                      size_t index, size_t count);
+/** Replace an entry in the package's info map by key and index.
+ * \param pkg the package instance.
+ * \param key the key to modify.
+ * \param index the entry's index.
+ * \param value the new value for that entry.
+ * \returns true if the modification was successful, false if the key does not
+ *               exist or the index is out of bounds.
+ */
+pkgdepdb_bool pkgdepdb_pkg_info_set_i(pkgdepdb_pkg *pkg, const char *key,
+                                      size_t index, const char *value);
 
+/** Retrieve the number of ELF files stored in the package. */
 size_t        pkgdepdb_pkg_elf_count(pkgdepdb_pkg*);
-size_t        pkgdepdb_pkg_elf_get  (pkgdepdb_pkg*, pkgdepdb_elf*, size_t,
-                                     size_t);
+/** Get references to the contained ELF file objects.
+ * The references must be unreferenced via pkgdepdb_elf_unref().
+ * The target array may contain already valid references, they will be replaced
+ * properly.
+ * \param pkg the package instance.
+ * \param out a list of pkgdepdb_elf variables to fill.
+ * \param index the index to start from.
+ * \param count the number of objects to output.
+ * \returns the number of created references.
+ */
+size_t        pkgdepdb_pkg_elf_get(pkgdepdb_pkg *pkg, pkgdepdb_elf *out,
+                                   size_t index, size_t count);
+/** Add an ELF file to a package. The reference will stay valid and must still
+ * be removed via pkgdepdb_elf_unref().
+ * \returns 1 if the file was added successfully.
+ */
 size_t        pkgdepdb_pkg_elf_add  (pkgdepdb_pkg*, pkgdepdb_elf);
+/** Delete an ELF file object from a package. This does not invalidate any
+ * existing references to the ELF object, as they are reference counted. You
+ * must still call pkgdepdb_elf_unref() on the parameter passed into the
+ * function.
+ */
 size_t        pkgdepdb_pkg_elf_del_e(pkgdepdb_pkg*, pkgdepdb_elf);
+/** Delete an ELF file object from a package by index. */
 size_t        pkgdepdb_pkg_elf_del_i(pkgdepdb_pkg*, size_t);
+/** Delete range of ELF file object from a package. */
 size_t        pkgdepdb_pkg_elf_del_r(pkgdepdb_pkg*, size_t, size_t);
-/* 0: Invalid index, 1: replaced, -1: deleted */
+/** Replace an ELF file object in a package. When passing a NULL reference,
+ * this has the same effect as calling pkgdepdb_pkg_elf_del_i() with the same
+ * index parameter.
+ * \returns 0: Invalid index, 1: replaced, -1: deleted */
 int           pkgdepdb_pkg_elf_set_i(pkgdepdb_pkg*, size_t, pkgdepdb_elf);
 
-/* some exposed utility functions */
+/** Guess name and version for a package based on a package archive file name.
+ * This SHOULD properly recognize ArchLinux and Slackware naming conventions.
+ */
 void          pkgdepdb_pkg_guess(pkgdepdb_pkg*, const char *filename);
 
+/** Check whether two packages conflict according to their conflict entries. */
 pkgdepdb_bool pkgdepdb_pkg_conflict(pkgdepdb_pkg*, pkgdepdb_pkg*);
+/** Check whether a package replaces another via a replacement entry. */
 pkgdepdb_bool pkgdepdb_pkg_replaces(pkgdepdb_pkg*, pkgdepdb_pkg*);
 
 /*********

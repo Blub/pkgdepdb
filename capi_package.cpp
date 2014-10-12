@@ -114,8 +114,8 @@ size_t pkg_dependlist_get(const Package& pkg, DependList Package::*member,
 }
 
 static inline
-int pkg_dependlist_add(Package& pkg, DependList Package::*member,
-                       const char *name, const char *constraint)
+pkgdepdb_bool pkg_dependlist_add(Package& pkg, DependList Package::*member,
+                                 const char *name, const char *constraint)
 {
   (pkg.*member).emplace_back(name, constraint ? constraint : "");
   return 1;
@@ -194,8 +194,8 @@ size_t pkgdepdb_pkg_dep_get(pkgdepdb_pkg *pkg_, unsigned int what,
   return pkg_dependlist_get(*pkg, kDepMember[what], on, oc, off, n);
 }
 
-size_t pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg_, unsigned int what,
-                            const char *name, const char *constraint)
+pkgdepdb_bool pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg_, unsigned int what,
+                                   const char *name, const char *constraint)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   if (what >= kDepMemberCount)
