@@ -22,6 +22,7 @@ Installation:
             a C++11 compatible compiler
             libarchive
             BSD or GNU compatible `make'
+            libtool when using WITH_LIBRARY=yes
           optionally:
             libalpm (part of pacman, the ArchLinux package manager)
         check time:
