@@ -155,79 +155,227 @@ void             pkgdepdb_cfg_set_json(pkgdepdb_cfg*, unsigned int);
  * pkgdepdb::DB interface
  */
 
-pkgdepdb_db  *pkgdepdb_db_new   (pkgdepdb_cfg*);
+/**
+ * Create a fresh empty database instance and link it to the provided
+ * configuration. The configuration instance must remain valid as long as the
+ * database uses it, it can be modified between operations with the changing
+ * taking effect on any future operations performed ont he database instance.
+ * \param cfg configuration instance, must stay valid until the db is deleted.
+ * \returns a new Database instance.
+ */
+pkgdepdb_db  *pkgdepdb_db_new   (pkgdepdb_cfg *cfg);
+/** Delete a database instance. */
 void          pkgdepdb_db_delete(pkgdepdb_db*);
-pkgdepdb_bool pkgdepdb_db_read  (pkgdepdb_db*, const char *filename);
-pkgdepdb_bool pkgdepdb_db_store (pkgdepdb_db*, const char *filename);
+/** Read a database from disk.
+ * \param db the database instance.
+ * \param filename path to the database file to read.
+ * \returns true on success.
+ */
+pkgdepdb_bool pkgdepdb_db_read  (pkgdepdb_db *db, const char *filename);
+/** Store the database to disk.
+ * \param db the database instance.
+ * \param filename path to write the database to.
+ * \returns true on success.
+ */
+pkgdepdb_bool pkgdepdb_db_store (pkgdepdb_db *db, const char *filename);
 
+/** After a database was loaded from disk, this reflects the data-format
+ * version number.
+ */
 unsigned int  pkgdepdb_db_loaded_version(pkgdepdb_db*);
 
+/** Return whether database queries should assume strict link mode.
+ * \sa pkgdepdb_set_strict_linking().
+ */
 pkgdepdb_bool pkgdepdb_db_strict_linking(pkgdepdb_db*);
+/** Set strict-linking mode.
+ * In strict mode, a 'NONE' OSABI value is treated like its own ABI.
+ * If strict mode is disabled, ELF files of any ABI can link against a
+ * 'NONE' abi.
+ */
 void          pkgdepdb_db_set_strict_linking(pkgdepdb_db*, pkgdepdb_bool);
 
+/** Query the database name. \sa pkgdepdb_db_set_name(). */
 const char*   pkgdepdb_db_name(pkgdepdb_db*);
+/** Set the database name. The name has absolutely no effect on any operation
+ * and exists only for convenience.
+ */
 void          pkgdepdb_db_set_name(pkgdepdb_db*, const char*);
 
+/** Return the number of configured library path entries. */
 size_t        pkgdepdb_db_library_path_count   (pkgdepdb_db*);
-size_t        pkgdepdb_db_library_path_get     (pkgdepdb_db*, const char**,
-                                                size_t, size_t);
+/** Retrieve library path entries.
+ * The retrieved character pointers must NOT be freed, they will be valid only
+ * until any write operation is performed on the database.
+ * \param db the database instance.
+ * \param out A list of at least 'count' pointers to C strings which will be
+ *            filled with pointers valid until the next write operation on the
+ *            database occurs, they must NOT be freed manually.
+ * \param offset How many entries to skip ahead. The first string ending up in
+ *               the output array will be entry number 'offset'. Specifying an
+ *               out of bounds number will result in zero entries returned.
+ * \param count Number of entries to retrieve.
+ * \returns the number of entries successfully stored in the output array.
+ */
+size_t        pkgdepdb_db_library_path_get     (pkgdepdb_db *db,
+                                                const char **out,
+                                                size_t offset, size_t count);
+/** Check whether the database's library path contains a certain entry. */
 pkgdepdb_bool pkgdepdb_db_library_path_contains(pkgdepdb_db*, const char*);
+/** Add an entry to the database's library path array. */
 pkgdepdb_bool pkgdepdb_db_library_path_add     (pkgdepdb_db*, const char*);
+/** Delete the first library path exactly matching the provided string. */
 pkgdepdb_bool pkgdepdb_db_library_path_del_s   (pkgdepdb_db*, const char*);
+/** Delete a library path entry by index.
+ * \returns true on success, false if the index was out of bounds.
+ */
 pkgdepdb_bool pkgdepdb_db_library_path_del_i   (pkgdepdb_db*, size_t);
-size_t        pkgdepdb_db_library_path_del_r   (pkgdepdb_db*, size_t, size_t);
+/** Delete a range of library path entries. Out of bounds ranges are handled
+ * correctly, the return value will reflect the actual number of entries
+ * deleted.
+ * \param db the database instance.
+ * \param first the index of the first entry to remove.
+ * \param count the number of entries to remove.
+ * \returns number of entries removed.
+ */
+size_t        pkgdepdb_db_library_path_del_r   (pkgdepdb_db *db,
+                                                size_t first, size_t, count);
+/** Change a library path entry by index.
+ * \returns true on success, false if the index was out of bounds.
+ */
 pkgdepdb_bool pkgdepdb_db_library_path_set_i   (pkgdepdb_db*, size_t,
                                                 const char*);
 
 /* the package delete functions "uninstall" the package from the db */
+/** Retrieve the number of packages installed in the database. */
 size_t        pkgdepdb_db_package_count   (pkgdepdb_db*);
+/** Install a package into the database.
+ * \returns true on success.
+ */
 pkgdepdb_bool pkgdepdb_db_package_install (pkgdepdb_db*, pkgdepdb_pkg*);
+/** Find an installed package by name. */
 pkgdepdb_pkg* pkgdepdb_db_package_find    (pkgdepdb_db*, const char*);
-size_t        pkgdepdb_db_package_get     (pkgdepdb_db*, pkgdepdb_pkg**, size_t,
-                                           size_t);
+/** Retrieve a range of installed packages.
+ * \param db the database instance.
+ * \param out the output array that will be filled.
+ * \param index the start index to copy from.
+ * \param count the number of packages to retrieve.
+ * \returns the number of packages actually stored in the output array.
+ */
+size_t        pkgdepdb_db_package_get     (pkgdepdb_db *db, pkgdepdb_pkg **out,
+                                           size_t index, size_t count);
+/** Delete and destroy package from the database. This calls
+ * pkgdepdb_pkg_delete on the deleted package. All references to the package
+ * are invalidated. */
 pkgdepdb_bool pkgdepdb_db_package_delete_p(pkgdepdb_db*, pkgdepdb_pkg*);
+/** Delete and destroy an installed package by name. All remaining references
+ * to the package are invalidated. */
 pkgdepdb_bool pkgdepdb_db_package_delete_s(pkgdepdb_db*, const char*);
+/** Delete and destroy an installed package by index. All remaining references
+ * to the package are invalidated. */
 pkgdepdb_bool pkgdepdb_db_package_delete_i(pkgdepdb_db*, size_t);
-/* remove a package without destroying it */
+/** Uninstall a package from the database without destroying the package
+ * structure. Only a version taking a package reference is provided because
+ * you have to manually call pkgdepdb_pkg_delete() on it afterwards.
+ */
 pkgdepdb_bool pkgdepdb_db_package_remove(pkgdepdb_db*, pkgdepdb_pkg*);
+
+/** Check whether an installed package has to be considered broken in the
+ * database.
+ * Currently this means that the package contains an ELF file which fails to
+ * find at least one required library with respect to the database's and the
+ * package's library path, as well as the file's rpath and runapth properties.
+ */
 pkgdepdb_bool pkgdepdb_db_package_is_broken(pkgdepdb_db*, pkgdepdb_pkg*);
 
-/* the DB's object list is read-only */
+/** Retrieve the number of ELF files contained within all the packages
+ * installed into the database. These have no particular order. */
 size_t pkgdepdb_db_object_count(pkgdepdb_db*);
-size_t pkgdepdb_db_object_get  (pkgdepdb_db*, pkgdepdb_elf*, size_t, size_t);
+/** Retrieve a range of ELF files from the database. No assumptions about their
+ * order can be made. Any write access to the database may cause the order
+ * to change.
+ * \param db the database instance.
+ * \param out pointer to an array of ELF references, valid existing reference
+ *            objects will be correctly replaced. Meaning the list may contain
+ *            intermixed valid references and NULL pointers, and no more values
+ *            than specified by the return value will be touched.
+ * \param index the index of the first element to retrieve.
+ * \param count the number of elements that fit into the output array.
+ * \returns the number of elements retrieved. You must manually calls
+ *          pkgdepdb_elf_unref() on the retrieved elements.
+ */
+size_t pkgdepdb_db_object_get(pkgdepdb_db *db, pkgdepdb_elf *out,
+                              size_t index, size_t count);
 
+/** Check whether an ELF file which is part of a package inside the specified
+ * database has to be considered broken with respect to the database's
+ * and package's library path, as well as the file's rpath and runpath
+ * settings.
+ */
 pkgdepdb_bool pkgdepdb_db_object_is_broken(pkgdepdb_db*, pkgdepdb_elf);
 
+/** Retrieve the number of ignore-file rules in the database. */
 size_t        pkgdepdb_db_ignored_files_count   (pkgdepdb_db*);
+/** Retrieve ignore-file rules. The parameters work exactly like the ones of
+ * pkgdepdb_db_library_path_get(). */
 size_t        pkgdepdb_db_ignored_files_get     (pkgdepdb_db*, const char**,
                                                  size_t, size_t);
+/** Add a new ignore-file rule to the database. */
 pkgdepdb_bool pkgdepdb_db_ignored_files_add     (pkgdepdb_db*, const char*);
+/** Check whether an entry is listed in the db's ignore file rules. */
 pkgdepdb_bool pkgdepdb_db_ignored_files_contains(pkgdepdb_db*, const char*);
+/** Delete the frist ignore-file entry matching the specified string. */
 pkgdepdb_bool pkgdepdb_db_ignored_files_del_s   (pkgdepdb_db*, const char*);
+/** Delete an ignore-file entry by index. */
 pkgdepdb_bool pkgdepdb_db_ignored_files_del_i   (pkgdepdb_db*, size_t);
+/** Delete a range of ignore-file entries.
+ * \returns the number of entries actually deleted after bounds checking. */
 size_t        pkgdepdb_db_ignored_files_del_r   (pkgdepdb_db*, size_t, size_t);
 
+/** Access the base packages list: \sa pkgdepdb_db_library_path_count(). */
 size_t        pkgdepdb_db_base_packages_count   (pkgdepdb_db*);
+/** Access the base packages list: \sa pkgdepdb_db_library_path_get(). */
 size_t        pkgdepdb_db_base_packages_get     (pkgdepdb_db*, const char**,
                                                  size_t, size_t);
+/** Access the base packages list: \sa pkgdepdb_db_library_path_contains(). */
 pkgdepdb_bool pkgdepdb_db_base_packages_contains(pkgdepdb_db*, const char*);
+/** Access the base packages list: \sa pkgdepdb_db_library_path_add(). */
 size_t        pkgdepdb_db_base_packages_add     (pkgdepdb_db*, const char*);
+/** Access the base packages list: \sa pkgdepdb_db_library_path_del_s(). */
 pkgdepdb_bool pkgdepdb_db_base_packages_del_s   (pkgdepdb_db*, const char*);
+/** Access the base packages list: \sa pkgdepdb_db_library_path_del_i(). */
 pkgdepdb_bool pkgdepdb_db_base_packages_del_i   (pkgdepdb_db*, size_t);
+/** Access the base packages list: \sa pkgdepdb_db_library_path_del_r(). */
 size_t        pkgdepdb_db_base_packages_del_r   (pkgdepdb_db*, size_t, size_t);
 
+/** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_count().*/
 size_t        pkgdepdb_db_assume_found_count   (pkgdepdb_db*);
+/** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_get().*/
 size_t        pkgdepdb_db_assume_found_get     (pkgdepdb_db*, const char**,
                                                  size_t, size_t);
+/** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_add().*/
 pkgdepdb_bool pkgdepdb_db_assume_found_add     (pkgdepdb_db*, const char*);
+/** List of libraries assumed to exist:
+ * \sa pkgdepdb_db_library_path_contains().*/
 pkgdepdb_bool pkgdepdb_db_assume_found_contains(pkgdepdb_db*, const char*);
+/** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_del_s().*/
 pkgdepdb_bool pkgdepdb_db_assume_found_del_s   (pkgdepdb_db*, const char*);
+/** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_del_i().*/
 pkgdepdb_bool pkgdepdb_db_assume_found_del_i   (pkgdepdb_db*, size_t);
+/** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_del_r().*/
 size_t        pkgdepdb_db_assume_found_del_r   (pkgdepdb_db*, size_t, size_t);
 
+/**
+ * Relink all objects contained in the database. Do this whenever you change
+ * database rules such as the global library path.
+ * This operation can use threading if the configuration enables it.
+ */
 void          pkgdepdb_db_relink_all    (pkgdepdb_db*);
 void          pkgdepdb_db_fix_paths     (pkgdepdb_db*);
+/** Convenience function to delete all packages from the database while keeping
+ * all the rules. */
 pkgdepdb_bool pkgdepdb_db_wipe_packages (pkgdepdb_db*);
+/** Convenience function to delete the file lists of all packages in the db. */
 pkgdepdb_bool pkgdepdb_db_wipe_filelists(pkgdepdb_db*);
 
 /*********

@@ -81,7 +81,7 @@ pkgdepdb_bool pkgdepdb_db_library_path_contains(pkgdepdb_db *db_,
 
 pkgdepdb_bool pkgdepdb_db_library_path_del_s(pkgdepdb_db *db_, const char *path) {
   auto db = reinterpret_cast<DB*>(db_);
-  return db->LD_Delete(path);
+  return pkgdepdb_strlist_del_s_one(db->library_path_, path) == 1;
 }
 
 pkgdepdb_bool pkgdepdb_db_library_path_del_i(pkgdepdb_db *db_, size_t index) {
