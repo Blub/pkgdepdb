@@ -683,60 +683,143 @@ pkgdepdb_bool pkgdepdb_pkg_replaces(pkgdepdb_pkg*, pkgdepdb_pkg*);
  * pkgdepdb::Elf interface
  */
 
+/** Create a new ELF file object instance and return a reference to it.
+ * These objects are always reference counted, and you have to destroy
+ * the reference with pkgdepdb_elf_unref() regardless of whether it has been
+ * added to a package.
+ */
 pkgdepdb_elf  pkgdepdb_elf_new  (void);
+/** Destroy an ELF file object reference. If this was the last reference, the
+ * object will be destroyed. */
 void          pkgdepdb_elf_unref(pkgdepdb_elf);
-pkgdepdb_elf  pkgdepdb_elf_load (const char *file, int *err, pkgdepdb_cfg*);
+/** Load information about an ELF file from disk.
+ * \param file the filename.
+ * \param err pointer to an integer that will contain an error status.
+ * \param cfg configuration what information to extract.
+ * \returns a reference to an ELF object, or NULL on an error.
+ */
+pkgdepdb_elf  pkgdepdb_elf_load (const char *file, int *err,
+                                 pkgdepdb_cfg *cfg);
+/** Read information from an in-memory ELF file.
+ * \param data the binary data.
+ * \param size size in bytes of the data.
+ * \param basename the filename without the preceding path.
+ * \param dirname the directory that contains the ELF file.
+ * \param err pointer to an integer that will contain an error status.
+ * \param cfg configuration what information to extract.
+ * \returns an ELF reference, or NULL on error.
+ */
 pkgdepdb_elf  pkgdepdb_elf_read (const char *data, size_t size,
                                  const char *basename, const char *dirname,
-                                 int *err, pkgdepdb_cfg*);
+                                 int *err, pkgdepdb_cfg *cfg);
 
+/** Fetch the elf object's directory path. */
 const char*   pkgdepdb_elf_dirname     (pkgdepdb_elf);
+/** Fetch the elf object's filename without the preceding directory path. */
 const char*   pkgdepdb_elf_basename    (pkgdepdb_elf);
+/** Set the elf object's directory path. */
 void          pkgdepdb_elf_set_dirname (pkgdepdb_elf, const char*);
+/** Set the elf object's file basename without a preceding directory path. */
 void          pkgdepdb_elf_set_basename(pkgdepdb_elf, const char*);
 
+/** Retrieve the ELF class of an elf object. */
 unsigned char pkgdepdb_elf_class(pkgdepdb_elf);
+/** Retrieve the data type of an elf object. */
 unsigned char pkgdepdb_elf_data (pkgdepdb_elf);
+/** Retrieve the os-ABI number of an elf object. */
 unsigned char pkgdepdb_elf_osabi(pkgdepdb_elf);
 /* shouldn't really be set manually but what the heck... */
+/** Change the ELF class of an elf object. */
 void          pkgdepdb_elf_set_class(pkgdepdb_elf, unsigned char);
+/** Change the ELF data type of an elf object. */
 void          pkgdepdb_elf_set_data (pkgdepdb_elf, unsigned char);
+/** Change the OS ABI number of an elf object. */
 void          pkgdepdb_elf_set_osabi(pkgdepdb_elf, unsigned char);
 
 /* convenience interface */
+/** Get a string describing the object's ELF class. */
 const char*   pkgdepdb_elf_class_string(pkgdepdb_elf);
+/** Get a string describing the object's ELF data type. */
 const char*   pkgdepdb_elf_data_string (pkgdepdb_elf);
+/** Get a string describing the object's ELF OS ABI name. */
 const char*   pkgdepdb_elf_osabi_string(pkgdepdb_elf);
 
+/** Get the object's DT_RPATH entry. */
 const char*   pkgdepdb_elf_rpath      (pkgdepdb_elf);
+/** Get the object's DT_RUNPATH entry. */
 const char*   pkgdepdb_elf_runpath    (pkgdepdb_elf);
+/** Get the object's PT_INTERP entry, the interpreter from the auxiliary data.
+ */
 const char*   pkgdepdb_elf_interpreter(pkgdepdb_elf);
 /* also shouldn't be set manually */
+/** Change the object's DT_RPATH entry. */
 void          pkgdepdb_elf_set_rpath      (pkgdepdb_elf, const char*);
+/** Change the object's DT_RUNPATH entry. */
 void          pkgdepdb_elf_set_runpath    (pkgdepdb_elf, const char*);
+/** Change the object's PT_INTERP entry. */
 void          pkgdepdb_elf_set_interpreter(pkgdepdb_elf, const char*);
 
+/** Get the number of DT_NEEDED entries. */
 size_t        pkgdepdb_elf_needed_count(pkgdepdb_elf);
+/** Retrieve DT_NEEDED entries. Parameters work like all the other string list
+ * accessors. \sa pkgdepdb_db_library_path_get(). */
 size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf, const char**, size_t,
                                         size_t);
+/** Check whether the elf's DT_NEEDED list contains a specific entry. */
 pkgdepdb_bool pkgdepdb_elf_needed_contains(pkgdepdb_elf, const char*);
+/** Add an entry to the object's DT_NEEDED list. */
 void          pkgdepdb_elf_needed_add     (pkgdepdb_elf, const char*);
+/** Delete a DT_NEEDED entry by content. */
 size_t        pkgdepdb_elf_needed_del_s   (pkgdepdb_elf, const char*);
+/** Delete a DT_NEEDED entry by index. */
 void          pkgdepdb_elf_needed_del_i   (pkgdepdb_elf, size_t);
+/** Delete a range of DT_NEEDED entries. */
 void          pkgdepdb_elf_needed_del_r   (pkgdepdb_elf, size_t, size_t);
 
+/** Get the number of DT_NEEDED entries the elf object cannot find. This is
+ * only valid if it was linked as part of a package installed in a database.
+ */
 size_t        pkgdepdb_elf_missing_count   (pkgdepdb_elf);
+/** Retrieve a list of missing libraries.
+ * Only valid if it was linked as part of a package installed in a database.
+ * Works like the other string list accessors.
+ * \sa pkgdepdb_db_library_path_get().
+ */
 size_t        pkgdepdb_elf_missing_get     (pkgdepdb_elf, const char**, size_t,
                                             size_t);
+/** Check whether the elf object misses a specific library entry.
+ * Only valid if it was linked as part of a package installed in a database.
+ */
 pkgdepdb_bool pkgdepdb_elf_missing_contains(pkgdepdb_elf, const char*);
 
+/** Get the number of DT_NEEDED entries successfully found inside the database.
+ * Only valid if it was linked as part of a package installed into a database.
+ */
 size_t        pkgdepdb_elf_found_count   (pkgdepdb_elf);
+/** Get the DT_NEEDED entries successfully found inside the database.
+ * Only valid if it was linked as part of a package installed into a database.
+ * Creates references like other ELF getters.
+ * \sa pkgdepdb_db_object_get().
+ */
 size_t        pkgdepdb_elf_found_get     (pkgdepdb_elf, pkgdepdb_elf*, size_t,
                                           size_t);
+/** Find a successfully found DT_NEEDED entry by name.
+ * Only valid if it was linked as part of a package installed into a database.
+ * \returns an ELF references you have to call pkgdepdb_elf_unref() on when
+ *          finished using it, or NULL if no such entry was found.
+ */
 pkgdepdb_elf  pkgdepdb_elf_found_find    (pkgdepdb_elf, const char*);
 
 /* OSABI/class/data compatibility check */
-int           pkgdepdb_elf_can_use(pkgdepdb_elf, pkgdepdb_elf obj, int strict);
+/** Check whether an elf file can use another elf file with respect to their
+ * class, datatype and OSABI.
+ * \param elf the object trying to link to the library.
+ * \param obj the library the object tries to link to.
+ * \param strict whether strict linking should be used.
+ * \return true if the can link successfully.
+ */
+pkgdepdb_bool pkgdepdb_elf_can_use(pkgdepdb_elf elf, pkgdepdb_elf obj,
+                                   pkgdepdb_bool strict);
 
 #ifdef __cplusplus
 } /* "C" */

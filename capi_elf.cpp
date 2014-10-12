@@ -250,7 +250,8 @@ void pkgdepdb_elf_needed_del_r(pkgdepdb_elf elf_, size_t index, size_t count) {
                      elf->needed_.begin() + index + count);
 }
 
-int pkgdepdb_elf_can_use(pkgdepdb_elf subject, pkgdepdb_elf object, int strict)
+pkgdepdb_bool pkgdepdb_elf_can_use(pkgdepdb_elf subject, pkgdepdb_elf object,
+                                   pkgdepdb_bool strict)
 {
   auto elf = *reinterpret_cast<rptr<Elf>*>(subject);
   auto other = *reinterpret_cast<rptr<Elf>*>(object);
