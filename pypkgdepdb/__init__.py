@@ -104,9 +104,9 @@ class Config(object):
                                       lib.cfg_set_package_info)
 
     def __eq__(self, other):
-        return self._ptr == other._ptr
+        return self._ptr[0] == other._ptr[0]
     def __ne__(self, other):
-        return self._ptr != other._ptr
+        return self._ptr[0] != other._ptr[0]
 
 class DB(object):
     class PackageList(object):
@@ -316,9 +316,9 @@ class DB(object):
         return v == 1
 
     def __eq__(self, other):
-        return self._ptr == other._ptr
+        return self._ptr[0] == other._ptr[0]
     def __ne__(self, other):
-        return self._ptr != other._ptr
+        return self._ptr[0] != other._ptr[0]
 
 class Package(object):
     class ElfList(object):
@@ -571,9 +571,9 @@ class Package(object):
         return lib.pkg_replaces(self._ptr, other._ptr) != 0
 
     def __eq__(self, other):
-        return self._ptr == other._ptr
+        return self._ptr[0] == other._ptr[0]
     def __ne__(self, other):
-        return self._ptr != other._ptr
+        return self._ptr[0] != other._ptr[0]
 
 class Elf(object):
     class FoundList(object):
