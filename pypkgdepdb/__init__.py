@@ -117,7 +117,7 @@ class DB(object):
             return lib.db_package_count(self.owner._ptr)
 
         def get(self, off=0, count=None):
-            if isinstance(key, str):
+            if isinstance(off, str):
                 if count is not None:
                     raise ValueError('named access cannot have a count')
                 return self.get_named(off)
