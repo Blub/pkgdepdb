@@ -262,7 +262,7 @@ class DB(object):
         lib.db_delete(self._ptr)
 
     def read(self, path):
-        if lib.db_read(self._ptr, cstr(path)) != 1:
+        if lib.db_load(self._ptr, cstr(path)) != 1:
             raise PKGDepDBException('failed to read database from %s' % (path))
 
     def load(self, path):

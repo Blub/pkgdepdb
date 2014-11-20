@@ -45,7 +45,7 @@ pkgdepdb_functions = [
     ('cfg_set_json',               None,     [p_cfg, c_uint]),
     ('db_new',                     p_db,     [p_cfg]),
     ('db_delete',                  None,     [p_db]),
-    ('db_read',                    c_int,    [p_db, c_char_p]),
+    ('db_load',                    c_int,    [p_db, c_char_p]),
     ('db_store',                   c_int,    [p_db, c_char_p]),
     ('db_loaded_version',          c_uint,   [p_db]),
     ('db_strict_linking',          c_int,    [p_db]),

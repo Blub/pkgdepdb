@@ -21,9 +21,9 @@ void pkgdepdb_db_delete(pkgdepdb_db *db_) {
   delete db;
 }
 
-pkgdepdb_bool pkgdepdb_db_read(pkgdepdb_db *db_, const char *filename) {
+pkgdepdb_bool pkgdepdb_db_load(pkgdepdb_db *db_, const char *filename) {
   auto db = reinterpret_cast<DB*>(db_);
-  return db->Read(filename);
+  return db->Load(filename);
 }
 
 pkgdepdb_bool pkgdepdb_db_store(pkgdepdb_db *db_, const char *filename) {

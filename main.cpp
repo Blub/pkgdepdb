@@ -347,8 +347,10 @@ int main(int argc, char **argv) {
       }
 
       case 'J':
-        if (!Config::ParseJSONBit(optarg, config.json_))
+        if (const char* msg = Config::ParseJSONBit(optarg, config.json_)) {
+          fprintf(stderr, "argument error: %s\n", msg);
           help(1);
+        }
         break;
 
       case 'j':
@@ -447,7 +449,7 @@ int main(int argc, char **argv) {
 
   uniq<DB> db(new DB(config));
   if (has_db) {
-    if (!db->Read(dbfile)) {
+    if (!db->Load(dbfile)) {
       config.Log(Error, "failed to read database\n");
       return 1;
     }

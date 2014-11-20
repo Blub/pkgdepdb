@@ -84,7 +84,7 @@ struct DB {
                       const ObjFilterList       &obj_filters) const;
 
   bool Store(const string& filename);
-  bool Read (const string& filename);
+  bool Load (const string& filename);
   bool Empty() const;
 
   bool LD_Append (const string& dir);

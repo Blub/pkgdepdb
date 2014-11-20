@@ -757,7 +757,7 @@ static bool db_store(DB *db, const string& filename) {
   return out.out_;
 }
 
-static bool db_read(DB *db, const string& filename) {
+static bool db_load(DB *db, const string& filename) {
   bool gzip = ends_with_gz(filename);
   uniq<SerialIn> sin(SerialIn::Open(db, filename, gzip));
 
@@ -886,12 +886,12 @@ bool DB::Store(const string& filename) {
   return db_store(this, filename);
 }
 
-bool DB::Read(const string& filename) {
+bool DB::Load(const string& filename) {
   if (!Empty()) {
     config_.Log(Error, "internal usage error: DB::read on a non-empty db!\n");
     return false;
   }
-  return db_read(this, filename);
+  return db_load(this, filename);
 }
 
 } // ::pkgdepdb

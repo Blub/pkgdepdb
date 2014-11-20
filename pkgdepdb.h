@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+/* BEGIN PKGDEPDB HEADER */
+
 /*********
  * common types
  */
@@ -171,7 +173,7 @@ void          pkgdepdb_db_delete(pkgdepdb_db*);
  * \param filename path to the database file to read.
  * \returns true on success.
  */
-pkgdepdb_bool pkgdepdb_db_read  (pkgdepdb_db *db, const char *filename);
+pkgdepdb_bool pkgdepdb_db_load  (pkgdepdb_db *db, const char *filename);
 /** Store the database to disk.
  * \param db the database instance.
  * \param filename path to write the database to.
@@ -820,6 +822,8 @@ pkgdepdb_elf  pkgdepdb_elf_found_find    (pkgdepdb_elf, const char*);
  */
 pkgdepdb_bool pkgdepdb_elf_can_use(pkgdepdb_elf elf, pkgdepdb_elf obj,
                                    pkgdepdb_bool strict);
+
+/* END PKGDEPDB HEADER */
 
 #ifdef __cplusplus
 } /* "C" */
