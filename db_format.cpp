@@ -18,7 +18,7 @@
 namespace pkgdepdb {
 
 // version
-uint16_t DB::CURRENT = 10;
+uint16_t DB::CURRENT = 12;
 
 // magic header
 static const char
