@@ -560,6 +560,8 @@ bool DB::LD_Insert(const string& dir_, size_t i) {
     return false;
   // exists
   library_path_.erase(old);
+  if (oldidx < i)
+    --i;
   library_path_.insert(library_path_.begin() + i, dir);
   return true;
 }
