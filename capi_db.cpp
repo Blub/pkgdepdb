@@ -72,6 +72,21 @@ pkgdepdb_bool pkgdepdb_db_library_path_add(pkgdepdb_db *db_, const char *path) {
   return db->LD_Append(path);
 }
 
+pkgdepdb_bool pkgdepdb_db_library_path_insert(pkgdepdb_db *db_, size_t index,
+                                              const char *path)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return db->LD_Insert(path, index);
+}
+
+size_t pkgdepdb_db_library_path_insert_r(pkgdepdb_db *db_, size_t index,
+                                         size_t count, const char **paths)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  return pkgdepdb_strlist_insert_unique(*db, &DB::library_path_, index, count,
+                                        paths);
+}
+
 pkgdepdb_bool pkgdepdb_db_library_path_contains(pkgdepdb_db *db_,
                                                 const char *path)
 {
@@ -215,6 +230,16 @@ pkgdepdb_bool pkgdepdb_db_ignored_files_add(pkgdepdb_db *db_, const char *file)
   return db->IgnoreFile_Add(file);
 }
 
+size_t pkgdepdb_db_ignored_files_add_r(pkgdepdb_db *db_, size_t count,
+                                       const char **files)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  size_t cnt = 0;
+  for (size_t i = 0; i != count; ++i)
+    cnt += db->IgnoreFile_Add(files[i]) ? 1 : 0;
+  return cnt;
+}
+
 pkgdepdb_bool pkgdepdb_db_ignored_files_contains(pkgdepdb_db *db_,
                                                  const char *file)
 {
@@ -258,6 +283,16 @@ size_t pkgdepdb_db_base_packages_add(pkgdepdb_db *db_, const char *name) {
   return db->BasePackages_Add(name);
 }
 
+size_t pkgdepdb_db_base_packages_add_r(pkgdepdb_db *db_, size_t count,
+                                       const char **names)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  size_t cnt = 0;
+  for (size_t i = 0; i != count; ++i)
+    cnt += db->BasePackages_Add(names[i]) ? 1 : 0;
+  return cnt;
+}
+
 pkgdepdb_bool pkgdepdb_db_base_packages_contains(pkgdepdb_db *db_,
                                                  const char *name)
 {
@@ -299,6 +334,16 @@ size_t pkgdepdb_db_assume_found_get(pkgdepdb_db *db_, const char **out,
 pkgdepdb_bool pkgdepdb_db_assume_found_add(pkgdepdb_db *db_, const char *lib) {
   auto db = reinterpret_cast<DB*>(db_);
   return db->AssumeFound_Add(lib);
+}
+
+size_t pkgdepdb_db_assume_found_add_r(pkgdepdb_db *db_, size_t count,
+                                      const char **libs)
+{
+  auto db = reinterpret_cast<DB*>(db_);
+  size_t cnt = 0;
+  for (size_t i = 0; i != count; ++i)
+    cnt += db->AssumeFound_Add(libs[i]) ? 1 : 0;
+  return cnt;
 }
 
 pkgdepdb_bool pkgdepdb_db_assume_found_contains(pkgdepdb_db *db_,

@@ -50,6 +50,16 @@ size_t pkgdepdb_strlist_add_unique(T& obj, std::set<std::string> T::*member,
 }
 
 template<class T>
+size_t pkgdepdb_strlist_insert_unique(T& obj,
+                                      std::set<std::string> T::*member,
+                                      size_t count, const char **values)
+{
+  auto& v = obj.*member;
+  v.insert(values, values + count);
+  return 1;
+}
+
+template<class T>
 size_t pkgdepdb_strlist_add_always(T& obj, std::vector<std::string> T::*member,
                                    const char *value)
 {
@@ -61,12 +71,43 @@ template<class T>
 size_t pkgdepdb_strlist_add_unique(T& obj, std::vector<std::string> T::*member,
                                    const char *value)
 {
-  auto beg = (obj.*member).begin();
-  auto end = (obj.*member).end();
+  auto& v = obj.*member;
+  auto beg = v.begin();
+  auto end = v.end();
   if (std::find(beg, end, value) == end)
     return 0;
-  (obj.*member).emplace_back(value);
+  v.emplace_back(value);
   return 1;
+}
+
+template<class T>
+size_t pkgdepdb_strlist_insert_always(T& obj,
+                                      std::vector<std::string> T::*member,
+                                      size_t index, size_t count,
+                                      const char **values)
+{
+  auto& v = obj.*member;
+  v.insert(v.begin() + index, values, values + count);
+  return 1;
+}
+
+template<class T>
+size_t pkgdepdb_strlist_insert_unique(T& obj,
+                                      std::vector<std::string> T::*member,
+                                      size_t index, size_t count,
+                                      const char **values)
+{
+  auto& mem = obj.*member;
+  std::vector<std::string> vec(values, values + count);
+  for (const auto& v : mem) {
+    auto found = std::find(vec.begin(), vec.end(), v);
+    if (found != vec.end())
+      vec.erase(found);
+  }
+  mem.insert(mem.begin() + index,
+             std::make_move_iterator(vec.begin()),
+             std::make_move_iterator(vec.end()));
+  return vec.size();
 }
 
 static inline

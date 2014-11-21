@@ -122,6 +122,26 @@ pkgdepdb_bool pkg_dependlist_add(Package& pkg, DependList Package::*member,
 }
 
 static inline
+pkgdepdb_bool pkg_dependlist_insert(Package& pkg, DependList Package::*member,
+                                    size_t index, size_t count,
+                                    const char **names, const char **constrs)
+{
+  auto& mem = pkg.*member;
+  const auto size = mem.size();
+  mem.resize(size + count);
+  // move the tail
+  const auto tailsize = size - index;
+  for (size_t i = 0; i != tailsize; ++i) {
+    mem[size-1 + count - i] = move(mem[size-1 - i]);
+  }
+  for (size_t i = 0; i != count; ++i) {
+    std::get<0>(mem[index+i]) = names[i];
+    std::get<1>(mem[index+i]) = constrs[i];
+  }
+  return 1;
+}
+
+static inline
 pkgdepdb_bool pkg_dependlist_contains(Package& pkg,
                                       DependList Package::*member,
                                       const char *name)
@@ -203,6 +223,28 @@ pkgdepdb_bool pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg_, unsigned int what,
   return pkg_dependlist_add(*pkg, kDepMember[what], name, constraint);
 }
 
+pkgdepdb_bool pkgdepdb_pkg_dep_insert(pkgdepdb_pkg *pkg_, unsigned int what,
+                                      size_t index,
+                                      const char *name, const char *constr)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  if (what >= kDepMemberCount)
+    return 0;
+  return pkg_dependlist_insert(*pkg, kDepMember[what],
+                               index, 1, &name, &constr);
+}
+
+size_t pkgdepdb_pkg_dep_insert_r(pkgdepdb_pkg *pkg_, unsigned int what,
+                                 size_t index, size_t count,
+                                 const char **names, const char **cnts)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  if (what >= kDepMemberCount)
+    return 0;
+  return pkg_dependlist_insert(*pkg, kDepMember[what],
+                               index, count, names, cnts);
+}
+
 pkgdepdb_bool pkgdepdb_pkg_dep_contains(pkgdepdb_pkg *pkg_, unsigned int what,
                                         const char *name)
 {
@@ -263,6 +305,13 @@ size_t pkgdepdb_pkg_groups_add(pkgdepdb_pkg *pkg_, const char *v) {
   return pkgdepdb_strlist_add_unique(*pkg, &Package::groups_, v);
 }
 
+size_t pkgdepdb_pkg_groups_add_r(pkgdepdb_pkg *pkg_, size_t count,
+                                 const char **v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_insert_unique(*pkg, &Package::groups_, count, v);
+}
+
 pkgdepdb_bool pkgdepdb_pkg_groups_contains(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_contains(pkg->groups_, v);
@@ -299,6 +348,22 @@ size_t pkgdepdb_pkg_filelist_get(pkgdepdb_pkg *pkg_,
 size_t pkgdepdb_pkg_filelist_add(pkgdepdb_pkg *pkg_, const char *v) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   return pkgdepdb_strlist_add_always(*pkg, &Package::filelist_, v);
+}
+
+size_t pkgdepdb_pkg_filelist_insert(pkgdepdb_pkg *pkg_, size_t index,
+                                    const char *v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_insert_always(*pkg, &Package::filelist_, index, 1,
+                                        &v);
+}
+
+size_t pkgdepdb_pkg_filelist_insert_r(pkgdepdb_pkg *pkg_, size_t index,
+                                      size_t count, const char **v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  return pkgdepdb_strlist_insert_always(*pkg, &Package::filelist_, index,
+                                        count, v);
 }
 
 pkgdepdb_bool pkgdepdb_pkg_filelist_contains(pkgdepdb_pkg *pkg_, const char *v)
@@ -352,8 +417,8 @@ size_t pkgdepdb_pkg_elf_count(pkgdepdb_pkg *pkg_) {
   return pkg->objects_.size();
 }
 
-size_t pkgdepdb_pkg_elf_get  (pkgdepdb_pkg *pkg_, pkgdepdb_elf *out,
-                              size_t off, size_t count)
+size_t pkgdepdb_pkg_elf_get(pkgdepdb_pkg *pkg_, pkgdepdb_elf *out,
+                            size_t off, size_t count)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   if (off >= pkg->objects_.size())
@@ -374,12 +439,34 @@ size_t pkgdepdb_pkg_elf_get  (pkgdepdb_pkg *pkg_, pkgdepdb_elf *out,
   return got;
 }
 
-size_t pkgdepdb_pkg_elf_add  (pkgdepdb_pkg *pkg_, pkgdepdb_elf elf_) {
+size_t pkgdepdb_pkg_elf_add(pkgdepdb_pkg *pkg_, pkgdepdb_elf elf_) {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   auto elf = reinterpret_cast<rptr<Elf>*>(elf_);
   if (!elf || !*elf)
     return 0;
   pkg->objects_.push_back(*elf);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_elf_insert(pkgdepdb_pkg *pkg_, size_t index,
+                               pkgdepdb_elf elf_)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto elf = reinterpret_cast<rptr<Elf>*>(elf_);
+  if (!elf || !*elf)
+    return 0;
+  pkg->objects_.insert(pkg->objects_.begin() + index, *elf);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_elf_insert_r(pkgdepdb_pkg *pkg_, size_t index,
+                                 size_t count, pkgdepdb_elf *elf_)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto elf = reinterpret_cast<rptr<Elf>*>(elf_);
+  if (!elf || !*elf)
+    return 0;
+  pkg->objects_.insert(pkg->objects_.begin() + index, elf, elf + count);
   return 1;
 }
 
@@ -483,6 +570,24 @@ size_t pkgdepdb_pkg_info_add(pkgdepdb_pkg *pkg_, const char *k, const char *v)
 {
   auto pkg = reinterpret_cast<Package*>(pkg_);
   pkg->info_[k].emplace_back(v);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_info_insert(pkgdepdb_pkg *pkg_, const char *k,
+                                size_t index, const char *v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto& key = pkg->info_[k];
+  key.insert(key.begin() + index, v);
+  return 1;
+}
+
+size_t pkgdepdb_pkg_info_insert_r(pkgdepdb_pkg *pkg_, const char *k,
+                                  size_t index, size_t count, const char **v)
+{
+  auto pkg = reinterpret_cast<Package*>(pkg_);
+  auto& key = pkg->info_[k];
+  key.insert(key.begin() + index, v, v + count);
   return 1;
 }
 

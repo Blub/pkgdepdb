@@ -226,6 +226,21 @@ size_t        pkgdepdb_db_library_path_get     (pkgdepdb_db *db,
 pkgdepdb_bool pkgdepdb_db_library_path_contains(pkgdepdb_db*, const char*);
 /** Add an entry to the database's library path array. */
 pkgdepdb_bool pkgdepdb_db_library_path_add     (pkgdepdb_db*, const char*);
+/** Insert an entry to the database's library path array at a specified
+ * position
+ */
+pkgdepdb_bool pkgdepdb_db_library_path_insert  (pkgdepdb_db*, size_t,
+                                                const char*);
+/** Insert entries to the database's library path array at a specified
+ * position.
+ * \param db the database instance.
+ * \param index the position to insert at.
+ * \param count the number of elements to insert.
+ * \param data array of at least as many elements as are to be inserted.
+ */
+size_t        pkgdepdb_db_library_path_insert_r(pkgdepdb_db *db, size_t index,
+                                                size_t count,
+                                                const char **data);
 /** Delete the first library path exactly matching the provided string. */
 pkgdepdb_bool pkgdepdb_db_library_path_del_s   (pkgdepdb_db*, const char*);
 /** Delete a library path entry by index.
@@ -324,6 +339,9 @@ size_t        pkgdepdb_db_ignored_files_get     (pkgdepdb_db*, const char**,
                                                  size_t, size_t);
 /** Add a new ignore-file rule to the database. */
 pkgdepdb_bool pkgdepdb_db_ignored_files_add     (pkgdepdb_db*, const char*);
+/** Add a ignore-file rules to the database. */
+size_t        pkgdepdb_db_ignored_files_add_r   (pkgdepdb_db*, size_t count,
+                                                 const char**);
 /** Check whether an entry is listed in the db's ignore file rules. */
 pkgdepdb_bool pkgdepdb_db_ignored_files_contains(pkgdepdb_db*, const char*);
 /** Delete the frist ignore-file entry matching the specified string. */
@@ -343,6 +361,9 @@ size_t        pkgdepdb_db_base_packages_get     (pkgdepdb_db*, const char**,
 pkgdepdb_bool pkgdepdb_db_base_packages_contains(pkgdepdb_db*, const char*);
 /** Access the base packages list: \sa pkgdepdb_db_library_path_add(). */
 size_t        pkgdepdb_db_base_packages_add     (pkgdepdb_db*, const char*);
+/** Access the base packages list: \sa pkgdepdb_db_library_path_add_r(). */
+size_t        pkgdepdb_db_base_packages_add_r   (pkgdepdb_db*, size_t,
+                                                 const char**);
 /** Access the base packages list: \sa pkgdepdb_db_library_path_del_s(). */
 pkgdepdb_bool pkgdepdb_db_base_packages_del_s   (pkgdepdb_db*, const char*);
 /** Access the base packages list: \sa pkgdepdb_db_library_path_del_i(). */
@@ -357,6 +378,9 @@ size_t        pkgdepdb_db_assume_found_get     (pkgdepdb_db*, const char**,
                                                  size_t, size_t);
 /** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_add().*/
 pkgdepdb_bool pkgdepdb_db_assume_found_add     (pkgdepdb_db*, const char*);
+/** List of libraries assumed to exist: \sa pkgdepdb_db_library_path_add_r().*/
+size_t        pkgdepdb_db_assume_found_add_r   (pkgdepdb_db*, size_t,
+                                                const char**);
 /** List of libraries assumed to exist:
  * \sa pkgdepdb_db_library_path_contains().*/
 pkgdepdb_bool pkgdepdb_db_assume_found_contains(pkgdepdb_db*, const char*);
@@ -477,6 +501,34 @@ pkgdepdb_bool pkgdepdb_pkg_dep_contains(pkgdepdb_pkg *pkg,
  */
 pkgdepdb_bool pkgdepdb_pkg_dep_add(pkgdepdb_pkg *pkg, unsigned int deptype,
                                    const char *name, const char *constraint);
+/** Insert a dependency entry to a package.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param index the position to insert to.
+ * \param name the package name without any version constraints.
+ * \param constraint an optional version constraint. Can be an empty string, or
+ *                   NULL which is treated like an empty string.
+ * \returns true on success, false if an invalid dependency type was specified.
+ */
+pkgdepdb_bool pkgdepdb_pkg_dep_insert(pkgdepdb_pkg *pkg, unsigned int deptype,
+                                      size_t index,
+                                      const char *name, const char *constraint);
+/** Insert dependency entries to a package.
+ * \param pkg the package instance.
+ * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
+ * \param index the position to insert to.
+ * \param count the number of elements to insert.
+ * \param names the package name array without any version constraints.
+ * \param constraints an array of optional version constraints.
+ *                    Can be an empty string, or NULL which is treated like an
+ *                    empty string.
+ * \returns true on success, false if an invalid dependency type was specified.
+ */
+size_t        pkgdepdb_pkg_dep_insert_r(pkgdepdb_pkg *pkg,
+                                        unsigned int deptype,
+                                        size_t index, size_t count,
+                                        const char **names,
+                                        const char **constraints);
 /** Delete a dependency entry from a package.
  * \param pkg the package instance.
  * \param deptype type of dependencies, \sa PKGDEPDB_PKG_DEPTYPE.
@@ -525,6 +577,8 @@ pkgdepdb_bool pkgdepdb_pkg_groups_contains(pkgdepdb_pkg*, const char*);
 /** Add a group entry to a package.
  * Parameters work exactly like the ones of pkgdepdb_db_library_path_add().*/
 size_t        pkgdepdb_pkg_groups_add     (pkgdepdb_pkg*, const char*);
+/** Insert group entries to a package.  */
+size_t        pkgdepdb_pkg_groups_add_r   (pkgdepdb_pkg*, size_t, const char**);
 /** Delete a group entry from a package by name.
  * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_s().*/
 size_t        pkgdepdb_pkg_groups_del_s   (pkgdepdb_pkg*, const char*);
@@ -548,6 +602,16 @@ pkgdepdb_bool pkgdepdb_pkg_filelist_contains(pkgdepdb_pkg*, const char*);
 /** Add a file to a package's filelist.
  * Parameters work exactly like the ones of pkgdepdb_db_library_path_add(). */
 size_t        pkgdepdb_pkg_filelist_add     (pkgdepdb_pkg*, const char*);
+/** Insert a file to a package's filelist.
+ * Parameters work exactly like the ones of pkgdepdb_db_library_path_insert().
+ */
+size_t        pkgdepdb_pkg_filelist_insert  (pkgdepdb_pkg*, size_t,
+                                             const char*);
+/** Insert files to a package's filelist.
+ * Parameters work exactly like the ones of
+ * pkgdepdb_db_library_path_insert_r(). */
+size_t        pkgdepdb_pkg_filelist_insert_r(pkgdepdb_pkg*, size_t, size_t,
+                                             const char**);
 /** Delete a file from a package's file list by path.
  * Parameters work exactly like the ones of pkgdepdb_db_library_path_del_s().*/
 size_t        pkgdepdb_pkg_filelist_del_s   (pkgdepdb_pkg*, const char*);
@@ -594,6 +658,28 @@ size_t        pkgdepdb_pkg_info_get_values  (pkgdepdb_pkg*, const char *key,
  */
 size_t        pkgdepdb_pkg_info_add(pkgdepdb_pkg *pkg, const char *key,
                                     const char *value);
+/** Insert an entry to the package's info map. If the key does not yet exist, a
+ * new list for that key will be instantiated.
+ * \param pkg the package instance.
+ * \param key the key to add to, if it doesn't exist yet, it will be created.
+ * \param index the position to insert at.
+ * \param value the value to add to the list.
+ * \returns 1 if the value was added successfully.
+ */
+size_t        pkgdepdb_pkg_info_insert(pkgdepdb_pkg *pkg, const char *key,
+                                       size_t index, const char *value);
+/** Insert entries into the package's info map. If the key does not yet exist,
+ * a new list for that key will be instantiated.
+ * \param pkg the package instance.
+ * \param key the key to insert elements to.
+ * \param index the position to insert at.
+ * \param count the number of elements to insert.
+ * \param values an array of values to insert.
+ * \returns 1 if the value was added successfully.
+ */
+size_t        pkgdepdb_pkg_info_insert_r(pkgdepdb_pkg *pkg, const char *key,
+                                         size_t index, size_t count,
+                                         const char **values);
 /** Delete an entry from a package's info map by key and value.
  * If the last value for a key has been removed, the key will be removed as
  * well.
@@ -655,6 +741,17 @@ size_t        pkgdepdb_pkg_elf_get(pkgdepdb_pkg *pkg, pkgdepdb_elf *out,
  * \returns 1 if the file was added successfully.
  */
 size_t        pkgdepdb_pkg_elf_add  (pkgdepdb_pkg*, pkgdepdb_elf);
+/** Insert an ELF file to a package. The reference will stay valid and must
+ * still be removed via pkgdepdb_elf_unref().
+ * \returns 1 if the file was added successfully.
+ */
+size_t        pkgdepdb_pkg_elf_insert(pkgdepdb_pkg*, size_t, pkgdepdb_elf);
+/** Insert ELF files to a package. The reference will stay valid and must
+ * still be removed via pkgdepdb_elf_unref().
+ * \returns 1 if the file was added successfully.
+ */
+size_t        pkgdepdb_pkg_elf_insert_r(pkgdepdb_pkg*, size_t, size_t,
+                                        pkgdepdb_elf*);
 /** Delete an ELF file object from a package. This does not invalidate any
  * existing references to the ELF object, as they are reference counted. You
  * must still call pkgdepdb_elf_unref() on the parameter passed into the
@@ -771,6 +868,11 @@ size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf, const char**, size_t,
 pkgdepdb_bool pkgdepdb_elf_needed_contains(pkgdepdb_elf, const char*);
 /** Add an entry to the object's DT_NEEDED list. */
 void          pkgdepdb_elf_needed_add     (pkgdepdb_elf, const char*);
+/** Insert an entry to the object's DT_NEEDED list. */
+void          pkgdepdb_elf_needed_insert  (pkgdepdb_elf, size_t, const char*);
+/** Insert entries to the object's DT_NEEDED list. */
+void          pkgdepdb_elf_needed_insert_r(pkgdepdb_elf, size_t, size_t,
+                                           const char**);
 /** Delete a DT_NEEDED entry by content. */
 size_t        pkgdepdb_elf_needed_del_s   (pkgdepdb_elf, const char*);
 /** Delete a DT_NEEDED entry by index. */

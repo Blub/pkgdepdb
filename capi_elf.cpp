@@ -229,6 +229,19 @@ void pkgdepdb_elf_needed_add(pkgdepdb_elf elf_, const char *v) {
   elf->needed_.emplace_back(v);
 }
 
+void pkgdepdb_elf_needed_insert(pkgdepdb_elf elf_, size_t index, const char *v)
+{
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  elf->needed_.insert(elf->needed_.begin() + index, v);
+}
+
+void pkgdepdb_elf_needed_insert_r(pkgdepdb_elf elf_, size_t index, size_t count,
+                                  const char **v)
+{
+  auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
+  elf->needed_.insert(elf->needed_.begin() + index, v, v + count);
+}
+
 pkgdepdb_bool pkgdepdb_elf_needed_contains(pkgdepdb_elf elf_, const char *v) {
   auto elf = *reinterpret_cast<rptr<Elf>*>(elf_);
   return pkgdepdb_strlist_contains(elf->needed_, v);
