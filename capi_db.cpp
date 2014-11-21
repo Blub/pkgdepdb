@@ -67,7 +67,8 @@ size_t pkgdepdb_db_library_path_get(pkgdepdb_db *db_, const char **out,
   return pkgdepdb_strlist_get(*db, &DB::library_path_, out, off, count);
 }
 
-pkgdepdb_bool pkgdepdb_db_library_path_add(pkgdepdb_db *db_, const char *path) {
+pkgdepdb_bool pkgdepdb_db_library_path_add(pkgdepdb_db *db_, const char *path)
+{
   auto db = reinterpret_cast<DB*>(db_);
   return db->LD_Append(path);
 }
@@ -83,8 +84,19 @@ size_t pkgdepdb_db_library_path_insert_r(pkgdepdb_db *db_, size_t index,
                                          size_t count, const char **paths)
 {
   auto db = reinterpret_cast<DB*>(db_);
-  return pkgdepdb_strlist_insert_unique(*db, &DB::library_path_, index, count,
-                                        paths);
+  std::set<string> pv;
+  for (size_t i = 0; i != count; ++i) {
+    string s(paths[i]);
+    fixpath(s);
+    pv.insert(s);
+  }
+  db->library_path_.insert(db->library_path_.begin() + index,
+                           pv.begin(), pv.end());
+  /* STL SUCKS
+                           std::make_move_iterator(pv.begin()),
+                           std::make_move_iterator(pv.end()));
+   */
+  return pv.size();
 }
 
 pkgdepdb_bool pkgdepdb_db_library_path_contains(pkgdepdb_db *db_,
