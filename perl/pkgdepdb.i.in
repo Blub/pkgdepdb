@@ -80,7 +80,7 @@
   if (SvTYPE((SV*)resultav) != SVt_PVAV)
     croak("Argument $argnum is not an array.");
   for (size_t i = 0; i != size$argnum; ++i) {
-    SV *tmp = newSVsv((SV*)$1[i]);
+    SV *tmp = newSVpv((const char*)$1[i], sizeof(pkgdepdb_pkg*));
     av_store(resultav, i, tmp);
   }
 }
@@ -110,14 +110,15 @@
   if (SvTYPE((SV*)resultav) != SVt_PVAV)
     croak("Argument $argnum is not an array.");
   for (size_t i = 0; i != size$argnum; ++i) {
-    SV *tmp = newSVsv((SV*)$1[i]);
+    SV *tmp = newSVpv((const char*)$1[i], sizeof(pkgdepdb_elf));
     av_store(resultav, i, tmp);
   }
 }
 
 %typemap(out) pkgdepdb_elf {
   if ($1) {
-    $result = newSVsv((SV*)$1);
+    fprintf(stderr, "Got one\n");
+    $result = newSVpv((const char*)$1, sizeof(pkgdepdb_elf));
   } else {
     $result = newSViv(0);
   }

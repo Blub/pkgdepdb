@@ -9,7 +9,11 @@ use PKGDepDB::CVal;
 sub load($$) {
   my ($class, $file, $cfg) = @_;
   my $err = 0;
-  $ptr = PKGDepDB::cmod::pkgdepdb_elf_load($file, \$err, $cfg);
+  my $ptr = PKGDepDB::cmod::pkgdepdb_elf_load($file, \$err, $cfg);
+
+  if ($err or not $ptr) {
+    return undef;
+  }
 
   return $class->new($ptr);
 }
@@ -67,7 +71,7 @@ sub new {
   tie $self->{ei_interpreter}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_elf_interpreter,
       \&PKGDepDB::cmod::pkgdepdb_elf_set_interpreter;
-  tie $self->{needed}, 'PKGDepDB::CVal::StringList', $ptr,
+  tie @{$self->{needed}}, 'PKGDepDB::CVal::StringList', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_elf_needed_count,
       \&PKGDepDB::cmod::pkgdepdb_elf_needed_get,
       \&PKGDepDB::cmod::pkgdepdb_elf_needed_set_i,
@@ -77,18 +81,18 @@ sub new {
       \&PKGDepDB::cmod::pkgdepdb_elf_needed_del_r,
       \&PKGDepDB::cmod::pkgdepdb_elf_needed_del_s,
       \&PKGDepDB::cmod::pkgdepdb_elf_needed_contains;
-  tie $self->{missing}, 'PKGDepDB::CVal::ROList', $ptr,
+  tie @{$self->{missing}}, 'PKGDepDB::CVal::ROList', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_elf_missing_count,
       \&PKGDepDB::cmod::pkgdepdb_elf_missing_get,
       \&PKGDepDB::cmod::pkgdepdb_elf_missing_contains;
-  tie $self->{found}, 'PKGDepDB::CVal::ROList', $ptr,
+  tie @{$self->{found}}, 'PKGDepDB::CVal::ROList', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_elf_found_count,
       sub($$$$) {
         my ($ptr, $out, $index, $count) = @_;
         my @raw;
         $#raw = $#$out;
         PKGDepDB::cmod::pkgdepdb_elf_found_get($ptr, \@raw, $index, $count);
-        $#@$out = 0;
+        $#{@$out} = 0;
         for my $elf (@raw) {
           push @$out, $class->new($elf);
         }

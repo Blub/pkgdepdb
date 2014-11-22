@@ -9,7 +9,7 @@ BEGIN {
 }
 
 use PKGDepDB::Cfg qw(LOG_LEVEL_WARN JSONBITS_QUERY);
-use PKGDepDB::Db;
+use PKGDepDB::Elf;
 
 my $cfg = PKGDepDB::Cfg->new();
 ok($cfg->read("test",
@@ -20,5 +20,6 @@ package_file_lists = true
 package_info = true
 max_jobs = 1
 json = off"));
-
 $cfg->{log_level} = LOG_LEVEL_WARN;
+
+my $elf = PKGDepDB::Elf->new();
