@@ -1,5 +1,11 @@
 package PKGDepDB::Cfg;
 
+use base qw(Exporter);
+our @EXPORT_OK = qw(LOG_LEVEL_DEBUG LOG_LEVEL_MESSAGE LOG_LEVEL_PRINT
+                    LOG_LEVEL_WARN LOG_LEVEL_ERROR
+                    JSONBITS_QUERY JSONBITS_DB
+                   );
+
 use strict;
 use warnings;
 use PKGDepDB;
@@ -69,19 +75,19 @@ sub max_jobs($) {
   return PKGDepDB::cmod::pkgdepdb_cfg_max_jobs($self->{ptr});
 }
 
-use constant LOG_LEVEL_DEBUG   => *PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_DEBUG;
-use constant LOG_LEVEL_MESSAGE => *PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_MESSAGE;
-use constant LOG_LEVEL_PRINT   => *PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_PRINT;
-use constant LOG_LEVEL_WARN    => *PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_WARN;
-use constant LOG_LEVEL_ERROR   => *PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_ERROR;
+use constant LOG_LEVEL_DEBUG   => $PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_DEBUG;
+use constant LOG_LEVEL_MESSAGE => $PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_MESSAGE;
+use constant LOG_LEVEL_PRINT   => $PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_PRINT;
+use constant LOG_LEVEL_WARN    => $PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_WARN;
+use constant LOG_LEVEL_ERROR   => $PKGDepDB::cmod::PKGDEPDB_CFG_LOG_LEVEL_ERROR;
 
 sub log_level($) {
   my $self = shift;
   return PKGDepDB::cmod::pkgdepdb_cfg_log_level($self->{ptr});
 }
 
-use constant JSONBITS_QUERY => *PKGDepDB::cmod::PKGDEPDB_JSONBITS_QUERY;
-use constant JSONBITS_DB    => *PKGDepDB::cmod::PKGDEPDB_JSONBITS_DB;
+use constant JSONBITS_QUERY => $PKGDepDB::cmod::PKGDEPDB_JSONBITS_QUERY;
+use constant JSONBITS_DB    => $PKGDepDB::cmod::PKGDEPDB_JSONBITS_DB;
 
 sub json($) {
   my $self = shift;
