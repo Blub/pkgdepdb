@@ -298,4 +298,56 @@ sub SPLICE {
   }
 }
 
+package PKGDepDB::CVal::ROList;
+
+use Carp qw(carp);
+sub PACKAGE { return 'PKGDepDB::CVal::ROList'; }
+
+sub TIEARRAY {
+  my ($class, $ptr, $count, $get, $contains, $find) = @_;
+
+  return bless { ptr      => $ptr,
+                 count    => $count,
+                 get      => $get,
+                 contains => $contains,
+                 find     => $find,
+               }, $class;
+}
+
+sub FETCH {
+  my ($self, $index) = @_;
+  my $ptr = $self->{ptr};
+  my @out = (0);
+  $self->{get}->($ptr, \@out, $index, 1);
+  return shift @out;
+}
+
+sub FETCHSIZE {
+  my $self = shift;
+  return $self->{count}->($self->{ptr});
+}
+
+sub STORE   { carp("access to read-only list"); }
+sub CLEAR   { carp("access to read-only list"); }
+sub DELETE  { carp("access to read-only list"); }
+sub PUSH    { carp("access to read-only list"); }
+sub POP     { carp("access to read-only list"); }
+sub SHIFT   { carp("access to read-only list"); }
+sub UNSHIFT { carp("access to read-only list"); }
+sub SPLICE  { carp("access to read-only list"); }
+
+sub find($$) {
+  my ($self, $key) = @_;
+  my $find = $self->{find};
+  carp(PACKAGE . "find no contains method available") unless $find;
+  return $find->($self->{ptr}, $key);
+}
+
+sub contains($$) {
+  my ($self, $key) = @_;
+  my $contains = $self->{contains};
+  carp(PACKAGE . "::contains: no contains method available") unless $contains;
+  return $contains->($self->{ptr}, $key);
+}
+
 1;

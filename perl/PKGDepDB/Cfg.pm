@@ -96,32 +96,33 @@ sub json($) {
 
 sub new {
   my $class = shift;
-  my $self = bless { 'ptr' => PKGDepDB::cmod::pkgdepdb_cfg_new() }, $class;
-  tie $self->{database}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  my $ptr = PKGDepDB::cmod::pkgdepdb_cfg_new();
+  my $self = bless { 'ptr' => $ptr }, $class;
+  tie $self->{database}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_database,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_database;
-  tie $self->{verbosity}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{verbosity}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_verbosity,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_verbosity;
-  tie $self->{quiet}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{quiet}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_quiet,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_quiet;
-  tie $self->{package_depends}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{package_depends}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_package_depends,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_package_depends;
-  tie $self->{package_file_lists}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{package_file_lists}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_package_file_lists,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_package_file_lists;
-  tie $self->{package_info}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{package_info}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_package_info,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_package_info;
-  tie $self->{max_jobs}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{max_jobs}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_max_jobs,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_max_jobs;
-  tie $self->{log_level}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{log_level}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_log_level,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_log_level;
-  tie $self->{json}, 'PKGDepDB::CVal::Scalar', $self->{ptr},
+  tie $self->{json}, 'PKGDepDB::CVal::Scalar', $ptr,
       \&PKGDepDB::cmod::pkgdepdb_cfg_json,
       \&PKGDepDB::cmod::pkgdepdb_cfg_set_json;
   return $self;

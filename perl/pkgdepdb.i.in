@@ -85,6 +85,44 @@
   }
 }
 
+%typemap(in) pkgdepdb_elf * ARROUT (size_t size) {
+  AV *tempav;
+  int i;
+  SV  **tv;
+  if (!SvROK($input))
+    croak("Argument $argnum is not a reference.");
+  if (SvTYPE(SvRV($input)) != SVt_PVAV)
+    croak("Argument $argnum is not an array.");
+  tempav = (AV*)SvRV($input);
+  size = av_top_index(tempav)+1;
+  $1 = (pkgdepdb_elf *) malloc(size*sizeof(pkgdepdb_elf));
+}
+
+%typemap(freearg) pkgdepdb_elf * ARROUT {
+  free($1);
+}
+
+%typemap(argout) pkgdepdb_elf * ARROUT {
+  AV *resultav;
+  if (!SvROK($input))
+    croak("Argument $argnum is not a reference.");
+  resultav = (AV*)SvRV($input);
+  if (SvTYPE((SV*)resultav) != SVt_PVAV)
+    croak("Argument $argnum is not an array.");
+  for (size_t i = 0; i != size$argnum; ++i) {
+    SV *tmp = newSVsv((SV*)$1[i]);
+    av_store(resultav, i, tmp);
+  }
+}
+
+%typemap(out) pkgdepdb_elf {
+  if ($1) {
+    $result = newSVsv((SV*)$1);
+  } else {
+    $result = newSViv(0);
+  }
+}
+
 %{
 #include "../pkgdepdb.h"
 %}
@@ -342,20 +380,25 @@ void          pkgdepdb_elf_set_rpath      (pkgdepdb_elf, const char*);
 void          pkgdepdb_elf_set_runpath    (pkgdepdb_elf, const char*);
 void          pkgdepdb_elf_set_interpreter(pkgdepdb_elf, const char*);
 size_t        pkgdepdb_elf_needed_count(pkgdepdb_elf);
-size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf, const char**, size_t,
-                                        size_t);
+size_t        pkgdepdb_elf_needed_get  (pkgdepdb_elf,
+                                        const char** ARROUT,
+                                        size_t, size_t);
 pkgdepdb_bool pkgdepdb_elf_needed_contains(pkgdepdb_elf, const char*);
 void          pkgdepdb_elf_needed_add     (pkgdepdb_elf, const char*);
+void          pkgdepdb_elf_needed_insert  (pkgdepdb_elf, size_t, const char*);
+void          pkgdepdb_elf_needed_insert_r(pkgdepdb_elf, size_t, size_t,
+                                           const char** ARRIN);
 size_t        pkgdepdb_elf_needed_del_s   (pkgdepdb_elf, const char*);
 void          pkgdepdb_elf_needed_del_i   (pkgdepdb_elf, size_t);
 void          pkgdepdb_elf_needed_del_r   (pkgdepdb_elf, size_t, size_t);
 size_t        pkgdepdb_elf_missing_count   (pkgdepdb_elf);
-size_t        pkgdepdb_elf_missing_get     (pkgdepdb_elf, const char**, size_t,
-                                            size_t);
+size_t        pkgdepdb_elf_missing_get     (pkgdepdb_elf,
+                                            const char** ARROUT,
+                                            size_t, size_t);
 pkgdepdb_bool pkgdepdb_elf_missing_contains(pkgdepdb_elf, const char*);
 size_t        pkgdepdb_elf_found_count   (pkgdepdb_elf);
-size_t        pkgdepdb_elf_found_get     (pkgdepdb_elf, pkgdepdb_elf*, size_t,
-                                          size_t);
+size_t        pkgdepdb_elf_found_get     (pkgdepdb_elf, pkgdepdb_elf* ARROUT,
+                                          size_t, size_t);
 pkgdepdb_elf  pkgdepdb_elf_found_find    (pkgdepdb_elf, const char*);
 pkgdepdb_bool pkgdepdb_elf_can_use(pkgdepdb_elf elf, pkgdepdb_elf obj,
                                    pkgdepdb_bool strict);
