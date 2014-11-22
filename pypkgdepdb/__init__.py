@@ -289,8 +289,12 @@ class DB(object):
         pkg.linked = True
 
     def uninstall_package(self, pkg):
-        if lib.db_package_remove(self._ptr, pkg._ptr) != 1:
-            raise PKGDepDBException('failed to remove package')
+        if isinstance(pkg, int):
+            if lib.db_package_remove_i(self._ptr, pkg) != 1:
+                raise PKGDepDBException('failed to remove package')
+        else:
+            if lib.db_package_remove_p(self._ptr, pkg._ptr) != 1:
+                raise PKGDepDBException('failed to remove package')
         pkg.linked = False
 
     def delete_package(self, pkg):

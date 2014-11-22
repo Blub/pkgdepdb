@@ -295,7 +295,12 @@ pkgdepdb_bool pkgdepdb_db_package_delete_i(pkgdepdb_db*, size_t);
  * structure. Only a version taking a package reference is provided because
  * you have to manually call pkgdepdb_pkg_delete() on it afterwards.
  */
-pkgdepdb_bool pkgdepdb_db_package_remove(pkgdepdb_db*, pkgdepdb_pkg*);
+pkgdepdb_bool pkgdepdb_db_package_remove_p(pkgdepdb_db*, pkgdepdb_pkg*);
+/** Uninstall a package from the database by index without destroying the
+ * package structure. Only a version taking a package reference is provided
+ * because you have to manually call pkgdepdb_pkg_delete() on it afterwards.
+ */
+pkgdepdb_bool pkgdepdb_db_package_remove_i(pkgdepdb_db*, size_t);
 
 /** Check whether an installed package has to be considered broken in the
  * database.

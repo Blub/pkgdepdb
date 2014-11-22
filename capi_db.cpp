@@ -171,7 +171,8 @@ pkgdepdb_bool pkgdepdb_db_package_delete_p(pkgdepdb_db *db_,
   return db->DeletePackage(pkgiter) ? 1 : 0;
 }
 
-pkgdepdb_bool pkgdepdb_db_package_remove(pkgdepdb_db *db_, pkgdepdb_pkg *pkg_)
+pkgdepdb_bool pkgdepdb_db_package_remove_p(pkgdepdb_db *db_,
+                                           pkgdepdb_pkg *pkg_)
 {
   auto db = reinterpret_cast<DB*>(db_);
   auto pkg = reinterpret_cast<Package*>(pkg_);
@@ -184,6 +185,13 @@ pkgdepdb_bool pkgdepdb_db_package_delete_i(pkgdepdb_db *db_, size_t index) {
   if (index >= db->packages_.size())
     return 0;
   return db->DeletePackage(db->packages_.begin() + index) ? 1 : 0;
+}
+
+pkgdepdb_bool pkgdepdb_db_package_remove_i(pkgdepdb_db *db_, size_t index) {
+  auto db = reinterpret_cast<DB*>(db_);
+  if (index >= db->packages_.size())
+    return 0;
+  return db->DeletePackage(db->packages_.begin() + index, false) ? 1 : 0;
 }
 
 pkgdepdb_bool pkgdepdb_db_package_delete_s(pkgdepdb_db *db_, const char *name)
