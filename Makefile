@@ -104,8 +104,8 @@ clean:
 	-rm -rf .libs
 	-rm -f setup.py
 
-install: install-bin install-lib install-man
-uninstall: uninstall-bin uninstall-lib uninstall-man
+install: install-bin $(INSTALL_LIB) install-man
+uninstall: uninstall-bin $(UNINSTALL_LIB) uninstall-man
 install-prefix:
 	install -d -m755 $(DESTDIR)$(PREFIX)
 install-bin: install-prefix

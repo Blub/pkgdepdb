@@ -14,6 +14,8 @@ CPPFLAGS+=$(CLANG_FLAGS)
 .endif
 
 LIBPKGDEPDB_LA:=
+INSTALL_LIB:=
+UNINSTALL_LIB:=
 LTCXX = $(CXX)
 LTLD  = $(CXX)
 LTOBJECTS  = $(OBJECTS)
@@ -23,6 +25,8 @@ LTLIB_OBJ  = $(LIB_OBJ)
 HAVE_LIBTOOL != which $(LIBTOOL) >/dev/null && echo yes
 .if $(HAVE_LIBTOOL) == yes
 LIBPKGDEPDB_LA:=libpkgdepdb.la
+INSTALL_LIB:=install-lib
+UNINSTALL_LIB:=uninstall-lib
 LTCXX = $(LIBTOOL) --mode=compile $(CXX)
 LTLD  = $(LIBTOOL) --mode=link $(CXX)
 LTOBJECTS  = $(OBJECTS:.o=.lo)

@@ -12,6 +12,8 @@ ifeq ($(CXX),clang++)
 endif
 
 LIBPKGDEPDB_LA:=
+INSTALL_LIB:=
+UNINSTALL_LIB:=
 LTCXX = $(CXX)
 LTLD  = $(CXX)
 LTOBJECTS  = $(OBJECTS)
@@ -21,6 +23,8 @@ ifeq ($(WITH_LIBRARY),yes)
 HAVE_LIBTOOL := $(shell which $(LIBTOOL) >/dev/null && echo yes)
 ifeq ($(HAVE_LIBTOOL),yes)
 LIBPKGDEPDB_LA:=libpkgdepdb.la
+INSTALL_LIB:=install-lib
+UNINSTALL_LIB:=uninstall-lib
 LTCXX = $(LIBTOOL) --mode=compile $(CXX)
 LTLD  = $(LIBTOOL) --mode=link $(CXX)
 LTOBJECTS  = $(OBJECTS:.o=.lo)
