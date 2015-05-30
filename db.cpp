@@ -2,6 +2,9 @@
 #include <algorithm>
 #include <utility>
 
+#include <stdlib.h>
+#include <limits.h>
+
 #include "main.h"
 
 #ifdef PKGDEPDB_ENABLE_THREADS
@@ -1059,6 +1062,8 @@ static const Package* find_depend(const string     &dependency,
 #ifdef PKGDEPDB_ENABLE_ALPM
   string op, ver;
   split_constraint(constraint, op, ver);
+#else
+  (void)constraint;
 #endif
 
   auto find = pkgmap.find(dependency);
