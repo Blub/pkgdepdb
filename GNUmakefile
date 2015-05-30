@@ -36,7 +36,8 @@ endif
 
 ifeq ($(ALPM),yes)
 ENABLE_ALPM := define
-LIBS += -lalpm
+CXXFLAGS += `pkg-config libalpm --cflags`
+LIBS += `pkg-config libalpm --libs`
 endif
 
 ifeq ($(REGEX),yes)

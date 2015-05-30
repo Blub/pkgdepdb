@@ -38,7 +38,8 @@ INSTALLTARGETS+=$(INSTALLTARGETS_LIB)
 
 .if $(ALPM) == yes
 ENABLE_ALPM := define
-LIBS += -lalpm
+CXXFLAGS += `pkg-config libalpm --cflags`
+LIBS += `pkg-config libalpm --libs`
 .endif
 
 .if $(REGEX) == yes
