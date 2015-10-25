@@ -1,7 +1,8 @@
-2015-10-25 Blub
+2015-10-25 Blub (0.1.10)
 
 	* DB version 13: store pkgbase
 	* print pkgbase with -Iv
+	* ridiculous hotfix
 
 2015-10-25 Blub (0.1.9)
 
