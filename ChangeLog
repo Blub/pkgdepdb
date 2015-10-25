@@ -1,6 +1,7 @@
 2015-10-25 Blub
 
 	* fix version string output
+	* fix loading of v13 dbs downgrading to v12
 
 2015-10-25 Blub (0.1.10)
 
