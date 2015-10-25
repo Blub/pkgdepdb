@@ -811,6 +811,8 @@ static bool db_load(DB *db, const string& filename) {
     db->contains_make_depends_ = true;
   if (hdr.version >= 12)
     db->contains_check_depends_ = true;
+  if (hdr.version >= 13)
+    db->contains_pkgbase_ = true;
 
   in >= db->name_;
   if (!read_stringlist(in, db->library_path_)) {
