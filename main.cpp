@@ -163,7 +163,10 @@ static void help [[noreturn]] (int x) {
 }
 
 static void version [[noreturn]] (int x) {
-  printf("pkgdepdb " PKGDEPDB_VERSION_STRING "\n");
+  if (PKGDEPDB_GIT_INFO[0])
+    printf("pkgdepdb " PKGDEPDB_VERSION_STRING "\n");
+  else
+    printf("pkgdepdb " PKGDEPDB_VERSION_STRING "-" PKGDEPDB_GIT_INFO "\n");
   exit(x);
 }
 
