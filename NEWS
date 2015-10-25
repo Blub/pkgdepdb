@@ -1,4 +1,4 @@
-2014-XX-YY Release 0.1.9
+2015-10-25 Release 0.1.9
 	- new filter: -fcontains
 	- DB version 12: storing makedepends, new dependency list format: a tuple
 	  of string and version instead of just one string
