@@ -23,8 +23,9 @@ struct Package {
   StringList              filelist_;
 
   // DB version 11:
-  string                  description_;
-  string                  pkgbase_;
+  string                  description_; // not stored
+  string                  pkgbase_; // DB version 13
+  // not stored:
   std::map<string,vec<string>>
                           info_; // generic info - everything not caught above
 

@@ -28,6 +28,7 @@ struct DB {
   bool contains_check_depends_;
   bool contains_groups_;
   bool contains_filelists_;
+  bool contains_pkgbase_;
 // }
 
   DB() = delete;

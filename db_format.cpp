@@ -18,7 +18,7 @@
 namespace pkgdepdb {
 
 // version
-uint16_t DB::CURRENT = 12;
+uint16_t DB::CURRENT = 13;
 
 // magic header
 static const char
@@ -493,6 +493,8 @@ static bool write_pkg(SerialOut &out,    Package  *pkg,
   // Now serialize the actual package data:
   out <= pkg->name_
       <= pkg->version_;
+  if (hdrver >= 13)
+      out <= pkg->pkgbase_;
   if (!write_objlist(out, pkg->objects_))
     return false;
 
@@ -576,6 +578,8 @@ static bool read_pkg(SerialIn &in,     Package  *&pkg,
   // Now serialize the actual package data:
   in >= pkg->name_
      >= pkg->version_;
+  if (hdrver >= 13)
+      in >= pkg->pkgbase_;
   if (!read_objlist(in, pkg->objects_, config))
     return false;
   for (auto &o : pkg->objects_)
@@ -661,7 +665,9 @@ static bool db_store(DB *db, const string& filename) {
     hdr.flags |= DBFlags::FileLists;
 
   // Figure out which database format version this will be
-  if (db->contains_check_depends_)
+  if (db->contains_pkgbase_)
+    hdr.version = 13;
+  else if (db->contains_check_depends_)
     hdr.version = 12;
   else if (db->contains_make_depends_)
     hdr.version = 10;

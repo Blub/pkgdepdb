@@ -35,6 +35,7 @@ DB::DB(const Config& optconfig)
   contains_check_depends_   = false;
   contains_groups_          = false;
   contains_filelists_       = false;
+  contains_pkgbase_         = false;
   strict_linking_           = false;
 }
 
@@ -80,6 +81,12 @@ bool DB::WipePackages() {
     return false;
   objects_.clear();
   packages_.clear();
+  contains_package_depends_ = false;
+  contains_make_depends_    = false;
+  contains_check_depends_   = false;
+  contains_groups_          = false;
+  contains_filelists_       = false;
+  contains_pkgbase_         = false;
   return true;
 }
 
@@ -230,6 +237,8 @@ bool DB::InstallPackage(Package* &&pkg) {
     contains_groups_ = true;
   if (pkg->filelist_.size())
     contains_filelists_ = true;
+  if (!pkg->pkgbase_.empty())
+    contains_pkgbase_ = true;
 
   const StringList *libpaths = GetPackageLibPath(pkg);
 
@@ -789,6 +798,8 @@ void DB::ShowPackages(bool                 filter_broken,
     else
       printf("  -> %s - %s\n", pkg->name_.c_str(), pkg->version_.c_str());
     if (config_.verbosity_ >= 1) {
+      if (!pkg->pkgbase_.empty())
+        printf("    package base: %s\n", pkg->pkgbase_.c_str());
       for (auto &grp : pkg->groups_)
         printf("    is in group: %s\n", grp.c_str());
       ShowDependList("    depends on: %s%s\n",              pkg->depends_);

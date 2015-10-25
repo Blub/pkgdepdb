@@ -1,3 +1,7 @@
+2015-XX-YY Release 0.1.10
+	- DB version 13: store pkgbase
+	- print pkgbase with -Iv
+
 2015-10-25 Release 0.1.9
 	- new filter: -fcontains
 	- DB version 12: storing makedepends, new dependency list format: a tuple

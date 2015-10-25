@@ -85,6 +85,10 @@ void DB::ShowPackages_json(bool                filter_broken,
     printf(",\n\t\t\t\"version\": ");
     json_quote(stdout, pkg->version_);
     if (config_.verbosity_ >= 1) {
+      if (!pkg->pkgbase_.empty()) {
+        printf(",\n\t\t\t\"pkgbase\": ");
+        json_quote(stdout, pkg->pkgbase_);
+      }
       if (!pkg->groups_.empty()) {
         printf(",\n\t\t\t\"groups\": [");
         const char *sep = "\n\t\t\t\t";
