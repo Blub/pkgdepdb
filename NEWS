@@ -1,5 +1,7 @@
-2015-XX-YY Release 0.1.11
-	- minor fixes
+2015-10-26 Release 0.1.11
+	- bugfixes
+	- fixed a major bug in .PKGINFO parsing that caused some values to be
+	  cut off at random.
 
 2015-10-25 Release 0.1.10
 	- hotfix tag to show my ridiculous timing with tagging releases

@@ -103,7 +103,8 @@ bool Package::ReadInfo(const string& str, const size_t size,
       return false;
     }
     size_t to = str.find_first_of("\n\r", pos);
-    to = str.find_last_not_of(" \t", to, to-pos);
+    while (str[to] == ' ' || str[to] == '\t')
+      --to;
     out = str.substr(pos, to-pos);
     skipline();
     return true;
