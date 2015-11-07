@@ -16,7 +16,7 @@ API_AGE      := 0
 
 VERSION_MAJOR := 0
 VERSION_MINOR := 1
-VERSION_PATCH := 11
+VERSION_PATCH := 12dev
 
 CXX ?= clang++
 CXXFLAGS += -std=c++11

@@ -1,3 +1,5 @@
+2015-XX-YY Release 0.1.12
+
 2015-11-07 Release 0.1.11
 	- bugfixes
 	- fixed a major bug in .PKGINFO parsing that caused some values to be
